@@ -1,0 +1,23 @@
+import ctypes as ct
+
+
+class Kernel:
+    def __init__(self):
+        self.dll = ct.CDLL('../x64/Release/analysisCpp.dll')
+        self.setTypes(
+            ('disksToVoronoiEdges', [ct.c_int] * 2 + [ct.c_void_p] * 2 + [ct.c_float] * 2, ct.c_int),
+            ('trueDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
+            ('weightedDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
+            ('sumOverWeights', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('sumAntisym', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('theta_ij', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('orientation_diff_ij', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+        )
+
+    def setTypes(self, *tup):
+        for func_name, argtypes, restype in tup:
+            getattr(self.dll, func_name).argtypes = argtypes
+            getattr(self.dll, func_name).restype = restype
+
+
+ker = Kernel()

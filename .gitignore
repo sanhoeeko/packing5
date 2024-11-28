@@ -1,0 +1,12 @@
+*
+
+!/**/
+/program-old/
+/packing5Cpp_with_omp/
+
+!.gitignore
+
+!*.c
+!*.h
+!*.cpp
+!*.py
