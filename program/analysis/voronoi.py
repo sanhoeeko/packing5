@@ -1,5 +1,3 @@
-from functools import lru_cache
-
 import numpy as np
 
 import utils as ut
@@ -49,6 +47,12 @@ class Voronoi:
     def weighted_delaunay(self):
         return Delaunay(True, *self.delaunay_template(ker.dll.weightedDelaunay))
 
+    def delaunay(self, weighted: bool):
+        if weighted:
+            return self.weighted_delaunay()
+        else:
+            return self.true_delaunay()
+
 
 class Delaunay:
     def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray):
@@ -73,17 +77,29 @@ class Delaunay:
         else:
             return self.weight_sums
 
-    @lru_cache(maxsize=None)
-    def theta_ij(self, xyt: ut.CArray):
-        output = ut.CArrayFZeros((self.num_edges,))
-        ker.dll.theta_ij(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, xyt.ptr, output.ptr)
-        return output
+    def phi_p(self, p: int, xyt: ut.CArray) -> np.ndarray[np.complex64]:
+        """
+        Assume that p is an even number. Because we use (-z)^4 = z^4, (-z)^6 = z^6
+        """
+        z_p = ut.CArray(np.zeros((self.num_edges,), dtype=np.complex64))
+        Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
+        ker.dll.z_ij_power_p(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr,
+                             xyt.ptr, z_p.ptr, np.float32(p))
+        z_p.data *= self.weights.data
+        ker.dll.sumComplex(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, z_p.ptr, Phi.ptr)
+        return Phi.data / self.weight_sums.data
 
-    def phi_p(self, p: int, xyt: ut.CArray) -> np.ndarray:
-        u = ut.CArray(np.exp(1j * p * self.theta_ij(xyt)) * self.weights)
-        Phi = ut.CArrayFZeros((self.num_rods,))
-        ker.dll.sumAntisym(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, u.ptr, Phi.ptr)
-        return Phi.data / self.weight_sums
+    def Phi6Complex(self, xyt: ut.CArray) -> np.ndarray[np.complex64]:
+        return self.phi_p(6, xyt)
+
+    def Phi4Complex(self, xyt: ut.CArray) -> np.ndarray[np.complex64]:
+        return self.phi_p(4, xyt)
+
+    def Phi6(self, xyt: ut.CArray) -> np.ndarray:
+        return np.abs(self.phi_p(6, xyt))
+
+    def Phi4(self, xyt: ut.CArray) -> np.ndarray:
+        return np.abs(self.phi_p(4, xyt))
 
     def S_center(self, xyt: ut.CArray) -> np.ndarray:
         """
@@ -91,13 +107,31 @@ class Delaunay:
         """
         ti_tj = ut.CArrayFZeros((self.num_edges,))
         ker.dll.orientation_diff_ij(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, xyt.ptr, ti_tj.ptr)
-        c = np.cos(2 * ti_tj.data)
+        c = ut.CArray(np.cos(2 * ti_tj.data))
         S = ut.CArrayFZeros((self.num_rods,))
         ker.dll.sumOverWeights(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, c.ptr, S.ptr)
-        return S.data / self.weight_sums
+        return S.data / self.weight_sums.data
+
+    def Q_tensor(self, xyt: ut.CArray) -> (ut.CArray, ut.CArray):
+        t_mul_2 = 2 * xyt.data[:, 2]
+        ux = ut.CArray(np.cos(t_mul_2))
+        uy = ut.CArray(np.sin(t_mul_2))
+        sum_ux = ux.copy()
+        sum_uy = uy.copy()
+        ker.dll.sumOverNeighbors(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, ux.ptr, sum_ux.ptr)
+        ker.dll.sumOverNeighbors(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, uy.ptr, sum_uy.ptr)
+        if self.weighted:
+            sum_ux.data *= self.weights.data
+            sum_uy.data *= self.weights.data
+        return sum_ux, sum_uy
 
     def S_local(self, xyt: ut.CArray) -> np.ndarray:
         """
         Calculate the director as the eigenvector of Q-tensor.
         """
+        sum_ux, sum_uy = self.Q_tensor(xyt)
+        S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
+        return S.data / (self.weight_sums.data + 1)
+
+    def director_angle(self, xyt: ut.CArray) -> np.ndarray:
         pass

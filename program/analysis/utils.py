@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 
 
@@ -29,3 +31,15 @@ def CArrayF(arr: np.ndarray):
 
 def CArrayFZeros(*args, **kwargs):
     return CArray(np.zeros(*args, **kwargs), np.float32)
+
+
+def Map(threads: int):
+    if threads > 1:
+        def map_func(func, tasks):
+            with ThreadPoolExecutor(max_workers=min(threads, len(tasks))) as executor:
+                return list(executor.map(func, tasks))
+    else:
+        def map_func(func, tasks):
+            return [func(task) for task in tasks]
+
+    return map_func

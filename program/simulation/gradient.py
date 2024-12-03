@@ -5,11 +5,11 @@ from .kernel import ker
 
 
 class GradientMatrix:
-    def __init__(self, state, grid, potential):
+    def __init__(self, state, grid):
         self.N = state.N
         self.state = state
         self.grid = grid
-        self.potential = potential
+        self.potential = None
         self.capacity = ut.cores * ut.max_neighbors
         self.z = ut.CArray(np.zeros((self.N,), dtype=np.int32))
         self.data = ut.CArrayFZeros((self.N, self.capacity, 4))
@@ -23,11 +23,19 @@ class GradientMatrix:
             self.grid.lines, self.grid.cols, self.N
         )
 
+    @property
+    def params_zero(self):
+        return (
+            0, self.state.xyt.ptr, self.state.boundary.ptr, self.grid.grid.ptr,
+            self.data.ptr, self.z.ptr,
+            self.grid.lines, self.grid.cols, self.N
+        )
+
     def calGradient(self):
         return ker.dll.CalGradient(*self.params)
 
     def calGradientAsDisks(self):
-        return ker.dll.CalGradientAsDisks(*self.params)
+        return ker.dll.CalGradientAsDisks(*self.params_zero)
 
     def stochasticCalGradient(self, p: float):
         def inner():
@@ -37,7 +45,7 @@ class GradientMatrix:
 
     def stochasticCalGradientAsDisks(self, p: float):
         def inner():
-            return ker.dll.StochasticCalGradientAsDisks(p, *self.params)
+            return ker.dll.StochasticCalGradientAsDisks(p, *self.params_zero)
 
         return inner
 

@@ -9,8 +9,8 @@ class Kernel:
             ('trueDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
             ('weightedDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
             ('sumOverWeights', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
-            ('sumAntisym', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
-            ('theta_ij', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('sumComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('z_ij_power_p', [ct.c_int] * 2 + [ct.c_void_p] * 4 + [ct.c_float], None),
             ('orientation_diff_ij', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
         )
 

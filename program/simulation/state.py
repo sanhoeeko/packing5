@@ -9,12 +9,11 @@ from .potential import Potential
 
 
 class State(ut.HasMeta):
-    metalist = [
-        'N', 'n', 'd', 'A', 'B', 'Gamma', 'gamma', 'rho', 'phi'
-    ]
+    meta_hint = "N: i4, A: f4, B: f4, gamma: f4, rho: f4, phi: f4"
     min_grad = 1e-4
 
     def __init__(self, N: int, n: int, d: float, A: float, B: float, configuration: np.ndarray):
+        super().__init__()
         self.N = np.int32(N)
         self.n = np.int32(n)
         self.d = np.float32(d)
@@ -26,7 +25,6 @@ class State(ut.HasMeta):
         # optional objects
         self.grid = None
         self.optimizer = None
-        self.potential = None
 
     @property
     def A(self):
@@ -50,11 +48,13 @@ class State(ut.HasMeta):
 
     @classmethod
     def random(cls, N, n, d, A, B):
-        return cls(N, n, d, A, B,
-                   randomConfiguration(N, A, B))
+        return cls(N, n, d, A, B, randomConfiguration(N, A, B))
 
-    def train(self, potential: Potential):
-        self.potential = potential
+    def setPotential(self, potential: Potential):
+        self.grid.gradient.potential = potential
+        return self
+
+    def train(self):
         self.grid = Grid(self)
         return self
 

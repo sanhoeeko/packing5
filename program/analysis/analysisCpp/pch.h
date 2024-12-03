@@ -18,12 +18,17 @@ DLLEXPORT int weightedDelaunay(int num_rods, int disks_per_rod, void* input_poin
     void* output_indices_ptr, float A, float B);
 DLLEXPORT void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* weights_ptr, void* output_ptr);
-DLLEXPORT void sumAntisym(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
-    void* weights_ptr, void* output_ptr);
-DLLEXPORT void theta_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
-    void* configuration_ptr, void* output_ptr);
+DLLEXPORT void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
+    void* complex_ptr, void* output_ptr);
+DLLEXPORT void z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+    void* output_complex_ptr, float p);
 DLLEXPORT void orientation_diff_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
     void* configuration_ptr, void* output_ptr);
-
+DLLEXPORT void sumOverNeighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
+    void* a_ptr, void* output_ptr);
+DLLEXPORT void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+    void* orientation_ptr, void* output_complex_ptr, float gamma, float p);
+DLLEXPORT void sumAnisotropicComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
+    void* complex_ptr, void* output_ptr);
 
 #endif //PCH_H

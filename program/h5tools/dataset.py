@@ -4,39 +4,46 @@ import pandas as pd
 
 
 class Dataset:
-    def __init__(self, file_name: str, metadata: list[tuple]):
+    def __init__(self, file_name: str, summary_dtype: list[tuple]):
         self.file_name = file_name
+        self.summary_dtype = summary_dtype
         with h5py.File(self.file_name, 'w') as f:
-            for key, value in metadata:
-                f.attrs[key] = value
-            f.create_dataset('summary_table', data=np.empty((0, len(metadata))), maxshape=(None, len(metadata)))
+            f.create_dataset('summary_table', dtype=summary_dtype, shape=(0,), maxshape=(None,), chunks=True)
 
-    def append_metadata(self, metadata):
+    def append_summary(self, metadata: np.ndarray):
         with h5py.File(self.file_name, 'a') as f:
-            summary_table = f['summary_table']
-            new_row = np.array(metadata, dtype=np.float32).reshape(1, -1)
-            summary_table.resize(summary_table.shape[0] + 1, axis=0)
-            summary_table[-1, :] = new_row
+            dset = f['summary_table']
+            dset.resize(dset.shape[0] + 1, axis=0)
+            dset[-1] = metadata[0]
 
     def read_summary_table(self):
         with h5py.File(self.file_name, 'r') as f:
-            summary_table = f['summary_table'][:]
-            column_names = list(f.attrs.keys())
-        return pd.DataFrame(summary_table, columns=column_names)
+            dataset = f['summary_table']
+            data = dataset[:]
+        df = pd.DataFrame(data)
+        # convert strings
+        for column in df.columns:
+            if np.issubdtype(df[column].dtype, np.object_):
+                df[column] = df[column].str.decode('utf-8')
+        return df
 
 
 class SimulationData(Dataset):
-    def __init__(self, file_name: str, metadata: list[tuple], descent_curve_size: int):
-        super().__init__(file_name, metadata)
-        meta_dict = dict(metadata)
-        N = meta_dict['N']
+    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], descent_curve_size: int):
+        super().__init__(file_name, summary_dtype)
+        N = metadata[0]['N']
         with h5py.File(self.file_name, 'a') as f:
+            f.attrs['metadata'] = metadata
             f.create_dataset('configuration', shape=(0, N, 3), maxshape=(None, N, 3), chunks=True)
             f.create_dataset('descent_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
                              chunks=True)
 
-    def append(self, metadata, data: dict):
-        self.append_metadata(metadata)
+    def get_metadata(self) -> np.ndarray:
+        with h5py.File(self.file_name, 'a') as f:
+            return f.attrs['metadata']
+
+    def append(self, summary: np.ndarray, data: dict):
+        self.append_summary(summary)
         with h5py.File(self.file_name, 'a') as f:
             for key, value in data.items():
                 if key in f:
@@ -46,17 +53,20 @@ class SimulationData(Dataset):
                 else:
                     raise KeyError(f"Dataset {key} not found in HDF5 file.")
 
+    def read_data(self):
+        pass
+
 
 class ExperimentData(Dataset):
-    def __init__(self, file_name, metadata):
-        super().__init__(file_name, metadata)
+    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple]):
+        super().__init__(file_name, summary_dtype)
         with h5py.File(self.file_name, 'a') as f:
+            f.attrs['metadata'] = metadata
             f.create_dataset('simulation_data', shape=(0,), dtype=h5py.vlen_dtype(h5py.special_dtype(vlen=bytes)),
                              chunks=True)
 
-    def append(self, simulation_data):
-        metadata = list(simulation_data.read_summary_table().iloc[-1])
-        self.append_metadata(metadata)
+    def append(self, simulation_data: SimulationData):
+        self.append_summary(simulation_data.get_metadata())
         with h5py.File(self.file_name, 'a') as f:
             sim_data_summary = simulation_data.read_summary_table().to_numpy()
             sim_data_dict = {}
@@ -80,8 +90,22 @@ class ExperimentData(Dataset):
             return simulation_data
 
 
-def package_simulations_into_experiment(file_name, experiment_metadata, simulations):
-    experiment_data = ExperimentData(file_name, experiment_metadata)
+def write_metadata_to_hdf5(hdf5_filename: str, metadata: dict):
+    with h5py.File(hdf5_filename, 'a') as f:
+        for key, value in metadata.items():
+            f.attrs[key] = value
+
+
+def read_metadata_from_hdf5(hdf5_filename: str) -> dict:
+    metadata = {}
+    with h5py.File(hdf5_filename, 'r') as f:
+        for key, value in f.attrs.items():
+            metadata[key] = value
+    return metadata
+
+
+def package_simulations_into_experiment(file_name: str, experiment_metadata, simulations: list[SimulationData]):
+    experiment_data = ExperimentData(file_name, experiment_metadata, simulations[0].get_metadata().dtype)
     for sim_data in simulations:
         experiment_data.append(sim_data)
     return experiment_data

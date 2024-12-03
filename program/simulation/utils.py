@@ -1,6 +1,4 @@
-import inspect
 import re
-from itertools import product
 
 import numpy as np
 
@@ -58,29 +56,21 @@ def CArrayFZeros(*args, **kwargs):
 
 # h5 metadata management
 
+def strToTuple(s: str):
+    return tuple(map(lambda x: x.strip(), s.split(':')))
+
+
 class HasMeta:
     """
-    Ensure that there is a metalist: list[str] at the top of class
+    Ensure that there is a meta_hint: str at the top of class,
+    format: <attr_name 1>: <type 1>, <attr_name 2>: <type 2>
     """
 
+    def __init__(self):
+        self.dtype = list(map(strToTuple, self.meta_hint.split(',')))
+        self.key_list = [x[0] for x in self.dtype]
+
     @property
-    def metadata(self):
-        return [getattr(self, key) for key in self.metalist]
-
-
-def ClassCartesian(cls, **attribute_lists):
-    # Get the names of the parameters of the class constructor
-    signature = inspect.signature(cls.__init__)
-    allowed_attributes = set(signature.parameters.keys())
-    allowed_attributes.discard('self')
-
-    # Check if all required properties are present
-    for key in attribute_lists:
-        if key not in allowed_attributes:
-            raise ValueError(f"Invalid attribute: {key}")
-    for attr in allowed_attributes:
-        if attr not in attribute_lists:
-            raise ValueError(f"Missing attribute: {attr}")
-
-    cartesian_product = product(*attribute_lists.values())
-    return [cls(**dict(zip(attribute_lists.keys(), attributes))) for attributes in cartesian_product]
+    def metadata(self) -> np.ndarray:
+        values = [getattr(self, key) for key in self.key_list]
+        return np.array([tuple(values)], dtype=self.dtype)

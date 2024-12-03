@@ -14,35 +14,28 @@ class Boundary:
         pass  # to be inherited
 
     def compress(self, t: float):
-        self.A = self.func_A(t, self.A)
-        self.B = self.func_B(t, self.B)
+        self.A = self.restrict_A(self.func_A(t, self.A))
+        self.B = self.restrict_B(self.func_B(t, self.B))
         self.refresh()
 
     def setCompressMethod(self, func_A, func_B, max_step_size: float):
-        self.func_A = self.restrict_compress_wrapper_A(func_A)
-        self.func_B = self.restrict_compress_wrapper_B(func_B)
+        self.func_A = func_A
+        self.func_B = func_B
         self.max_step_size = max_step_size
         return self
 
-    def restrict_compress_wrapper_A(self, compress_func):
-        def inner(t, x):
-            dA = compress_func(t, x) - self.A
-            if abs(dA) > self.max_step_size:
-                return self.A + np.sign(dA) * self.max_step_size
-            else:
-                return self.A + dA
+    def _restrict(self, current_value, target_value):
+        delta = target_value - current_value
+        if abs(delta) > self.max_step_size:
+            return current_value + np.sign(delta) * self.max_step_size
+        else:
+            return current_value + delta
 
-        return inner
+    def restrict_A(self, target_value):
+        return self._restrict(self.A, target_value)
 
-    def restrict_compress_wrapper_B(self, compress_func):
-        def inner(t, x):
-            dB = compress_func(t, x) - self.B
-            if abs(dB) > self.max_step_size:
-                return self.B + np.sign(dB) * self.max_step_size
-            else:
-                return self.B + dB
-
-        return inner
+    def restrict_B(self, target_value):
+        return self._restrict(self.B, target_value)
 
 
 class EllipticBoundary(Boundary):
@@ -58,16 +51,9 @@ class EllipticBoundary(Boundary):
 
 
 def NoCompress():
-    def inner(t, x):
-        return x
-
-    return inner
+    return lambda t, x: x
 
 
 def RatioCompress(ratio: float):
     q = 1 - ratio
-
-    def inner(t, x):
-        return q * x
-
-    return inner
+    return lambda t, x: q * x

@@ -3,7 +3,7 @@ import ctypes as ct
 
 class Kernel:
     def __init__(self):
-        self.dll = ct.CDLL('./x64/Debug/packing5Cpp.dll')
+        self.dll = ct.CDLL('./x64/Release/packing5Cpp.dll')
         self.dll.init()
         self.setTypes(
             ('addEllipticBoundary', [ct.c_float] * 2, ct.c_void_p),

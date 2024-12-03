@@ -51,6 +51,8 @@ vector<VoronoiEdge> PointsToVoronoiEdges(int num_points, float* input_points, fl
             graph_edge = graph_edge->next;
         }
     }
+
+    jcv_diagram_free(&diagram);
     return result;
 }
 

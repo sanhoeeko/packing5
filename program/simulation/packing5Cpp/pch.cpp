@@ -6,6 +6,7 @@
 void init()
 {
     srand(time(0));
+    omp_set_nested(1);
 }
 
 void* addEllipticBoundary(float a, float b)

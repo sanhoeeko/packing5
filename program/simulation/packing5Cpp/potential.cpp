@@ -1,9 +1,8 @@
 #include "pch.h"
-#include"potential.h"
-#include"functional.h"
-#include"array.h"
-
-#include<math.h>
+#include "potential.h"
+#include "functional.h"
+#include "array.h"
+#include <math.h>
 
 float modpi(float x)
 {
@@ -291,8 +290,9 @@ void Rod::initPotential(int threads, float* scalar_potential) {
     int m1 = xs.size();
     int m2 = ys.size();
     int m3 = ts.size();
+    omp_set_num_threads(threads); 
 
-#pragma omp parallel for num_threads(threads)  // use all cores
+#pragma omp parallel for collapse(2)  // use all cores; collapse loops for better parallelization
     for (int i = 0; i < m1; i++) {
         float x = xs[i];
         for (int j = 0; j < m2; j++) {
