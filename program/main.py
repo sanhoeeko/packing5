@@ -1,7 +1,7 @@
-from experiment import Experiment
-from simulation import boundary
 
 if __name__ == '__main__':
+    from experiment import Experiment
+    from simulation import boundary
     ex = Experiment(
         replica=4,
         N=1024,

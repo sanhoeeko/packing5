@@ -16,23 +16,24 @@ class Dataset:
     set `summary_dtype=None` to disable summary table (and create it later by other functions like `merge_dicts`).
     """
 
-    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple]):
+    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], summary_table_name: str):
         self.file_name = file_name
         self.summary_dtype = summary_dtype
+        self.summary_table_name = summary_table_name
         with h5py.File(self.file_name, 'w') as f:
             f.attrs['metadata'] = metadata
             if summary_dtype is not None:
-                f.create_dataset('summary_table', dtype=summary_dtype, shape=(0,), maxshape=(None,), chunks=True)
+                f.create_dataset(summary_table_name, dtype=summary_dtype, shape=(0,), maxshape=(None,), chunks=True)
 
     def append_summary(self, metadata: np.ndarray):
         with h5py.File(self.file_name, 'a') as f:
-            dset = f['summary_table']
+            dset = f[self.summary_table_name]
             dset.resize(dset.shape[0] + 1, axis=0)
             dset[-1] = metadata[0]
 
     def read_summary_table(self):
         with h5py.File(self.file_name, 'r') as f:
-            dataset = f['summary_table']
+            dataset = f[self.summary_table_name]
             data = dataset[:]
         df = pd.DataFrame(data)
         # convert strings
@@ -69,8 +70,9 @@ class Dataset:
 
 
 class SimulationData(Dataset):
-    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], descent_curve_size: int):
-        super().__init__(file_name, metadata, summary_dtype)
+    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], summary_table_name: str,
+                 descent_curve_size: int):
+        super().__init__(file_name, metadata, summary_dtype, summary_table_name)
         N = metadata[0]['N']
         with h5py.File(self.file_name, 'a') as f:
             f.create_dataset('configuration', shape=(0, N, 3), maxshape=(None, N, 3), chunks=True)
@@ -83,33 +85,35 @@ class SimulationData(Dataset):
 
 
 class ExperimentData(Dataset):
-    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple]):
-        super().__init__(file_name, metadata, summary_dtype)
+    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], summary_table_name: str):
+        super().__init__(file_name, metadata, summary_dtype, summary_table_name)
 
     def write(self, data: dict):
         ht.write_dict_to_hdf5(self.file_name, data)
 
     def __getitem__(self, index):
-        with h5py.File(self.file_name, 'r') as f:
-            metadata = f['summary_table'][index]
-            sim_data_serialized = f['simulation_data'][index].tobytes()
-            sim_data_summary, sim_data_dict = np.frombuffer(sim_data_serialized, dtype=object)
-            temp_metadata = {key: value for key, value in zip(f.attrs.keys(), metadata)}
-            simulation_data = SimulationData(file_name=None, metadata=temp_metadata)
-            simulation_data.summary_table = sim_data_summary
-            for key, value in sim_data_dict.items():
-                setattr(simulation_data, key, value)
-            return simulation_data
+        pass
 
 
 def package_simulations_into_experiment(
         file_name: str,
+        summary_table_name: str,
         experiment_metadata: np.ndarray,
         simulations: list[Dataset]) -> ExperimentData:
     """
     This function creates an integrated HDF5 file, but does not destroy old files.
     """
-    experiment_data = ExperimentData(file_name, experiment_metadata, None)
+
+    # create ExperimentData object
+    experiment_data = ExperimentData(file_name, experiment_metadata, None, None)
+
+    # collect data
     dic = ht.merge_dicts([s.read_data() for s in simulations])
+
+    # collect metadata
+    metadata_list = np.array([s.read_metadata() for s in simulations])
+    dic[summary_table_name] = metadata_list
+
+    # write to disk
     experiment_data.write(dic)
     return experiment_data

@@ -40,7 +40,7 @@ class SimulationsCommonParticle:
     def package(self):
         temp_file_name = f"temp_{threading.get_ident()}.h5"
         self.dataset = package_simulations_into_experiment(
-            temp_file_name, self.metadata, [s.dataset for s in self.simulators]
+            temp_file_name, 'simulation_table', self.metadata, [s.dataset for s in self.simulators]
         )
         # delete old files
         for name in self.id:
@@ -97,6 +97,7 @@ class Experiment:
 
     @property
     def metadata(self):
+        # do not use `utils.dict_to_numpy_struct` because there is a special i8 type.
         return np.array([(self.start_time, self.time_elapse_s)], dtype=self.meta_dtype)
 
     @property
@@ -105,7 +106,7 @@ class Experiment:
 
     def package(self):
         self.dataset = package_simulations_into_experiment(
-            'data.h5', self.metadata, [s.dataset for s in self.SCPs]
+            'data.h5', 'particle_shape_table', self.metadata, [s.dataset for s in self.SCPs]
         )
         # delete old files
         for name in self.id:

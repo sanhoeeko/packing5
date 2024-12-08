@@ -30,8 +30,6 @@ def write_dict_to_hdf5(file_path: str, data: dict):
     """
     with h5py.File(file_path, 'a') as file:
         for key, value in data.items():
-            if key == 'metadata':
-                continue
             if isinstance(value, np.ndarray):
                 file.create_dataset(key, data=value)
             else:

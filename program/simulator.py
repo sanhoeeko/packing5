@@ -43,7 +43,7 @@ class Simulator(ut.HasMeta):
         return all_true(self.has_settings)
 
     def create_dataset(self):
-        self.dataset = SimulationData(f'{self.id}.h5', self.metadata, self.state.dtype,
+        self.dataset = SimulationData(f'{self.id}.h5', self.metadata, self.state.dtype, 'state_table',
                                       descent_curve_size=self.max_relaxation // self.descent_curve_stride)
 
     @property
