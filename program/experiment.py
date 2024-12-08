@@ -42,11 +42,11 @@ class SimulationsCommonParticle:
         self.dataset = package_simulations_into_experiment(
             temp_file_name, self.metadata, [s.dataset for s in self.simulators]
         )
-        # delete old data
+        # delete old files
         for name in self.id:
             os.remove(f"{name}.h5")
-        # rename new data
-        os.rename(temp_file_name, f"{self.id[0]}.h5")
+        # rename new file
+        self.dataset.rename(f"{self.id[0]}.h5")
 
     def execute(self):
         self.init()
@@ -93,16 +93,28 @@ class Experiment:
 
     @property
     def meta_dtype(self):
-        return [('start_time', 'S32', 'time_elapse', 'i8')]
+        return [('start_time', 'S32'), ('time_elapse', 'i8')]
 
     @property
     def metadata(self):
-        return np.array([[self.start_time, self.time_elapse_s]], dtype=self.meta_dtype)
+        return np.array([(self.start_time, self.time_elapse_s)], dtype=self.meta_dtype)
+
+    @property
+    def id(self) -> list:
+        return [s.id[0] for s in self.SCPs]
 
     def package(self):
         self.dataset = package_simulations_into_experiment(
             'data.h5', self.metadata, [s.dataset for s in self.SCPs]
         )
+        # delete old files
+        for name in self.id:
+            os.remove(f"{name}.h5")
+
+    def compress_file(self):
+        original_size, compressed_size = self.dataset.compress_file()
+        compress_rate_percent = int((1 - compressed_size / original_size) * 100)
+        print(f"Successfully compressed {self.dataset.file_name}. Compress rate: {compress_rate_percent}%.")
 
     def execute(self):
         tasks = [dask.delayed(s.execute)() for s in self.SCPs]
@@ -111,3 +123,4 @@ class Experiment:
         end = time.perf_counter()
         self.time_elapse_s = int(end - start)
         self.package()
+        self.compress_file()

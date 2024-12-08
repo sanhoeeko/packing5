@@ -52,32 +52,6 @@ def dict_to_numpy_struct(input_dict: dict, max_str_len: int):
     return structured_array
 
 
-def merge_hdf5_files(filenames: list[str], temp_file_name: str):
-    # TODO: 测试此函数
-    """
-    Merge multiple HDF5 files, assuming they have the same structure and dataset names.
-    :param filenames: Not including '.h5'
-    """
-    hdf5_files = [f"{name}.h5" for name in filenames]
-
-    # 打开第一个文件，读取其结构
-    with h5py.File(hdf5_files[0], 'r') as f:
-        dataset_names = list(f.keys())
-
-    # 创建新的hdf5文件以保存合并后的数据
-    with h5py.File(temp_file_name, 'w') as merged_file:
-        for name in dataset_names:
-            # 创建一个空的list来存放每个文件的数组
-            arrays = []
-            for file in hdf5_files:
-                with h5py.File(file, 'r') as f:
-                    arrays.append(f[name][:])  # 读取数组并添加到list中
-            # 在第0维上堆叠数组
-            merged_data = np.stack(arrays, axis=0)
-            # 将堆叠后的数据写入新的hdf5文件
-            merged_file.create_dataset(name, data=merged_data)
-
-
 class Profile:
     def __init__(self, output_file: str):
         self.file_name = output_file

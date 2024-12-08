@@ -4,7 +4,7 @@ from simulation import boundary
 if __name__ == '__main__':
     ex = Experiment(
         replica=4,
-        N=1000,
+        N=1024,
         n=3,
         d=0.025,
         Gamma0=1,
