@@ -2,7 +2,26 @@ import numpy as np
 
 from . import mymath as mm, utils as ut
 from .database import Database
-from .voronoi import OrderParameterFunc
+from .h5tools import dict_to_analysis_hdf5, add_array_to_hdf5
+from .voronoi import Voronoi
+
+
+def OrderParameterFunc(order_parameter_name: str, weighted: bool, abs_averaged: bool):
+    """
+    parameters of inner function:
+    abg = (A_upper_bound, B_upper_bound, gamma) for each state
+    xyt = (N, 3) configuration
+    :return: a function object for `Database.apply`
+    """
+
+    def inner(args) -> np.float32:
+        abg: tuple = args[0]
+        xyt: np.ndarray = args[1]
+        xyt_c = ut.CArray(xyt)
+        Xi = getattr(Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay(weighted), order_parameter_name)(xyt_c)
+        return np.mean(np.abs(Xi)) if abs_averaged else Xi
+
+    return inner
 
 
 def interpolatedOrderParameterCurves(database: Database, order_parameter_name: str, x_axis_name: str,
@@ -38,7 +57,7 @@ def orderParameterAnalysisInterpolated(database: Database, order_parameters: lis
         )
         dic[order_parameter] = (y_mean, y_ci)
     dic[x_axis_name] = x
-    ut.dict_to_analysis_hdf5(out_file, dic)
-    ut.add_array_to_hdf5(out_file, 'state_table', database.state_table)
-    ut.add_array_to_hdf5(out_file, 'particle_shape_table', database.particle_shape_table)
-    ut.add_array_to_hdf5(out_file, 'simulation_table', database.simulation_table)
+    dict_to_analysis_hdf5(out_file, dic)
+    add_array_to_hdf5(out_file, 'state_table', database.state_table)
+    add_array_to_hdf5(out_file, 'particle_shape_table', database.particle_shape_table)
+    add_array_to_hdf5(out_file, 'simulation_table', database.simulation_table)

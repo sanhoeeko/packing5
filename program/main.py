@@ -16,7 +16,7 @@
 
 if __name__ == '__main__':
     from analysis.database import Database
-    from analysis.analysis import orderParameterAnalysisInterpolated
+    from art.viewer import RenderSetup, InteractiveViewer
 
     db = Database('data.h5')
-    orderParameterAnalysisInterpolated(db, ['Phi6', 'S_local'], 'rho', num_threads=4)
+    InteractiveViewer(db.id('gbwi'), RenderSetup('z_number', False, 'voronoi', True)).show()

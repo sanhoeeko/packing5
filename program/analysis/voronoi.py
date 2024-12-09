@@ -66,7 +66,7 @@ class Delaunay:
         ker.dll.sumOverWeights(self.num_edges, self.num_rods, self.indices.ptr,
                                self.edges.ptr, self.weights.ptr, self.weight_sums.ptr)
 
-    def z_number(self):
+    def z_number(self, arg=None):
         if self.weighted:
             result = ut.CArrayFZeros((self.num_rods,))
             one_weights = ut.CArray(np.ones((self.num_edges,), dtype=np.float32))
@@ -135,19 +135,3 @@ class Delaunay:
 
     def director_angle(self, xyt: ut.CArray) -> np.ndarray:
         pass
-
-
-def OrderParameterFunc(order_parameter_name: str, weighted: bool, abs_averaged: bool):
-    """
-    abg = (A_upper_bound, B_upper_bound, gamma) for each state
-    :return: a function object for `Database.apply`
-    """
-
-    def inner(args) -> np.float32:
-        abg: tuple = args[0]
-        xyt: np.ndarray = args[1]
-        xyt_c = ut.CArray(xyt)
-        Xi = getattr(Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay(weighted), order_parameter_name)(xyt_c)
-        return np.mean(np.abs(Xi)) if abs_averaged else Xi
-
-    return inner

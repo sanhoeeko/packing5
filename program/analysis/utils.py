@@ -1,7 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
 
-import h5py
 import numpy as np
+
+from analysis.h5tools import invalid_value_of
 
 
 # C++ data management
@@ -49,23 +50,22 @@ def Map(threads: int):
     return map_func
 
 
-# h5 interaction
-
-
-def dict_to_analysis_hdf5(file_name: str, data_dict: dict):
+def actual_length_of_1d_array(arr: np.ndarray) -> int:
     """
-    :param data_dict: key: name of order parameter; value: tuple of (mean, ci)
+    :return: the first index of invalid value; if there is not, return the length of array.
     """
-    with h5py.File(file_name, 'w') as hdf5_file:
-        for key, value in data_dict.items():
-            if isinstance(value, tuple):
-                group = hdf5_file.create_group(key)
-                group.create_dataset('mean', data=value[0], dtype=np.float32)
-                group.create_dataset('ci', data=value[1], dtype=np.float32)
-            else:
-                hdf5_file.create_dataset(key, data=value, dtype=np.float32)
+    val = invalid_value_of(arr)
+    diff = arr == val
+    if not np.any(diff):
+        return len(arr)
+    else:
+        return np.where(diff)[0][0]
 
 
-def add_array_to_hdf5(file_name: str, name: str, data: np.ndarray):
-    with h5py.File(file_name, 'a') as hdf5_file:
-        hdf5_file.create_dataset(name, data=data, dtype=data.dtype)
+def struct_to_dict(arr: np.ndarray):
+    fields = arr.dtype.names
+    values = list(arr.item())
+    for i in range(len(values)):
+        if type(values[i]) is bytes:
+            values[i] = values[i].decode('utf-8')
+    return dict(zip(fields, values))

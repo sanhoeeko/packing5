@@ -2,51 +2,10 @@
 analysis.database: Data Access Layer
 """
 
-import h5py
 import numpy as np
-import pandas as pd
 
 from . import utils as ut
-
-
-class LazyArray:
-    def __init__(self, hdf5_file: str, dataset_name: str):
-        self.file = h5py.File(hdf5_file, 'r')
-        self.dataset = self.file[dataset_name]
-        self.shape = self.dataset.shape
-        self.dtype = self.dataset.dtype
-
-    def __getitem__(self, index):
-        return self.dataset[index]
-
-    def __len__(self):
-        return self.shape[0]
-
-    def __repr__(self):
-        return f"LazyArray(shape={self.shape}, dtype={self.dtype})"
-
-    def close(self):
-        self.file.close()
-
-
-def read_hdf5_to_dict(file_path: str) -> dict:
-    data_dict = {}
-    with h5py.File(file_path, 'r') as file:
-        for dataset_name in file:
-            if dataset_name.endswith('table'):
-                data_dict[dataset_name] = file[dataset_name][:]
-            else:
-                data_dict[dataset_name] = LazyArray(file_path, dataset_name)
-    return data_dict
-
-
-def struct_array_to_dataframe(data: np.ndarray) -> pd.DataFrame:
-    df = pd.DataFrame(data.reshape(-1))
-    # convert strings
-    for column in df.columns:
-        if np.issubdtype(df[column].dtype, np.object_):
-            df[column] = df[column].str.decode('utf-8')
-    return df
+from .h5tools import LazyArray, read_hdf5_to_dict_lazy, struct_array_to_dataframe
 
 
 class Database:
@@ -56,9 +15,10 @@ class Database:
     2. for the same shape of particles
     3. for one simulation
     """
+
     def __init__(self, file_name: str):
         self.file_name = file_name
-        dic = read_hdf5_to_dict(file_name)
+        dic = read_hdf5_to_dict_lazy(file_name)
 
         # configuration: 3 + 2 = 5 dim
         self.configuration: LazyArray = dic['configuration']
@@ -72,10 +32,23 @@ class Database:
         self.particle_shape_table: np.ndarray = dic['particle_shape_table']
         self.simulation_table: np.ndarray = dic['simulation_table']
 
+        # shapes
+        self.shape = self.configuration.shape[:3]
+        self.m_groups, self.n_parallels, self.l_max_states = self.shape
+
         self.summary = struct_array_to_dataframe(self.simulation_table)
 
     def __repr__(self):
         return str(self.summary)
+
+    def id(self, state_id: str):
+        index = self.summary[self.summary['id'] == state_id].index.tolist()[0]
+        i = index // self.shape[1]
+        j = index % self.shape[1]
+        return PickledSimulation(
+            self.simulation_table[i, j], self.state_table[i, j, :],
+            self.descent_curve[i, j, :, :], self.configuration[i, j, :, :, :]
+        )
 
     def property(self, prop: str) -> np.ndarray:
         """
@@ -107,3 +80,24 @@ class Database:
         """
         dc = self.descent_curve[i, j, :, :]
         return dc / dc[:, 0:1]
+
+
+class PickledSimulation:
+    def __init__(self, metadata: np.ndarray, state_info: np.ndarray, descent_curve: np.ndarray, xyt: np.ndarray):
+        self.n = ut.actual_length_of_1d_array(state_info)
+        self.metadata = ut.struct_to_dict(metadata)
+        # clip nan filled
+        self.state_info = state_info[:self.n]
+        self.descent_curve = descent_curve[:self.n, :]
+        self.xyt = xyt[:self.n, :, :]
+
+    def __len__(self):
+        return self.n
+
+    def __getitem__(self, idx) -> dict:
+        state_info = ut.struct_to_dict(self.state_info[idx])
+        return {
+            'metadata': {**self.metadata, **state_info},
+            'descent_curve': self.descent_curve[idx, :],
+            'xyt': self.xyt[idx, :, :]
+        }
