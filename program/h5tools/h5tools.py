@@ -81,6 +81,8 @@ def merge_dicts(dict_list: list[dict]):
             else:
                 # Add new key-value pair to the merged dictionary
                 merged_dict[key] = value
+                if isinstance(value, np.ndarray):
+                    arrays_to_stack[key] = [value]
 
     # Stack collected arrays and update the merged dictionary
     for key, arrays in arrays_to_stack.items():
@@ -138,7 +140,7 @@ def _get_invalid_value(field_type):
         return np.int32(-1) if field_type == np.int32 else np.int64(-1)
     elif np.issubdtype(field_type, np.floating):
         return np.float32(np.nan) if field_type == np.float32 else np.nan
-    elif np.issubdtype(field_type, np.str_):
+    elif np.issubdtype(field_type, np.str_) or np.issubdtype(field_type, np.bytes_):
         return '*' * field_type.itemsize
     else:
         raise ValueError(f"Unsupported field type: {field_type}")

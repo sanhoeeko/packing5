@@ -8,6 +8,15 @@ from matplotlib.path import Path
 from matplotlib.transforms import Affine2D
 
 
+class Figure:
+    def __enter__(self):
+        self.fig, self.ax = plt.subplots()
+        return self.ax
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        plt.show()
+
+
 def getColorForInterval(color_map_name: str, interval: tuple):
     cmap = matplotlib.colormaps[color_map_name]
     a = interval[0]
@@ -21,25 +30,36 @@ def getColorForInterval(color_map_name: str, interval: tuple):
     return callCmap
 
 
-def plotListOfArray(lst: list[np.ndarray]):
+def plotListOfArray(lst: np.ndarray):
     cmap = getColorForInterval('cool', (0, len(lst)))
-    for i in range(len(lst)):
-        plt.plot(lst[i], color=cmap(i), alpha=0.5)
-    plt.show()
-    
+    with Figure() as ax:
+        for i in range(len(lst)):
+            ax.plot(lst[i], color=cmap(i), alpha=0.5)
 
-def plotListOfArray3d(lst: list[np.ndarray]):
-    n = max(map(len, lst))
-    m = len(lst)
-    mat = np.zeros((m, n))
-    for i in range(len(lst)):
-        mat[i, :len(lst[i])] = np.asarray(lst[i])
-    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    xs = np.arange(0, n)
-    ys = np.arange(0, m)
-    X, Y = np.meshgrid(xs, ys)
-    ax.plot_wireframe(X, Y, mat)
-    plt.show()
+
+def plotMeanCurvesWithCI(x: np.ndarray, y_mean_lst: list[np.ndarray], y_ci_lst: list[np.ndarray]):
+    cmap_s = 'cool'
+    cmap = plt.get_cmap(cmap_s)
+    assert len(y_mean_lst) == len(y_ci_lst)
+    colors = cmap(np.linspace(0, 1, len(y_mean_lst)))
+    with Figure() as ax:
+        for i, (y_mean, y_ci) in enumerate(zip(y_mean_lst, y_ci_lst)):
+            color = colors[i]
+            ax.fill_between(x, y_mean - y_ci, y_mean + y_ci, color=color, alpha=0.2)
+            ax.plot(x, y_mean, color=color)
+
+    # if self.average_flags is not None and len(self.average_flags) == 1:
+    #     flag = self.average_flags[0]
+    #     lst = np.asarray(self.abstract[flag])
+    #     min_v, max_v = np.min(lst), np.max(lst)
+    #     norm = Normalize(vmin=min_v, vmax=max_v)
+    #     sm = ScalarMappable(cmap=cmap_s, norm=norm)
+    #     cbar = plt.colorbar(sm)
+    #     cbar.set_label(flag)
+    # if self.x_label is not None:
+    #     plt.xlabel(self.x_label)
+    # if self.y_label is not None:
+    #     plt.ylabel(self.y_label)
 
 
 class Capsule(patches.Patch):

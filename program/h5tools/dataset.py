@@ -3,7 +3,6 @@ import threading
 
 import h5py
 import numpy as np
-import pandas as pd
 
 from . import h5tools as ht
 from .utils import randomString
@@ -30,17 +29,6 @@ class Dataset:
             dset = f[self.summary_table_name]
             dset.resize(dset.shape[0] + 1, axis=0)
             dset[-1] = metadata[0]
-
-    def read_summary_table(self):
-        with h5py.File(self.file_name, 'r') as f:
-            dataset = f[self.summary_table_name]
-            data = dataset[:]
-        df = pd.DataFrame(data)
-        # convert strings
-        for column in df.columns:
-            if np.issubdtype(df[column].dtype, np.object_):
-                df[column] = df[column].str.decode('utf-8')
-        return df
 
     def read_metadata(self) -> np.ndarray:
         with h5py.File(self.file_name, 'a') as f:
@@ -90,9 +78,6 @@ class ExperimentData(Dataset):
 
     def write(self, data: dict):
         ht.write_dict_to_hdf5(self.file_name, data)
-
-    def __getitem__(self, index):
-        pass
 
 
 def package_simulations_into_experiment(
