@@ -86,7 +86,7 @@ class PickledSimulation:
     def __init__(self, metadata: np.ndarray, state_info: np.ndarray, descent_curve: np.ndarray, xyt: np.ndarray):
         self.n = ut.actual_length_of_1d_array(state_info)
         self.metadata = ut.struct_to_dict(metadata)
-        # clip nan filled
+        # clip nan data
         self.state_info = state_info[:self.n]
         self.descent_curve = descent_curve[:self.n, :]
         self.xyt = xyt[:self.n, :, :]

@@ -1,10 +1,11 @@
+import os.path
 import re
 
 import numpy as np
 
 # determine key parameters
 
-with open('./simulation/packing5Cpp/defs.h', 'r') as f:
+with open(os.path.join(os.getcwd(), 'simulation/packing5Cpp/defs.h'), 'r') as f:
     defs_content = f.read()
 
 

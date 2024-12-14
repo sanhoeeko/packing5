@@ -53,4 +53,11 @@ DLLEXPORT void HollowClear(void* p_float, int N, int stride);
 
 DLLEXPORT float FastNorm(void* p_x, int n);
 
+//// test functions /////////////////////////////////////////////////////////////////////////////
+
+DLLEXPORT void preciseGE(void* p_shape, void* scalar_potential, void* scalar_potential_dr, void* p_out,
+    float x, float y, float t1, float t2);
+
+DLLEXPORT void interpolateGE(void* p_shape, void* p_out, float x, float y, float t1, float t2);
+
 #endif

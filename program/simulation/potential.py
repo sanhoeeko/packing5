@@ -38,6 +38,7 @@ class Potential:
     def cal_potential(self, threads: int):
         self.table = ut.CArrayFZeros(ut.potential_table_shape)
         self.shape_ptr = ker.dll.addParticleShape(threads, self.n, self.d, self.table.ptr, self.radial_func.Vr_data.ptr)
+        print(f"Successfully load potential, {self.tag}")
         return self
 
     @property
