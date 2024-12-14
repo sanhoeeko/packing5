@@ -1,7 +1,6 @@
 import numpy as np
 
 from . import utils as ut
-from .gradient import GradientMatrix
 from .kernel import ker
 
 
@@ -15,7 +14,6 @@ class Grid:
         grid = np.full((Grid.max_size, ut.max_neighbors), -1, dtype=np.int32)
         grid[:, 0] = 0
         self.grid = ut.CArray(grid)
-        self.gradient = GradientMatrix(state, self)
 
     def init(self, A: float, B: float):
         """

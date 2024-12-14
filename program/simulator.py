@@ -9,6 +9,7 @@ from h5tools.utils import randomString
 from simulation import boundary
 from simulation.potential import Potential, PowerFunc
 from simulation.state import State
+from simulation.stepsize import findBestStepsize
 
 
 def settings():
@@ -48,11 +49,11 @@ class Simulator(ut.HasMeta):
 
     @property
     def potential_shape(self) -> str:
-        return self.state.grid.gradient.potential.tag['shape']
+        return self.state.gradient.potential.tag['shape']
 
     @property
     def potential_scalar(self) -> str:
-        return self.state.grid.gradient.potential.tag['scalar']
+        return self.state.gradient.potential.tag['scalar']
 
     @classmethod
     def loadState(cls, s: State, potential: Potential, state_id: str = None):
@@ -98,13 +99,14 @@ class Simulator(ut.HasMeta):
         assert self.is_setting_complete()
         self.create_dataset()
         try:
-            grads = self.state.initAsDisks(self.max_relaxation)
+            grads = self.state.initAsDisks(self.max_relaxation, 1e-3)
             self.save(grads)
-            for i in range(100):
+            for i in range(600):
                 if self.state.phi > 1.0:
                     break
                 self.state.boundary.compress(i)
-                grads = self.state.equilibrium(self.max_relaxation)
+                grads = self.state.equilibrium(self.max_relaxation,
+                                               findBestStepsize(self.state, 1e-4, 16))
                 self.save(grads)
         except Exception as e:
             print(f"An exception occurred in simulation [{self.id}]!\n")
@@ -122,11 +124,11 @@ def testSingleThread():
     N = 1000
     n = 3
     d = 0.025
-    phi0 = 0.5
+    phi0 = 0.8
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
     compress_func_B = boundary.RatioCompress(0.01)
     ex = createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B)
     ex.setPotential(Potential(n, d, PowerFunc(2.5)))
-    ex.state.grid.gradient.potential.cal_potential(4)
+    ex.state.gradient.potential.cal_potential(4)
     ex.execute()

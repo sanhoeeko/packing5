@@ -31,6 +31,9 @@ class GradientMatrix:
             self.grid.lines, self.grid.cols, self.N
         )
 
+    def calGradientAndEnergy(self):
+        return ker.dll.CalGradientAndEnergy(*self.params)
+
     def calGradient(self):
         return ker.dll.CalGradient(*self.params)
 
@@ -57,20 +60,14 @@ class GradientSum:
         self.z = Gij.z
         self.src = Gij.data
         self.data = ut.CArrayFZeros((self.N, 4))
-        self.energy = EnergySum(self)
 
     def g(self) -> ut.CArray:
         ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
         return self.data
 
-
-class EnergySum:
-    def __init__(self, gi):
-        self.src = gi.data
-        self.data = np.float32(0)
-
-    def E(self):
-        self.data = np.sum(self.src.data[:, :, 3])
+    def E(self) -> np.float32:
+        self.g()
+        return np.sum(self.data[:, 3])
 
 
 class Optimizer:
@@ -83,14 +80,14 @@ class Optimizer:
         if as_disks:
             func_name += 'AsDisks'
         if stochastic_p == 1:
-            self.void_gradient_func = getattr(state.grid.gradient, func_name)
+            self.void_gradient_func = getattr(state.gradient, func_name)
         else:
-            self.void_gradient_func = getattr(state.grid.gradient, func_name)(stochastic_p)
+            self.void_gradient_func = getattr(state.gradient, func_name)(stochastic_p)
 
         def raw_gradient_func() -> ut.CArray:
             self.grid.gridLocate()
             self.void_gradient_func()
-            return state.grid.gradient.sum.g()
+            return state.gradient.sum.g()
 
         self.raw_gradient_func = raw_gradient_func
 
@@ -109,7 +106,8 @@ class Optimizer:
         else:
             def momentum_gradient_func() -> ut.CArray:
                 gradient = self.noise_gradient_func()
-                ker.dll.AddVector4(self.momentum.ptr, gradient.ptr, self.N, self.beta)
+                self.momentum.data *= self.beta
+                ker.dll.AddVector4(self.momentum.ptr, gradient.ptr, self.N, 1 - self.beta)
                 return self.momentum
 
             self.func = momentum_gradient_func

@@ -4,6 +4,7 @@ analysis.database: Data Access Layer
 
 import numpy as np
 
+from simulation.state import State
 from . import utils as ut
 from .h5tools import LazyArray, read_hdf5_to_dict_lazy, struct_array_to_dataframe
 
@@ -42,9 +43,15 @@ class Database:
         return str(self.summary)
 
     def id(self, state_id: str):
-        index = self.summary[self.summary['id'] == state_id].index.tolist()[0]
+        try:
+            index = self.summary[self.summary['id'] == state_id].index.tolist()[0]
+        except:
+            raise KeyError("Simulation ID not found!")
         i = index // self.shape[1]
         j = index % self.shape[1]
+        return self.simulation_at(i, j)
+
+    def simulation_at(self, i: int, j: int):
         return PickledSimulation(
             self.simulation_table[i, j], self.state_table[i, j, :],
             self.descent_curve[i, j, :, :], self.configuration[i, j, :, :, :]
@@ -74,13 +81,6 @@ class Database:
             result_array = np.array(results).reshape(shape_3d)
         return result_array
 
-    def descent_curve_at(self, i: int, j: int) -> np.ndarray:
-        """
-        :return: 2d array, a set of normalized descent curves of one simulation.
-        """
-        dc = self.descent_curve[i, j, :, :]
-        return dc / dc[:, 0:1]
-
 
 class PickledSimulation:
     def __init__(self, metadata: np.ndarray, state_info: np.ndarray, descent_curve: np.ndarray, xyt: np.ndarray):
@@ -101,3 +101,26 @@ class PickledSimulation:
             'descent_curve': self.descent_curve[idx, :],
             'xyt': self.xyt[idx, :, :]
         }
+
+    def state_at(self, idx: int) -> State:
+        """
+        :param idx: can be negative. E.g., if it is -1, return the last state.
+        """
+        info = self.state_info[idx]
+        xyt4 = np.zeros((self.metadata['N'], 4))
+        xyt4[:, :3] = self.xyt[idx, :, :]
+        return State(self.metadata['N'], self.metadata['n'], self.metadata['d'], info['A'], info['B'],
+                     configuration=xyt4)
+
+    def normalizedDescentCurve(self) -> np.ndarray:
+        """
+        :return: 2d array, a set of normalized descent curves of one simulation.
+        """
+        return self.descent_curve / self.descent_curve[:, 0:1]
+
+    def stateDistance(self) -> np.ndarray:
+        """
+        :return: 1d array, showing how much the state variates during compression.
+        """
+        diff_xyt = np.diff(self.xyt, axis=0)
+        return np.linalg.norm(diff_xyt, axis=(1, 2)) / np.sqrt(self.metadata['N'])

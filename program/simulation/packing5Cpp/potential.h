@@ -51,7 +51,6 @@ struct Rod : ParticleShape {
     // auxiliary functions 
     xyt interpolateGradientSimplex(const xyt& q);
     xyt interpolatePotentialSimplex(const xyt& q);
-    float potentialNoInterpolate(const xyt& q);
 
     // interfaces
     xyt gradient(const xyt& q);

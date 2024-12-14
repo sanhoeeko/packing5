@@ -84,7 +84,7 @@ float FastNorm(void* p_x, int n) {
         result[4] + result[5] + result[6] + result[7]);
 }
 
-#else
+#else  ////////////////////////////////////////////////////////////////////////////////
 
 void AddVector4(void* p_x, void* p_g, int N, float s)
 {

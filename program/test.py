@@ -1,8 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-import utils as ut
-from voronoi import Voronoi
+import analysis.utils as ut
+from analysis.voronoi import Voronoi
 
 
 def VoroVisualize(voro: Voronoi):

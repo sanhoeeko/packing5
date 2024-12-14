@@ -22,8 +22,9 @@ class Figure:
     It can be created as a normal object, or at the beginning of a `with` block
     """
 
-    def __init__(self):
-        self.fig, self.ax = plt.subplots()
+    def __init__(self, no_enter_flag=False):
+        if no_enter_flag:
+            self.fig, self.ax = plt.subplots()
 
     def __enter__(self):
         self.fig, self.ax = plt.subplots()

@@ -61,7 +61,7 @@ class RenderState:
             alpha = 1.0
         for xi, yi, ti in xyt:
             # ellipse = patches.Ellipse((xi, yi), width=self.a, height=self.b, angle=ti)
-            ellipse = art.Capsule((xi, yi), width=a, height=b, angle=ti)
+            ellipse = art.Capsule((xi, yi), width=a, height=b, angle=180 / np.pi * ti)
             ellipses.append(ellipse)
 
         # Calculate color_data, which determines the color to display on particles
@@ -80,9 +80,10 @@ class RenderState:
         # Add a text [at the top left side] to show information of the state
         self.handle.ax.text(-self.A, self.B * 1.1,
                             (
-                                f"n={metadata['n']}, d={metadata['d']}, ρ={'{:.3f}'.format(metadata['rho'])}, "
-                                f"a={'{:.2f}'.format(metadata['A'])}, b={'{:.2f}'.format(metadata['B'])}, "
-                                # f"E={'{:.3f}'.format(metadata['energy'])}"
+                                f"n={metadata['n']}, d={'{:.3f}'.format(metadata['d'])}, "
+                                f"ρ={'{:.3f}'.format(metadata['rho'])}, "
+                                f"A={'{:.2f}'.format(metadata['A'])}, B={'{:.2f}'.format(metadata['B'])}, "
+                                f"E={'{:.3f}'.format(metadata['energy'])}"
                             )
                             )
         self.handle.colorbar(col, 'θ')
@@ -93,7 +94,7 @@ class InteractiveViewer:
     def __init__(self, data: PickledSimulation, setup: RenderSetup):
         self.simu = data
         self.index = 0
-        self.handle = Figure().slider(len(self.simu), self.update)
+        self.handle = Figure(True).slider(len(self.simu), self.update)
         self.handle.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.renderer = RenderState(self.handle)
         self.setup = setup

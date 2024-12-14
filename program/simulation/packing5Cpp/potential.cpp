@@ -99,7 +99,8 @@ xyt ParticleShape::transform(const xyt& q)
     {
         abs(q.x) / (2 * a_padded),
         abs(q.y) / (a_padded + b_padded),
-        (q.x > 0) ^ (q.y > 0) ? modpi(q.t) : 1 - modpi(q.t)
+        (q.x > 0) ^ (q.y > 0) ? modpi(q.t) : 1 - modpi(q.t),
+        q.unused
     };
 }
 
@@ -109,7 +110,8 @@ xyt ParticleShape::transform_signed(const xyt& g)
     {
         g.x / (2 * a_padded),
         g.y / (a_padded + b_padded),
-        g.t / pi
+        g.t / pi,
+        g.unused
     };
 }
 
@@ -119,7 +121,8 @@ xyt ParticleShape::inverse(const xyt& q)
     {
         (2 * a_padded) * q.x,
         (a_padded + b_padded) * q.y,
-        pi * q.t
+        pi * q.t,
+        q.unused
     };
 }
 
@@ -219,7 +222,8 @@ xyt Rod::interpolatePotentialSimplex(const xyt& q)
         the energy: A(x-x0) + B(y-y0) + C(t-t0) + D
         since x0 <- floor'(x), there must be x > x0, y > y0, t > t0
     */
-    return { A, B, C, A * dx + B * dy + C * dt + D };
+    float energy = A * dx + B * dy + C * dt + D;
+    return { A, B, C, energy };
 }
 
 inline static XytPair ZeroXytPair() {
@@ -304,20 +308,6 @@ void Rod::initPotential(int threads, float* scalar_potential) {
             }
         }
     }
-}
-
-float Rod::potentialNoInterpolate(const xyt& _q)
-{
-    const float
-        a1 = szx - 1,
-        a2 = szy - 1,
-        a3 = szt - 1;
-    xyt q = transform(_q);
-    int
-        i = round(q.x * a1),
-        j = round(q.y * a2),
-        k = round(q.t * a3);
-    return data[i][j][k];
 }
 
 xyt Rod::potential(const xyt& q) {

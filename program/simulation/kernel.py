@@ -17,6 +17,7 @@ class Kernel:
             ('CalGradientAsDisks', [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
             ('StochasticCalGradient', [ct.c_float] + [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
             ('StochasticCalGradientAsDisks', [ct.c_float] + [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
+            ('CalGradientAndEnergy', [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
             ('SumTensor4', [ct.c_void_p] * 3 + [ct.c_int], None),
             ('AddVector4', [ct.c_void_p] * 2 + [ct.c_int, ct.c_float], None),
             ('PerturbVector4', [ct.c_void_p, ct.c_int, ct.c_float], None),
