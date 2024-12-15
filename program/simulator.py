@@ -151,16 +151,19 @@ def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
             )
 
 
-def testSingleThread():
+def testSingleThread(profile=True):
     N = 1000
     n = 3
-    d = 0.025
-    phi0 = 0.8
+    d = 0.05
+    phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
-    compress_func_B = boundary.RatioCompress(0.01)
+    compress_func_B = boundary.RatioCompress(0.001)
     ex = createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B)
     ex.setPotential(Potential(n, d, PowerFunc(2.5)))
     ex.state.gradient.potential.cal_potential(4)
-    with ut.Profile('main.prof'):
+    if profile:
+        with ut.Profile('main.prof'):
+            ex.execute()
+    else:
         ex.execute()
