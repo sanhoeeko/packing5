@@ -1,7 +1,6 @@
 #pragma once
 
 #include"defs.h"
-#include"io.h"
 #include<vector>
 #include<functional>
 using namespace std;

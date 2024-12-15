@@ -296,7 +296,9 @@ void Rod::initPotential(int threads, float* scalar_potential) {
     int m3 = ts.size();
     omp_set_num_threads(threads); 
 
-#pragma omp parallel for collapse(2)  // use all cores; collapse loops for better parallelization
+    // use all cores; collapse loops for better parallelization
+    // ?? #pragma omp parallel for collapse(1) ??
+#pragma omp parallel for collapse(3) private(i, j, k)  
     for (int i = 0; i < m1; i++) {
         float x = xs[i];
         for (int j = 0; j < m2; j++) {

@@ -5,6 +5,16 @@ import time
 
 import numpy as np
 
+
+def setWorkingDirectory():
+    import os, sys
+    if sys.platform.startswith('linux'):
+        working_dir = "/home/gengjie/packing5/program"
+        os.chdir(working_dir)
+
+
+setWorkingDirectory()
+
 # determine key parameters
 
 with open(os.path.join(os.getcwd(), 'simulation/packing5Cpp/defs.h'), 'r') as f:

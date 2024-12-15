@@ -2,6 +2,8 @@
 
 #include "defs.h"
 #include "potential.h"
+#include <cmath>
+#include <cstdlib>
 
 struct EllipticBoundary {
     float a, b;

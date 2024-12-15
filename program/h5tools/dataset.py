@@ -100,19 +100,23 @@ def package_simulations_into_experiment(
     return experiment_data
 
 
-def package_simulations_cwd(file_name='data.h5', summary_table_name='simulation_table'):
+def package_simulations_cwd_once(file_name='data.h5', summary_table_name='simulation_table', excluding=None):
     # collect h5 files
+    if excluding is None: excluding = []
     folder = os.getcwd()
     files = os.listdir(folder)
     h5_files = [os.path.abspath(os.path.join(folder, file)) for file in files if
-                file.endswith('.h5') and file not in ['data.h5', file_name]]
+                file.endswith('.h5') and file not in ['data.h5', file_name] + excluding]
 
     # collect data
     dic = ht.merge_dicts([ht.read_hdf5_to_dict(file) for file in h5_files])
 
     # collect metadata
-    metadata_list = np.array([ht.read_metadata_to_struct(file) for file in h5_files])
-    dic[summary_table_name] = metadata_list
+    try:
+        metadata_list = np.array([ht.read_metadata_to_struct(file) for file in h5_files])
+        dic[summary_table_name] = metadata_list
+    except:
+        pass  # If there is no metadata
 
     # write to disk
     ht.write_dict_to_hdf5(file_name, dic)
@@ -120,3 +124,11 @@ def package_simulations_cwd(file_name='data.h5', summary_table_name='simulation_
     # clear (unsafe)
     # for file in h5_files:
     #     os.remove(file)
+    return [file.split('\\')[-1] for file in h5_files]  # return file names
+
+
+def package_simulations_cwd(file_name='data.h5'):
+    temp_file_name = 'temp01.h5'
+    h5_files = package_simulations_cwd_once(temp_file_name, 'simulation_table')
+    package_simulations_cwd_once(file_name, 'shape_table', excluding=h5_files)
+    os.remove(temp_file_name)

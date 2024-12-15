@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 
 from . import mymath as mm, utils as ut
@@ -14,12 +16,30 @@ def OrderParameterFunc(order_parameter_name: str, weighted: bool, abs_averaged: 
     :return: a function object for `Database.apply`
     """
 
-    def inner(args) -> np.float32:
+    def inner(args) -> Union[np.float32, np.ndarray]:
         abg: tuple = args[0]
         xyt: np.ndarray = args[1]
         xyt_c = ut.CArray(xyt)
         Xi = getattr(Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay(weighted), order_parameter_name)(xyt_c)
         return np.mean(np.abs(Xi)) if abs_averaged else Xi
+
+    return inner
+
+
+def CorrelationFunc(order_a: str, order_b: str, weighted: bool):
+    """
+    order_a, order_b: order parameter names.
+    All means are taken over each simulation separately.
+    :return: mean((a - mean(a)) * (b - mean(b)))
+    """
+
+    def inner(args) -> np.float32:
+        a_field = OrderParameterFunc(order_a, weighted, False)(args)
+        b_field = OrderParameterFunc(order_b, weighted, False)(args)
+        a_mean = np.mean(a_field, axis=len(a_field.shape) - 1, keepdims=True)
+        b_mean = np.mean(a_field, axis=len(a_field.shape) - 1, keepdims=True)
+        cor_field = (a_field - a_mean) * (b_field - b_mean)
+        return np.mean(cor_field)
 
     return inner
 

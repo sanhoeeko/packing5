@@ -1,4 +1,9 @@
 ﻿#include "pch.h"
+#include <cmath>
+#include <cstring>
+#include <utility>
+#include <vector>
+
 
 /*
     return: number of Voronoi ridges

@@ -1,5 +1,9 @@
 import ctypes as ct
 
+from . import utils as ut
+
+ut.setWorkingDirectory()
+
 
 class Kernel:
     def __init__(self):

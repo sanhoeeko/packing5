@@ -28,10 +28,10 @@ void xyt::operator-=(const xyt& q) {
     x -= q.x; y -= q.y; t -= q.t;
 }
 
-bool isnan(xyt& q) {
+bool isnan(const xyt& q) {
     return isnan(q.x) || isnan(q.y) || isnan(q.t);
 }
 
-bool isinf(xyt& q) {
+bool isinf(const xyt& q) {
     return isinf(q.x) || isinf(q.y) || isinf(q.t);
 }

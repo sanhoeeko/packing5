@@ -10,6 +10,7 @@
 #define ENERGY_STRIDE 1000
 
 #include <omp.h>
+#include <cmath>
 using namespace std;
 #undef max
 #undef min

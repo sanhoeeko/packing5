@@ -3,11 +3,11 @@
 
 #ifdef _WIN32
 #define DLLEXPORT extern "C" __declspec(dllexport)
+#include "framework.h"
 #else
 #define DLLEXPORT extern "C"
 #endif
 
-#include "framework.h"
 #include "defs.h"
 
 DLLEXPORT void init();

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cd program
+my_python="/home/gengjie/anaconda3/bin/python"
 
-# run subprojects
-nohup python3 main.py &
+rm nohup.out
+nohup ${my_python} program/main.py &
+wait

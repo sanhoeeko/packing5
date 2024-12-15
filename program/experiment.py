@@ -29,8 +29,8 @@ class SimulationsCommonParticle:
         return [s.id for s in self.simulators]
 
     def append(self, simulator: Simulator):
-        assert simulator.state.n == self.n
-        assert simulator.state.d == self.d
+        assert simulator.state.n == self.n, f"simulator.state.n={simulator.state.n}, while self.n={self.n}"
+        assert abs(simulator.state.d - self.d) < 1e-6, f"simulator.state.d={simulator.state.d}, while self.d={self.d}"
         simulator.setPotential(self.potential)
         self.simulators.append(simulator)
 

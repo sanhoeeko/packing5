@@ -3,11 +3,11 @@
 
 #ifdef _WIN32
 #define DLLEXPORT extern "C" __declspec(dllexport)
+#include "framework.h"
 #else
 #define DLLEXPORT extern "C"
 #endif
 
-#include "framework.h"
 #include "voro_interface.h"
 
 DLLEXPORT int disksToVoronoiEdges(int num_rods, int disks_per_rod, void* input_points_ptr, void* output_ptr, 
