@@ -1,5 +1,7 @@
+import cProfile
 import os.path
 import re
+import time
 
 import numpy as np
 
@@ -81,3 +83,21 @@ class HasMeta:
     def metadata(self) -> np.ndarray:
         values = [getattr(self, key) for key in self.key_list]
         return np.array([tuple(values)], dtype=self.dtype)
+
+
+class Profile:
+    def __init__(self, output_file: str):
+        self.file_name = output_file
+        self.profiler = cProfile.Profile()
+        self.t0 = 0
+
+    def __enter__(self):
+        self.profiler.enable()
+        self.t0 = time.time()
+        return self.profiler
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        t = time.time()
+        self.profiler.disable()
+        self.profiler.dump_stats(self.file_name)
+        print(f"Program finished in {t - self.t0} seconds.")

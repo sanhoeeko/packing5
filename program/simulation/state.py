@@ -9,8 +9,8 @@ from .potential import Potential
 
 
 class State(ut.HasMeta):
-    meta_hint = "N: i4, A: f4, B: f4, gamma: f4, rho: f4, phi: f4, energy: f4"
-    min_grad = 1e-4
+    meta_hint = "N: i4, A: f4, B: f4, gamma: f4, rho: f4, phi: f4, energy: f4, gradient_amp: f4"
+    min_grad = 0.01
 
     def __init__(self, N: int, n: int, d: float, A: float, B: float, configuration: np.ndarray):
         super().__init__()
@@ -49,7 +49,11 @@ class State(ut.HasMeta):
 
     @property
     def energy(self):
-        return self.calEnergy()
+        return self.CalEnergy_pure()
+
+    @property
+    def gradient_amp(self):
+        return ker.dll.FastNorm(self.CalGradient_pure().ptr, self.N * 4) / np.sqrt(self.N)
 
     @classmethod
     def random(cls, N, n, d, A, B):
@@ -93,7 +97,7 @@ class State(ut.HasMeta):
         return g
 
     def initAsDisks(self,  n_steps: int, step_size: float):
-        grads = np.zeros((n_steps,))
+        grads = np.full((n_steps,), np.nan)
         self.setOptimizer(0, 0, 1, True)
         for t in range(int(n_steps)):
             grad = self.descent(self.optimizer.calGradient(), step_size)
@@ -102,7 +106,7 @@ class State(ut.HasMeta):
         return grads
 
     def equilibrium(self, n_steps: int, step_size: float):
-        grads = np.zeros((n_steps,))
+        grads = np.full((n_steps,), np.nan)
         self.setOptimizer(0, 0, 1, False)
         for t in range(int(n_steps)):
             grad = self.descent(self.optimizer.calGradient(), step_size)
@@ -110,7 +114,20 @@ class State(ut.HasMeta):
             if grad <= State.min_grad: break
         return grads
 
-    def calEnergy(self):
+    def CalGradient_pure(self) -> ut.CArray:
+        """
+        For class State, most methods are impure that leaves some caches.
+        The method is pure and returns a gradient CArray.
+        """
+        gradient = self.optimizer.calGradient()
+        self.clear_dependency()
+        return gradient
+
+    def CalEnergy_pure(self) -> np.float32:
+        """
+        For class State, most methods are impure that leaves some caches.
+        The method is pure and returns an energy value.
+        """
         self.grid.gridLocate()
         self.gradient.calGradientAndEnergy()
         energy = self.gradient.sum.E()

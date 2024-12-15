@@ -31,11 +31,7 @@ class Dataset:
             dset[-1] = metadata[0]
 
     def read_metadata(self) -> np.ndarray:
-        with h5py.File(self.file_name, 'a') as f:
-            try:
-                return f.attrs['metadata']
-            except KeyError:
-                raise ValueError('This file has no metadata!')
+        return ht.read_metadata_to_struct(self.file_name)
 
     def read_data(self) -> dict:
         return ht.read_hdf5_to_dict(self.file_name)
@@ -102,3 +98,25 @@ def package_simulations_into_experiment(
     # write to disk
     experiment_data.write(dic)
     return experiment_data
+
+
+def package_simulations_cwd(file_name='data.h5', summary_table_name='simulation_table'):
+    # collect h5 files
+    folder = os.getcwd()
+    files = os.listdir(folder)
+    h5_files = [os.path.abspath(os.path.join(folder, file)) for file in files if
+                file.endswith('.h5') and file not in ['data.h5', file_name]]
+
+    # collect data
+    dic = ht.merge_dicts([ht.read_hdf5_to_dict(file) for file in h5_files])
+
+    # collect metadata
+    metadata_list = np.array([ht.read_metadata_to_struct(file) for file in h5_files])
+    dic[summary_table_name] = metadata_list
+
+    # write to disk
+    ht.write_dict_to_hdf5(file_name, dic)
+
+    # clear (unsafe)
+    # for file in h5_files:
+    #     os.remove(file)

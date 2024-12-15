@@ -1,4 +1,3 @@
-import cProfile
 import inspect
 import random
 import string
@@ -49,24 +48,6 @@ def dict_to_numpy_struct(input_dict: dict, max_str_len: int):
     for key, value in input_dict.items():
         structured_array[key][0] = value
     return structured_array
-
-
-class Profile:
-    def __init__(self, output_file: str):
-        self.file_name = output_file
-        self.profiler = cProfile.Profile()
-        self.t0 = 0
-
-    def __enter__(self):
-        self.profiler.enable()
-        self.t0 = time.time()
-        return self.profiler
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        t = time.time()
-        self.profiler.disable()
-        self.profiler.dump_stats(self.file_name)
-        print(f"Program finished in {t - self.t0} seconds.")
 
 
 def FuncCartesian(func, **attribute_lists):

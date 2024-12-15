@@ -30,8 +30,9 @@ class Database:
         # state_table summary each state in a struct scalar: 3 dim
         self.state_table: np.ndarray = dic['state_table']
 
-        self.particle_shape_table: np.ndarray = dic['particle_shape_table']
         self.simulation_table: np.ndarray = dic['simulation_table']
+        if 'particle_shape_table' in dic.keys():
+            self.particle_shape_table: np.ndarray = dic['particle_shape_table']
 
         # shapes
         self.shape = self.configuration.shape[:3]

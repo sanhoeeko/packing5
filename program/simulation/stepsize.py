@@ -12,12 +12,12 @@ def energyScan(s: State, g: ut.CArray, max_stepsize: float, n_samples: int):
     ys = np.zeros_like(xs)
     for i in range(n_samples):
         state.xyt.set_data(s.xyt.data + xs[i] * g.data)
-        ys[i] = state.calEnergy()
+        ys[i] = state.CalEnergy_pure()
     return xs, ys
 
 
 def findBestStepsize(s: State,  max_stepsize: float, n_samples: int) -> np.float32:
-    gradient = s.optimizer.calGradient()
+    gradient = s.CalGradient_pure()
     g = ker.dll.FastNorm(gradient.ptr, s.N * 4) / np.sqrt(s.N)
     normalized_gradient = ut.CArray(gradient.data / g)
     xs, ys = energyScan(s, normalized_gradient, max_stepsize, n_samples)

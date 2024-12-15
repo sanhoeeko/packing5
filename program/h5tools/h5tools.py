@@ -10,6 +10,14 @@ def read_hdf5_to_dict(file_path: str) -> dict:
     return data_dict
 
 
+def read_metadata_to_struct(file_name: str) -> np.ndarray:
+    with h5py.File(file_name, 'a') as f:
+        try:
+            return f.attrs['metadata']
+        except KeyError:
+            raise ValueError('This file has no metadata!')
+
+
 def append_dict_to_hdf5_head(file_path: str, data: dict):
     """
     This method requires keys to exist in the HDF5 file.
@@ -149,6 +157,7 @@ def _get_invalid_value(field_type):
 def compress_hdf5_file(input_file: str, output_file: str, compression='gzip', compression_opts=9):
     """
     Compress an existing HDF5 file and save it to a new file.
+    input_file != output_file
     """
 
     def copy_attrs(source, dest):
@@ -172,6 +181,9 @@ def compress_hdf5_file(input_file: str, output_file: str, compression='gzip', co
                 dataset = dest.create_dataset(name, data=data, compression=compression,
                                               compression_opts=compression_opts)
                 copy_attrs(item, dataset)
+
+    # input_file != output_file
+    assert input_file != output_file, "Please using different file names."
 
     # Open the existing HDF5 file
     with h5py.File(input_file, 'r') as f_in:

@@ -1,3 +1,4 @@
+import time
 import traceback
 
 import numpy as np
@@ -39,6 +40,21 @@ class Simulator(ut.HasMeta):
         self.rho0 = self.state.rho
         self.phi0 = self.state.phi
         self.dataset = None
+
+        # cache for diagnosis
+        self.current_step_size = defaults.step_size
+        self.current_grads = None
+
+    @property
+    def current_relaxations(self):
+        """
+        :return: turns of relaxations used in current compress. This method is for profiling.
+        """
+        indices = np.where(np.isnan(self.current_grads))[0]
+        if len(indices) == 0:
+            return self.max_relaxation
+        else:
+            return indices[0]
 
     def is_setting_complete(self):
         return all_true(self.has_settings)
@@ -89,7 +105,7 @@ class Simulator(ut.HasMeta):
     def fetchData(self, grads):
         return {
             'configuration': self.state.xyt3d(),
-            'descent_curve': grads[::self.descent_curve_stride].copy(),
+            'descent_curve': grads[::self.descent_curve_stride].astype(np.float32),
         }
 
     def save(self, grads):
@@ -99,18 +115,33 @@ class Simulator(ut.HasMeta):
         assert self.is_setting_complete()
         self.create_dataset()
         try:
-            grads = self.state.initAsDisks(self.max_relaxation, 1e-3)
-            self.save(grads)
-            for i in range(600):
-                if self.state.phi > 1.0:
-                    break
+            self.current_grads = self.state.initAsDisks(self.max_relaxation, defaults.step_size)
+            self.save(self.current_grads * defaults.step_size)
+            for i in range(defaults.max_compress_turns):
+                if self.state.phi > defaults.terminal_phi: break
                 self.state.boundary.compress(i)
-                grads = self.state.equilibrium(self.max_relaxation,
-                                               findBestStepsize(self.state, 1e-4, 16))
-                self.save(grads)
+                current_speed = self.equilibrium()
+                self.save(self.current_grads)
+                print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
         except Exception as e:
             print(f"An exception occurred in simulation [{self.id}]!\n")
             traceback.print_exc()
+
+    def equilibrium(self) -> float:
+        """
+        :return: current speed. Unit: it/s.
+        All black magics for gradient descent should be here.
+        """
+        start_t = time.perf_counter()
+        self.current_grads = np.full((self.max_relaxation,), np.nan)
+        part_length = self.max_relaxation // 200
+        for i in range(200):
+            self.current_step_size = findBestStepsize(self.state, 1e-3, 48)
+            grads = self.state.equilibrium(part_length, self.current_step_size)
+            self.current_grads[part_length * i:part_length * (i + 1)] = grads * self.current_step_size
+        end_t = time.perf_counter()
+        elapse_t = end_t - start_t
+        return self.current_relaxations / elapse_t
 
 
 def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
@@ -131,4 +162,5 @@ def testSingleThread():
     ex = createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B)
     ex.setPotential(Potential(n, d, PowerFunc(2.5)))
     ex.state.gradient.potential.cal_potential(4)
-    ex.execute()
+    with ut.Profile('main.prof'):
+        ex.execute()
