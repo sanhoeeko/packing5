@@ -1,16 +1,17 @@
 import time
 import traceback
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import defaults
 import simulation.utils as ut
 from h5tools.dataset import SimulationData
 from h5tools.utils import randomString
-from simulation import boundary
-from simulation.potential import Potential, PowerFunc
-from simulation.state import State
-from simulation.stepsize import findBestStepsize
+from . import boundary
+from .potential import Potential, PowerFunc
+from .state import State
+from .stepsize import findBestStepsize
 
 
 def settings():
@@ -136,9 +137,12 @@ class Simulator(ut.HasMeta):
         self.current_grads = np.full((self.max_relaxation,), np.nan)
         part_length = self.max_relaxation // 200
         for i in range(200):
-            self.current_step_size = findBestStepsize(self.state, 1e-3, 48)
+            self.current_step_size = findBestStepsize(
+                self.state, defaults.max_step_size, defaults.step_size_searching_samples
+            )
             grads = self.state.equilibrium(part_length, self.current_step_size)
             self.current_grads[part_length * i:part_length * (i + 1)] = grads * self.current_step_size
+            plt.plot(self.current_grads); plt.show()
         end_t = time.perf_counter()
         elapse_t = end_t - start_t
         return self.current_relaxations / elapse_t
@@ -155,7 +159,7 @@ def testSingleThread(profile=True):
     N = 1000
     n = 3
     d = 0.05
-    phi0 = 0.7
+    phi0 = 0.6
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
     compress_func_B = boundary.RatioCompress(0.001)
@@ -163,7 +167,7 @@ def testSingleThread(profile=True):
     ex.setPotential(Potential(n, d, PowerFunc(2.5)))
     ex.state.gradient.potential.cal_potential(4)
     if profile:
-        with ut.Profile('main.prof'):
+        with ut.Profile('../main.prof'):
             ex.execute()
     else:
         ex.execute()

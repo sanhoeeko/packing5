@@ -101,6 +101,9 @@ class Delaunay:
     def Phi4(self, xyt: ut.CArray) -> np.ndarray:
         return np.abs(self.phi_p(4, xyt))
 
+    def phi_p_ellipse(self, p: int, gamma: float, xyt: ut.CArray) -> np.ndarray[np.complex64]:
+        pass
+
     def S_center(self, xyt: ut.CArray) -> np.ndarray:
         """
         Use the orientation of the centering particle, θ_i, as director.
@@ -113,6 +116,13 @@ class Delaunay:
         return S.data / self.weight_sums.data
 
     def Q_tensor(self, xyt: ut.CArray) -> (ut.CArray, ut.CArray):
+        """
+        Q = ∑ 2(u @ u.T - 1) = [ ∑ cos 2t, ∑ sin 2t; ∑ sin 2t, -∑ cos 2t]
+        The sum (can be weighted) is taken over neighbors.
+        Here we define:
+        sum_ux[i] = ∑[j] cos 2t[i,j]
+        sum_uy[i] = ∑[j] sin 2t[i,j]
+        """
         t_mul_2 = 2 * xyt.data[:, 2]
         ux = ut.CArray(np.cos(t_mul_2))
         uy = ut.CArray(np.sin(t_mul_2))
@@ -121,17 +131,23 @@ class Delaunay:
         ker.dll.sumOverNeighbors(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, ux.ptr, sum_ux.ptr)
         ker.dll.sumOverNeighbors(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, uy.ptr, sum_uy.ptr)
         if self.weighted:
+            # TODO: bug
             sum_ux.data *= self.weights.data
             sum_uy.data *= self.weights.data
         return sum_ux, sum_uy
 
     def S_local(self, xyt: ut.CArray) -> np.ndarray:
         """
-        Calculate the director as the eigenvector of Q-tensor.
+        Use the director as the eigenvector of Q-tensor, then S_local is the eigenvalue.
         """
         sum_ux, sum_uy = self.Q_tensor(xyt)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
         return S.data / (self.weight_sums.data + 1)
 
     def director_angle(self, xyt: ut.CArray) -> np.ndarray:
-        pass
+        """
+        Calculate the director as the eigenvector of Q-tensor.
+        """
+        sum_ux, sum_uy = self.Q_tensor(xyt)
+        S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
+        return np.atan2(sum_uy, sum_ux + S)

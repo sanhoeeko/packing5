@@ -9,7 +9,23 @@ from . import utils as ut
 from .h5tools import LazyArray, read_hdf5_to_dict_lazy, struct_array_to_dataframe
 
 
-class Database:
+class DatabaseBase:
+    def __init__(self, dic: dict):
+        # state_table summary each state in a struct scalar: 3 dim
+        self.state_table: np.ndarray = dic['state_table']
+
+        self.simulation_table: np.ndarray = dic['simulation_table']
+        if 'particle_shape_table' in dic.keys():
+            self.particle_shape_table: np.ndarray = dic['particle_shape_table']
+
+        # shapes
+        self.shape = self.state_table.shape
+        self.m_groups, self.n_parallels, self.l_max_states = self.shape
+
+        self.summary = struct_array_to_dataframe(self.simulation_table)
+
+
+class Database(DatabaseBase):
     """
     The first three dimensions of data:
     1. for the same "external" conditions
@@ -27,18 +43,8 @@ class Database:
         # descent_curve: 3 + 1 = 4 dim
         self.descent_curve: LazyArray = dic['descent_curve']
 
-        # state_table summary each state in a struct scalar: 3 dim
-        self.state_table: np.ndarray = dic['state_table']
-
-        self.simulation_table: np.ndarray = dic['simulation_table']
-        if 'particle_shape_table' in dic.keys():
-            self.particle_shape_table: np.ndarray = dic['particle_shape_table']
-
-        # shapes
-        self.shape = self.configuration.shape[:3]
-        self.m_groups, self.n_parallels, self.l_max_states = self.shape
-
-        self.summary = struct_array_to_dataframe(self.simulation_table)
+        # some metadata
+        super().__init__(dic)
 
     def __repr__(self):
         return str(self.summary)
@@ -65,13 +71,19 @@ class Database:
         """
         return self.state_table[prop]
 
-    def apply(self, func_act_on_configuration, num_threads=1):
+    def apply(self, func_act_on_configuration, num_threads=1, from_to_nth_data=None):
         """
         :param func_act_on_configuration: (abg: (3,), configuration: (N, 3)) -> scalar
+        :param from_to_nth_data: tuple of int, if data of too low or too high density is unneeded.
         This function loads all configuration data. Mind your memory!
         """
-        data = self.configuration[:]
-        abg = np.stack((self.property('A'), self.property('B'), self.property('gamma')), axis=3)
+        if from_to_nth_data is None:
+            data = self.configuration[:]
+            abg = np.stack((self.property('A'), self.property('B'), self.property('gamma')), axis=3)
+        else:
+            data = self.configuration[:, :, from_to_nth_data[0]:from_to_nth_data[1], :, :]
+            abg = np.stack((self.property('A'), self.property('B'), self.property('gamma')), axis=3)
+            abg = abg[:, :, from_to_nth_data[0]:from_to_nth_data[1], :]
         shape_3d = data.shape[:3]
         xyt = data.reshape(-1, data.shape[-2], data.shape[-1])
         abg = abg.reshape(-1, 3)

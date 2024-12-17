@@ -106,7 +106,7 @@ class Optimizer:
         else:
             def momentum_gradient_func() -> ut.CArray:
                 gradient = self.noise_gradient_func()
-                self.momentum.data *= self.beta
+                self.momentum.set_data(self.momentum.data * self.beta)
                 ker.dll.AddVector4(self.momentum.ptr, gradient.ptr, self.N, 1 - self.beta)
                 return self.momentum
 

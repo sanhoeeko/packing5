@@ -1,5 +1,3 @@
-import math
-
 import matplotlib
 import matplotlib.patches as patches
 import numpy as np
@@ -22,12 +20,10 @@ class Figure:
     It can be created as a normal object, or at the beginning of a `with` block
     """
 
-    def __init__(self, no_enter_flag=False):
-        if no_enter_flag:
-            self.fig, self.ax = plt.subplots()
+    def __init__(self):
+        self.fig, self.ax = plt.subplots()
 
     def __enter__(self):
-        self.fig, self.ax = plt.subplots()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -39,6 +35,17 @@ class Figure:
         for c in self.fig.get_axes():
             if c is not self.ax and c not in exclude_targets:
                 self.fig.delaxes(c)
+
+    def labels(self, x_label: str, y_label: str):
+        self.ax.set_xlabel(x_label)
+        self.ax.set_ylabel(y_label)
+        return self
+
+    def region(self, x_interval, y_interval):
+        self.ax.set_xlim(*x_interval)
+        self.ax.set_ylim(*y_interval)
+        self.ax.set_aspect('equal', adjustable='box')
+        return self
 
     def colorbar(self, collection, label: str):
         # Create an axes for the color bar
@@ -64,51 +71,6 @@ class Figure:
         self.ax.set_xlabel(x_label)
         self.ax.set_ylabel(y_label)
         return self
-
-
-def getColorForInterval(color_map_name: str, interval: tuple):
-    cmap = matplotlib.colormaps[color_map_name]
-    a = interval[0]
-    b = interval[1]
-    k = 1 / (b - a)
-
-    def callCmap(x: float):
-        y = k * (x - a)
-        return cmap(math.sqrt(y))
-
-    return callCmap
-
-
-def plotListOfArray(lst: np.ndarray):
-    cmap = getColorForInterval('cool', (0, len(lst)))
-    with Figure() as handle:
-        for i in range(len(lst)):
-            handle.ax.plot(lst[i], color=cmap(i), alpha=0.5)
-
-
-def plotMeanCurvesWithCI(x: np.ndarray, y_mean_lst: list[np.ndarray], y_ci_lst: list[np.ndarray]):
-    cmap_s = 'cool'
-    cmap = plt.get_cmap(cmap_s)
-    assert len(y_mean_lst) == len(y_ci_lst)
-    colors = cmap(np.linspace(0, 1, len(y_mean_lst)))
-    with Figure() as handle:
-        for i, (y_mean, y_ci) in enumerate(zip(y_mean_lst, y_ci_lst)):
-            color = colors[i]
-            handle.ax.fill_between(x, y_mean - y_ci, y_mean + y_ci, color=color, alpha=0.2)
-            handle.ax.plot(x, y_mean, color=color)
-
-    # if self.average_flags is not None and len(self.average_flags) == 1:
-    #     flag = self.average_flags[0]
-    #     lst = np.asarray(self.abstract[flag])
-    #     min_v, max_v = np.min(lst), np.max(lst)
-    #     norm = Normalize(vmin=min_v, vmax=max_v)
-    #     sm = ScalarMappable(cmap=cmap_s, norm=norm)
-    #     cbar = plt.colorbar(sm)
-    #     cbar.set_label(flag)
-    # if self.x_label is not None:
-    #     plt.xlabel(self.x_label)
-    # if self.y_label is not None:
-    #     plt.ylabel(self.y_label)
 
 
 class Capsule(patches.Patch):
@@ -151,3 +113,7 @@ class Capsule(patches.Patch):
         trans = Affine2D().translate(*self.xy)
 
         return scale + trans
+
+
+def ListColor01(color_map_name: str, length: int):
+    return plt.get_cmap(color_map_name)(np.linspace(0, 1, length))

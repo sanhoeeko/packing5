@@ -9,8 +9,8 @@ import numpy as np
 
 from h5tools.dataset import package_simulations_into_experiment
 from h5tools.utils import flatten, current_time, FuncCartesian, dict_to_numpy_struct
-from simulation.potential import RadialFunc, Potential, PowerFunc
-from simulator import Simulator, createSimulator
+from .potential import RadialFunc, Potential, PowerFunc
+from .simulator import Simulator, createSimulator
 
 
 class SimulationsCommonParticle:

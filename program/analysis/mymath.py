@@ -4,6 +4,12 @@ from scipy import stats
 from scipy.interpolate import CubicSpline
 
 
+class DirtyDataException(Exception):
+    def __init__(self, nth_state: int, *args):
+        super().__init__(*args)
+        self.nth_state = nth_state
+
+
 def CIRadius(data: np.ndarray, axis: int, confidence=0.95):
     """
     SEM: standard error of mean.
@@ -30,7 +36,7 @@ def CIRadius(data: np.ndarray, axis: int, confidence=0.95):
     return ci_radius
 
 
-def interpolate_tensor(x: np.ndarray, y: np.ndarray, eps: float, num_threads=1):
+def interpolate_tensor(x: np.ndarray, y: np.ndarray, eps: float, num_threads=1) -> (np.ndarray, np.ndarray):
     shape = x.shape
     x_max = np.max(x)
     x_min = np.min(x)
@@ -38,6 +44,12 @@ def interpolate_tensor(x: np.ndarray, y: np.ndarray, eps: float, num_threads=1):
     Y_shape = list(y.shape)
     Y_shape[-1] = X.shape[-1]
     Y = np.zeros(tuple(Y_shape))
+
+    # validity check
+    invalidity = np.isnan(y) | np.isinf(y)
+    if np.any(invalidity):
+        nan_position = np.where(invalidity)[-1][0]
+        raise DirtyDataException(nan_position, "NAN value detected in interpolation!")
 
     # interpolate with respect to the last dimension
     def interpolate_slice(i):

@@ -107,7 +107,7 @@ class State(ut.HasMeta):
 
     def equilibrium(self, n_steps: int, step_size: float):
         grads = np.full((n_steps,), np.nan)
-        self.setOptimizer(0, 0, 1, False)
+        self.setOptimizer(0, 0.01, 1, False)
         for t in range(int(n_steps)):
             grad = self.descent(self.optimizer.calGradient(), step_size)
             grads[t] = grad

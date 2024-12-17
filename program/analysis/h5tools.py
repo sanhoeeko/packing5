@@ -1,6 +1,6 @@
-import h5py
-import numpy as np
 import pandas as pd
+
+from h5tools.h5tools import *
 
 
 class LazyArray:
@@ -62,33 +62,27 @@ def add_array_to_hdf5(file_name: str, name: str, data: np.ndarray):
         hdf5_file.create_dataset(name, data=data, dtype=data.dtype)
 
 
-def invalid_value_of(array: np.ndarray):
-    if array.dtype.fields is not None:
-        return _get_struct_invalid_value(array.dtype)
-    else:
-        return _get_invalid_value(array.dtype)
+def add_property_to_hdf5(file_name: str, key: str, value):
+    with h5py.File(file_name, 'a') as hdf5_file:
+        hdf5_file[key] = value
 
 
-def _get_struct_invalid_value(dtype):
-    """
-    Generate an invalid value for a given numpy struct dtype.
-
-    Parameters:
-    dtype (np.dtype): The numpy struct dtype.
-
-    Returns:
-    tuple: A tuple containing invalid values for each field in the struct.
-    """
-    invalid_value = [_get_invalid_value(dtype.fields[field][0]) for field in dtype.fields]
-    return np.array([tuple(invalid_value)], dtype=dtype)
-
-
-def _get_invalid_value(field_type):
-    if np.issubdtype(field_type, np.integer):
-        return np.int32(-1) if field_type == np.int32 else np.int64(-1)
-    elif np.issubdtype(field_type, np.floating):
-        return np.float32(np.nan) if field_type == np.float32 else np.nan
-    elif np.issubdtype(field_type, np.str_) or np.issubdtype(field_type, np.bytes_):
-        return '*' * field_type.itemsize
-    else:
-        raise ValueError(f"Unsupported field type: {field_type}")
+def read_hdf5_groups_to_dicts(file_path: str) -> (dict, dict[dict]):
+    data_dict = {}
+    group_dict = {}
+    with h5py.File(file_path, 'r') as file:
+        for dataset_name in file:
+            if hasattr(file[dataset_name], 'keys'):
+                # if it is a group
+                temp_dic = {}
+                for key in file[dataset_name].keys():
+                    temp_dic[key] = file[dataset_name][key][:]
+                group_dict[dataset_name] = temp_dic
+            else:
+                if len(file[dataset_name].shape) == 0:
+                    # if it is a scalar
+                    data_dict[dataset_name] = file[dataset_name][()]
+                else:
+                    # if it is a dataset
+                    data_dict[dataset_name] = file[dataset_name][:]
+    return data_dict, group_dict

@@ -94,7 +94,7 @@ class InteractiveViewer:
     def __init__(self, data: PickledSimulation, setup: RenderSetup):
         self.simu = data
         self.index = 0
-        self.handle = Figure(True).slider(len(self.simu), self.update)
+        self.handle = Figure().slider(len(self.simu), self.update)
         self.handle.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.renderer = RenderState(self.handle)
         self.setup = setup
