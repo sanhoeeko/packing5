@@ -74,8 +74,9 @@ class Optimizer:
     def __init__(self, state, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool):
         self.N = state.N
         self.grid = state.grid
-        self.momentum = None
+        self.momentum = ut.CArrayFZeros((self.N, 4))
         self.beta = np.float32(momentum_beta)
+        self.pure_gradient_func = state.CalGradient_pure
         func_name = 'calGradient' if stochastic_p == 1 else 'stochasticCalGradient'
         if as_disks:
             func_name += 'AsDisks'
@@ -114,7 +115,7 @@ class Optimizer:
 
     def init(self):
         if self.beta != 0:
-            self.momentum = self.raw_gradient_func()
+            self.momentum = self.pure_gradient_func()
 
     def calGradient(self):
         return self.func()

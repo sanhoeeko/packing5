@@ -1,7 +1,7 @@
 import numpy as np
 
 from art.art import Figure
-from art.curves import plotMeanCurvesWithCI
+from art.curves import plotMeanCurvesWithCI, plotListOfArray
 from .analysis import averageEnergy
 from .database import Database
 
@@ -35,3 +35,7 @@ def checkStateDistance(db: Database):
 
 def checkEnergy(db: Database):
     plotMeanCurvesWithCI(*averageEnergy(db, 'phi'), x_label='packing fraction', y_label='energy')
+
+
+def checkDescentCurveAt(db: Database, i: int, j: int):
+    plotListOfArray(db.simulation_at(i, j).descent_curve)

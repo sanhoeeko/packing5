@@ -87,14 +87,14 @@ class State(ut.HasMeta):
     def xyt3d(self) -> np.ndarray:
         return self.xyt[:, :3].copy()
 
-    def descent(self, gradient: ut.CArray, step_size: float):
+    def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4) / np.sqrt(self.N)
         if np.isnan(g) or np.isinf(g):
             raise ValueError("NAN detected in gradient!")
         if g > State.min_grad:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.N, np.float32(step_size) / g)
         self.clear_dependency()
-        return g
+        return np.float32(g)
 
     def initAsDisks(self,  n_steps: int, step_size: float):
         grads = np.full((n_steps,), np.nan)
@@ -105,14 +105,18 @@ class State(ut.HasMeta):
             if grad <= State.min_grad: break
         return grads
 
-    def equilibrium(self, n_steps: int, step_size: float):
-        grads = np.full((n_steps,), np.nan)
-        self.setOptimizer(0, 0.01, 1, False)
+    def equilibrium(self, n_steps: int, step_size: float) -> (np.ndarray, int):
+        """
+        :return: (gradient amplitudes, number of iterations)
+        """
+        grads = np.full((n_steps,), np.float32(np.nan))
+        self.setOptimizer(0, 0.9, 1, False)
         for t in range(int(n_steps)):
             grad = self.descent(self.optimizer.calGradient(), step_size)
             grads[t] = grad
-            if grad <= State.min_grad: break
-        return grads
+            if grad <= State.min_grad:
+                return grads, t
+        return grads, n_steps - 1
 
     def CalGradient_pure(self) -> ut.CArray:
         """

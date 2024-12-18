@@ -4,7 +4,7 @@ import traceback
 import matplotlib.pyplot as plt
 import numpy as np
 
-import defaults
+import default
 import simulation.utils as ut
 from h5tools.dataset import SimulationData
 from h5tools.utils import randomString
@@ -43,7 +43,7 @@ class Simulator(ut.HasMeta):
         self.dataset = None
 
         # cache for diagnosis
-        self.current_step_size = defaults.step_size
+        self.current_step_size = default.step_size
         self.current_grads = None
 
     @property
@@ -116,10 +116,10 @@ class Simulator(ut.HasMeta):
         assert self.is_setting_complete()
         self.create_dataset()
         try:
-            self.current_grads = self.state.initAsDisks(self.max_relaxation, defaults.step_size)
-            self.save(self.current_grads * defaults.step_size)
-            for i in range(defaults.max_compress_turns):
-                if self.state.phi > defaults.terminal_phi: break
+            self.current_grads = self.state.initAsDisks(self.max_relaxation, default.step_size)
+            self.save(self.current_grads * default.step_size)
+            for i in range(default.max_compress_turns):
+                if self.state.phi > default.terminal_phi: break
                 self.state.boundary.compress(i)
                 current_speed = self.equilibrium()
                 self.save(self.current_grads)
@@ -138,11 +138,11 @@ class Simulator(ut.HasMeta):
         part_length = self.max_relaxation // 200
         for i in range(200):
             self.current_step_size = findBestStepsize(
-                self.state, defaults.max_step_size, defaults.step_size_searching_samples
+                self.state, default.max_step_size, default.step_size_searching_samples
             )
-            grads = self.state.equilibrium(part_length, self.current_step_size)
+            grads, n = self.state.equilibrium(part_length, self.current_step_size)
             self.current_grads[part_length * i:part_length * (i + 1)] = grads * self.current_step_size
-            plt.plot(self.current_grads); plt.show()
+            if grads[n] < self.state.min_grad: break
         end_t = time.perf_counter()
         elapse_t = end_t - start_t
         return self.current_relaxations / elapse_t
@@ -150,8 +150,8 @@ class Simulator(ut.HasMeta):
 
 def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
     return (Simulator.fromPackingFractionPhi(N, n, d, phi0, Gamma0)
-            .setCompressMethod(compress_func_A, compress_func_B, defaults.max_compress)
-            .schedule(defaults.max_relaxation, defaults.descent_curve_stride)
+            .setCompressMethod(compress_func_A, compress_func_B, default.max_compress)
+            .schedule(default.max_relaxation, default.descent_curve_stride)
             )
 
 
