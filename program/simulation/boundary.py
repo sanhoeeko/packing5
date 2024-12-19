@@ -5,13 +5,13 @@ from .kernel import ker
 
 class Boundary:
     def __init__(self, boundary_a: float, boundary_b: float):
-        self.A, self.B = boundary_a, boundary_b
+        self.A, self.B = float(boundary_a), float(boundary_b)  # higher precision than np.float32
         self.max_step_size = 1
         self.func_A = None
         self.func_B = None
 
     def refresh(self):
-        pass  # to be inherited
+        raise NotImplementedError  # to be inherited
 
     def compress(self, t: float):
         self.A = self.restrict_A(self.func_A(t, self.A))

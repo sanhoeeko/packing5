@@ -6,12 +6,12 @@ from art.viewer import *
 from analysis.analysis import *
 
 if __name__ == '__main__':
-
+    package_simulations_cwd()
     db = Database('data.h5')
     # checkEnergy(db)
     # calAllOrderParameters(db, 'rho')
-    # InteractiveViewer(db.simulation_at(0, 0), RenderSetup('S_local', False, 'default', True)).show()
-    checkDescentCurveAt(db, 0, 0)
+    InteractiveViewer(db.simulation_at(0, 0), RenderSetup('S_local', False, 'default', True)).show()
+    # checkDescentCurveAt(db, 0, 0)
 
     # db = AnalysisData('analysis.h5')
     # db.plot('Phi6')

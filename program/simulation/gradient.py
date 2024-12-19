@@ -76,6 +76,7 @@ class Optimizer:
         self.grid = state.grid
         self.momentum = ut.CArrayFZeros((self.N, 4))
         self.beta = np.float32(momentum_beta)
+        self.noise_factor = np.float32(noise_factor)
         self.pure_gradient_func = state.CalGradient_pure
         func_name = 'calGradient' if stochastic_p == 1 else 'stochasticCalGradient'
         if as_disks:
@@ -97,7 +98,7 @@ class Optimizer:
         else:
             def noise_gradient_func() -> ut.CArray:
                 gradient = self.raw_gradient_func()
-                ker.dll.PerturbVector4(gradient.ptr, self.N, noise_factor)
+                ker.dll.PerturbVector4(gradient.ptr, self.N, self.noise_factor)
                 return gradient
 
             self.noise_gradient_func = noise_gradient_func
@@ -107,8 +108,8 @@ class Optimizer:
         else:
             def momentum_gradient_func() -> ut.CArray:
                 gradient = self.noise_gradient_func()
-                self.momentum.set_data(self.momentum.data * self.beta)
-                ker.dll.AddVector4(self.momentum.ptr, gradient.ptr, self.N, 1 - self.beta)
+                ker.dll.CwiseMulVector4(self.momentum.ptr, self.N, self.beta)
+                ker.dll.AddVector4(self.momentum.ptr, gradient.ptr, self.momentum.ptr, self.N, 1 - self.beta)
                 return self.momentum
 
             self.func = momentum_gradient_func
@@ -119,3 +120,6 @@ class Optimizer:
 
     def calGradient(self):
         return self.func()
+
+    def anneal(self, anneal_factor: float):
+        self.noise_factor *= anneal_factor

@@ -43,7 +43,7 @@ DLLEXPORT void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_bounda
 
 DLLEXPORT void SumTensor4(void* p_z, void* p_Gij, void* p_gi, int N);
 
-DLLEXPORT void AddVector4(void* p_x, void* p_g, int N, float s);
+DLLEXPORT void AddVector4(void* p_x, void* p_g, void* p_dst, int N, float s);
 
 DLLEXPORT void PerturbVector4(void* p_input, int N, float sigma);
 
@@ -52,6 +52,8 @@ DLLEXPORT void FastClear(void* p_float, int size);
 DLLEXPORT void HollowClear(void* p_float, int N, int stride);
 
 DLLEXPORT float FastNorm(void* p_x, int n);
+
+DLLEXPORT void CwiseMulVector4(void* p_g, int N, float s);
 
 //// test functions /////////////////////////////////////////////////////////////////////////////
 

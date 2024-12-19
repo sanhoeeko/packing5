@@ -6,10 +6,9 @@ import default
 import simulation.utils as ut
 from h5tools.dataset import SimulationData
 from h5tools.utils import randomString
-from . import boundary
+from . import boundary, stepsize
 from .potential import Potential, PowerFunc
 from .state import State
-from .stepsize import findBestStepsize
 
 
 def settings():
@@ -79,10 +78,11 @@ class Simulator(ut.HasMeta):
         self.has_settings['has_potential'] = True
         return self
 
-    def schedule(self, max_relaxation, descent_curve_stride, cal_energy=False):
+    def schedule(self, max_relaxation, descent_curve_stride, epochs=1, cal_energy=False):
         self.max_relaxation = int(max_relaxation)
         self.descent_curve_stride = int(descent_curve_stride)
         self.if_cal_energy = cal_energy
+        self.epochs = epochs
         self.has_settings['has_schedule'] = True
         return self
 
@@ -121,16 +121,18 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
+            noise_factor = 0.4
             self.current_ge = np.full((self.max_relaxation // self.descent_curve_stride,), np.nan)
-            part_iterations = self.max_relaxation // 200
+            part_iterations = self.max_relaxation // self.epochs
             part_length = part_iterations // self.descent_curve_stride
-            for i in range(200):
-                self.current_step_size = findBestStepsize(
+            for i in range(self.epochs):
+                self.current_step_size = stepsize.findGoodStepsize(
                     self.state, default.max_step_size, default.step_size_searching_samples
                 )
                 self.current_relaxations, final_grad, ge_array = self.state.equilibrium(
-                    self.current_step_size, part_iterations, self.descent_curve_stride, self.if_cal_energy
+                    self.current_step_size, part_iterations, self.descent_curve_stride, noise_factor, self.if_cal_energy
                 )
+                noise_factor *= 0.95
                 if self.if_cal_energy:
                     self.current_ge[part_length * i:part_length * (i + 1)] = ge_array
                 else:
@@ -143,7 +145,7 @@ class Simulator(ut.HasMeta):
 def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
     return (Simulator.fromPackingFractionPhi(N, n, d, phi0, Gamma0)
             .setCompressMethod(compress_func_A, compress_func_B, default.max_compress)
-            .schedule(default.max_relaxation, default.descent_curve_stride, default.if_cal_energy)
+            .schedule(default.max_relaxation, default.descent_curve_stride, default.epochs, default.if_cal_energy)
             )
 
 
@@ -151,7 +153,7 @@ def testSingleThread(profile=True):
     N = 1000
     n = 3
     d = 0.05
-    phi0 = 0.6
+    phi0 = 0.4
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
     compress_func_B = boundary.RatioCompress(0.001)
@@ -160,6 +162,9 @@ def testSingleThread(profile=True):
     ex.state.gradient.potential.cal_potential(4)
     if profile:
         with ut.Profile('../main.prof'):
-            ex.execute()
+            try:
+                ex.execute()
+            except KeyboardInterrupt:
+                pass  # terminate the simulation and collect profiling data
     else:
         ex.execute()

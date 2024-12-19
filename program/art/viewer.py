@@ -14,7 +14,12 @@ class RenderSetup:
     def __init__(self, order_parameter_name: str = None, weighted=False, style: str = 'default', real_size=False):
         self.style = style
         self.real_size = real_size
-        self.func = OrderParameterFunc(order_parameter_name, weighted, False)
+
+        def func(x):
+            arr = OrderParameterFunc([order_parameter_name], weighted, False)(x)
+            return arr[order_parameter_name]
+
+        self.func = func
 
 
 def selectCmapAndNorm(style: str):

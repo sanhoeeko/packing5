@@ -10,7 +10,7 @@ from .potential import Potential
 
 class State(ut.HasMeta):
     meta_hint = "N: i4, A: f4, B: f4, gamma: f4, rho: f4, phi: f4, energy: f4, gradient_amp: f4"
-    min_grad = 1e-2  # Used in `Simulator` class, `equilibrium` method
+    min_grad = 1e-3  # Used in `Simulator` class, `equilibrium` method
 
     def __init__(self, N: int, n: int, d: float, A: float, B: float, configuration: np.ndarray):
         super().__init__()
@@ -91,7 +91,7 @@ class State(ut.HasMeta):
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4) / np.sqrt(self.N)
         if np.isnan(g) or np.isinf(g):
             raise ValueError("NAN detected in gradient!")
-        ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.N, np.float32(step_size) / g)
+        ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, np.float32(step_size) / g)
         self.clear_dependency()
         return np.float32(g)
 
@@ -112,7 +112,7 @@ class State(ut.HasMeta):
         energy = self.CalEnergy_pure()
         return gradient_amp, energy
 
-    def equilibrium(self, step_size: float, n_steps: int, stride: int, cal_energy=False) \
+    def equilibrium(self, step_size: float, n_steps: int, stride: int, noise_factor: float, cal_energy=False) \
             -> (int, np.ndarray, np.float32):
         """
         :return:
@@ -124,9 +124,10 @@ class State(ut.HasMeta):
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         grad = 0
 
-        self.setOptimizer(0, 0.9, 1, False)
+        self.setOptimizer(noise_factor, 0.9, 1, False)
         for t in range(int(n_steps)):
             grad = self.descent(self.optimizer.calGradient(), step_size)
+            # self.optimizer.anneal(0.99)
             if t % stride == 0:
                 if cal_energy:
                     current_ge = self.CalEnergy_pure()
@@ -146,6 +147,12 @@ class State(ut.HasMeta):
         self.clear_dependency()
         return gradient
 
+    def CalGradientNormalized_pure(self) -> ut.CArray:
+        gradient = self.CalGradient_pure()
+        g = ker.dll.FastNorm(gradient.ptr, self.N * 4) / np.sqrt(self.N)
+        ker.dll.CwiseMulVector4(gradient.ptr, self.N, np.float32(1) / g)
+        return gradient
+
     def CalEnergy_pure(self) -> np.float32:
         """
         For class State, most methods are impure that leaves some caches.
@@ -156,6 +163,7 @@ class State(ut.HasMeta):
         energy = self.gradient.sum.E()
         self.clear_dependency()
         return energy
+
 
 def randomConfiguration(N: int, A: float, B: float):
     xyt = np.zeros((N, 4))

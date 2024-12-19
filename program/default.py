@@ -1,9 +1,10 @@
 max_compress = 0.2
-descent_curve_stride = 1e2
+descent_curve_stride = 10
 max_relaxation = 1e5
 max_step_size = 1e-3
-step_size_searching_samples = 48
-max_compress_turns = 1000
+step_size_searching_samples = 64
+epochs = 20
+max_compress_turns = 2000
 terminal_phi = 2.0
 if_cal_energy = True
 S_local_background = 0.338
