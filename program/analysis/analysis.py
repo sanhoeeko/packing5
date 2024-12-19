@@ -72,8 +72,12 @@ def averageByGamma(x: np.ndarray, y: np.ndarray) -> (np.ndarray, np.ndarray, np.
     :param y: interpolated 3 dim
     :return: (interpolated x: 1 dim, mean y: 2 dim, CI radius y: 2 dim)
     """
-    ave_curve = ut.apply_struct(np.nanmean, axis=1)(y)
-    ci_curve = ut.apply_struct(mm.CIRadius, axis=1, confidence=0.95)(y)
+    if y.dtype.fields is not None:
+        ave_curve = ut.apply_struct(np.nanmean, axis=1)(y)
+        ci_curve = ut.apply_struct(mm.CIRadius, axis=1, confidence=0.95)(y)
+    else:
+        ave_curve = np.nanmean(y, axis=1)
+        ci_curve = mm.CIRadius(y, axis=1, confidence=0.95)
     return x, ave_curve, ci_curve
 
 

@@ -8,10 +8,10 @@ from analysis.analysis import *
 if __name__ == '__main__':
 
     db = Database('data.h5')
-    # checkDescentCurveAt(db, 0, 0)
-    calAllOrderParameters(db, 'rho')
+    # checkEnergy(db)
+    # calAllOrderParameters(db, 'rho')
     # InteractiveViewer(db.simulation_at(0, 0), RenderSetup('S_local', False, 'default', True)).show()
-    # checkDescentCurveAt(db, 0, 0)
+    checkDescentCurveAt(db, 0, 0)
 
     # db = AnalysisData('analysis.h5')
     # db.plot('Phi6')

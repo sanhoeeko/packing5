@@ -42,7 +42,7 @@ class Simulator(ut.HasMeta):
 
         # cache for diagnosis
         self.current_step_size = default.max_step_size
-        self.current_grads = None
+        self.current_ge = None
 
     def is_setting_complete(self):
         return all_true(self.has_settings)
@@ -109,7 +109,7 @@ class Simulator(ut.HasMeta):
                 if self.state.phi > default.terminal_phi: break
                 self.state.boundary.compress(i)
                 current_speed = self.equilibrium()
-                self.save(self.current_grads)
+                self.save(self.current_ge)
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
         except Exception as e:
             print(f"An exception occurred in simulation [{self.id}]!\n")
@@ -121,18 +121,21 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            self.current_grads = np.full((self.max_relaxation // self.descent_curve_stride,), np.nan)
+            self.current_ge = np.full((self.max_relaxation // self.descent_curve_stride,), np.nan)
             part_iterations = self.max_relaxation // 200
             part_length = part_iterations // self.descent_curve_stride
             for i in range(200):
                 self.current_step_size = findBestStepsize(
                     self.state, default.max_step_size, default.step_size_searching_samples
                 )
-                self.current_relaxations = ge_array, final_ge = self.state.equilibrium(
+                self.current_relaxations, final_grad, ge_array = self.state.equilibrium(
                     self.current_step_size, part_iterations, self.descent_curve_stride, self.if_cal_energy
                 )
-                self.current_grads[part_length * i:part_length * (i + 1)] = ge_array * self.current_step_size
-                if final_ge < self.state.min_grad:
+                if self.if_cal_energy:
+                    self.current_ge[part_length * i:part_length * (i + 1)] = ge_array
+                else:
+                    self.current_ge[part_length * i:part_length * (i + 1)] = ge_array * self.current_step_size
+                if final_grad < self.state.min_grad:
                     break
         return self.current_relaxations / timer.elapse_t
 

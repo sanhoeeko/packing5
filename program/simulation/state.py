@@ -112,17 +112,17 @@ class State(ut.HasMeta):
         energy = self.CalEnergy_pure()
         return gradient_amp, energy
 
-    def equilibrium(self, step_size: float, n_steps: int, stride: int, cal_energy=True) \
+    def equilibrium(self, step_size: float, n_steps: int, stride: int, cal_energy=False) \
             -> (int, np.ndarray, np.float32):
         """
         :return:
         if cal_energy:
-            (relaxations_steps, energy curve, final energy)
+            (relaxations_steps, final gradient amplitude, energy curve)
         else:
-            (relaxations_steps, gradient amplitudes, final gradient amplitude)
+            (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
-        current_ge = 0
+        grad = 0
 
         self.setOptimizer(0, 0.9, 1, False)
         for t in range(int(n_steps)):
@@ -134,8 +134,8 @@ class State(ut.HasMeta):
                     current_ge = grad
                 ge_array[t // stride] = current_ge
             if grad <= State.min_grad:
-                return t, ge_array, current_ge
-        return n_steps, ge_array, current_ge
+                return t, grad, ge_array
+        return n_steps, grad, ge_array
 
     def CalGradient_pure(self) -> ut.CArray:
         """
@@ -156,7 +156,6 @@ class State(ut.HasMeta):
         energy = self.gradient.sum.E()
         self.clear_dependency()
         return energy
-
 
 def randomConfiguration(N: int, A: float, B: float):
     xyt = np.zeros((N, 4))
