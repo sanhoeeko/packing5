@@ -129,7 +129,10 @@ class PickledSimulation:
         """
         :return: 2d array, a set of normalized descent curves of one simulation.
         """
-        return self.descent_curve / self.descent_curve[:, 0:1]
+        if self.metadata['if_cal_energy']:
+            return self.descent_curve / self.descent_curve[:, 0:1]
+        else:
+            return self.descent_curve
 
     def stateDistance(self) -> np.ndarray:
         """

@@ -1,7 +1,5 @@
-import time
 import traceback
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import default
@@ -23,8 +21,8 @@ def all_true(struct: np.ndarray) -> bool:
 
 
 class Simulator(ut.HasMeta):
-    meta_hint = ("id: S4, N: i4, n: i4, d: f4, gamma: f4, "
-                 "A0: f4, B0: f4, rho0: f4, phi0: f4, potential_shape: S32, potential_scalar: S32")
+    meta_hint = ("id: S4, N: i4, n: i4, d: f4, gamma: f4, A0: f4, B0: f4, rho0: f4, phi0: f4, "
+                 "potential_shape: S32, potential_scalar: S32, if_cal_energy: i4")
 
     def __init__(self, N: int, n: int, d: float, A0: float, B0: float):
         super().__init__()
@@ -43,19 +41,8 @@ class Simulator(ut.HasMeta):
         self.dataset = None
 
         # cache for diagnosis
-        self.current_step_size = default.step_size
+        self.current_step_size = default.max_step_size
         self.current_grads = None
-
-    @property
-    def current_relaxations(self):
-        """
-        :return: turns of relaxations used in current compress. This method is for profiling.
-        """
-        indices = np.where(np.isnan(self.current_grads))[0]
-        if len(indices) == 0:
-            return self.max_relaxation
-        else:
-            return indices[0]
 
     def is_setting_complete(self):
         return all_true(self.has_settings)
@@ -92,9 +79,10 @@ class Simulator(ut.HasMeta):
         self.has_settings['has_potential'] = True
         return self
 
-    def schedule(self, max_relaxation, descent_curve_stride):
+    def schedule(self, max_relaxation, descent_curve_stride, cal_energy=False):
         self.max_relaxation = int(max_relaxation)
         self.descent_curve_stride = int(descent_curve_stride)
+        self.if_cal_energy = cal_energy
         self.has_settings['has_schedule'] = True
         return self
 
@@ -106,7 +94,7 @@ class Simulator(ut.HasMeta):
     def fetchData(self, grads):
         return {
             'configuration': self.state.xyt3d(),
-            'descent_curve': grads[::self.descent_curve_stride].astype(np.float32),
+            'descent_curve': grads.astype(np.float32),
         }
 
     def save(self, grads):
@@ -116,8 +104,7 @@ class Simulator(ut.HasMeta):
         assert self.is_setting_complete()
         self.create_dataset()
         try:
-            self.current_grads = self.state.initAsDisks(self.max_relaxation, default.step_size)
-            self.save(self.current_grads * default.step_size)
+            self.state.initAsDisks()
             for i in range(default.max_compress_turns):
                 if self.state.phi > default.terminal_phi: break
                 self.state.boundary.compress(i)
@@ -133,25 +120,27 @@ class Simulator(ut.HasMeta):
         :return: current speed. Unit: it/s.
         All black magics for gradient descent should be here.
         """
-        start_t = time.perf_counter()
-        self.current_grads = np.full((self.max_relaxation,), np.nan)
-        part_length = self.max_relaxation // 200
-        for i in range(200):
-            self.current_step_size = findBestStepsize(
-                self.state, default.max_step_size, default.step_size_searching_samples
-            )
-            grads, n = self.state.equilibrium(part_length, self.current_step_size)
-            self.current_grads[part_length * i:part_length * (i + 1)] = grads * self.current_step_size
-            if grads[n] < self.state.min_grad: break
-        end_t = time.perf_counter()
-        elapse_t = end_t - start_t
-        return self.current_relaxations / elapse_t
+        with ut.Timer() as timer:
+            self.current_grads = np.full((self.max_relaxation // self.descent_curve_stride,), np.nan)
+            part_iterations = self.max_relaxation // 200
+            part_length = part_iterations // self.descent_curve_stride
+            for i in range(200):
+                self.current_step_size = findBestStepsize(
+                    self.state, default.max_step_size, default.step_size_searching_samples
+                )
+                self.current_relaxations = ge_array, final_ge = self.state.equilibrium(
+                    self.current_step_size, part_iterations, self.descent_curve_stride, self.if_cal_energy
+                )
+                self.current_grads[part_length * i:part_length * (i + 1)] = ge_array * self.current_step_size
+                if final_ge < self.state.min_grad:
+                    break
+        return self.current_relaxations / timer.elapse_t
 
 
 def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
     return (Simulator.fromPackingFractionPhi(N, n, d, phi0, Gamma0)
             .setCompressMethod(compress_func_A, compress_func_B, default.max_compress)
-            .schedule(default.max_relaxation, default.descent_curve_stride)
+            .schedule(default.max_relaxation, default.descent_curve_stride, default.if_cal_energy)
             )
 
 

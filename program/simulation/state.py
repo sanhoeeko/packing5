@@ -10,7 +10,7 @@ from .potential import Potential
 
 class State(ut.HasMeta):
     meta_hint = "N: i4, A: f4, B: f4, gamma: f4, rho: f4, phi: f4, energy: f4, gradient_amp: f4"
-    min_grad = 0.01
+    min_grad = 1e-2  # Used in `Simulator` class, `equilibrium` method
 
     def __init__(self, N: int, n: int, d: float, A: float, B: float, configuration: np.ndarray):
         super().__init__()
@@ -91,32 +91,51 @@ class State(ut.HasMeta):
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4) / np.sqrt(self.N)
         if np.isnan(g) or np.isinf(g):
             raise ValueError("NAN detected in gradient!")
-        if g > State.min_grad:
-            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.N, np.float32(step_size) / g)
+        ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.N, np.float32(step_size) / g)
         self.clear_dependency()
         return np.float32(g)
 
-    def initAsDisks(self,  n_steps: int, step_size: float):
-        grads = np.full((n_steps,), np.nan)
-        self.setOptimizer(0, 0, 1, True)
-        for t in range(int(n_steps)):
-            grad = self.descent(self.optimizer.calGradient(), step_size)
-            grads[t] = grad
-            if grad <= State.min_grad: break
-        return grads
+    def initAsDisks(self) -> (np.float32, np.float32):
+        """
+        All parameters in this method like `n_steps` and `step_size` cannot be changed.
+        :return: (final gradient amplitude, final energy)
+        """
+        min_grad_init = 1e-3
+        step_size_init = 1e-3
+        n_steps_init = int(1e5)
 
-    def equilibrium(self, n_steps: int, step_size: float) -> (np.ndarray, int):
+        self.setOptimizer(0, 0, 1, True)
+        gradient_amp = 0
+        for t in range(n_steps_init):
+            gradient_amp = self.descent(self.optimizer.calGradient(), step_size_init)
+            if gradient_amp <= min_grad_init: break
+        energy = self.CalEnergy_pure()
+        return gradient_amp, energy
+
+    def equilibrium(self, step_size: float, n_steps: int, stride: int, cal_energy=True) \
+            -> (int, np.ndarray, np.float32):
         """
-        :return: (gradient amplitudes, number of iterations)
+        :return:
+        if cal_energy:
+            (relaxations_steps, energy curve, final energy)
+        else:
+            (relaxations_steps, gradient amplitudes, final gradient amplitude)
         """
-        grads = np.full((n_steps,), np.float32(np.nan))
+        ge_array = np.full((n_steps // stride,), np.float32(np.nan))
+        current_ge = 0
+
         self.setOptimizer(0, 0.9, 1, False)
         for t in range(int(n_steps)):
             grad = self.descent(self.optimizer.calGradient(), step_size)
-            grads[t] = grad
+            if t % stride == 0:
+                if cal_energy:
+                    current_ge = self.CalEnergy_pure()
+                else:
+                    current_ge = grad
+                ge_array[t // stride] = current_ge
             if grad <= State.min_grad:
-                return grads, t
-        return grads, n_steps - 1
+                return t, ge_array, current_ge
+        return n_steps, ge_array, current_ge
 
     def CalGradient_pure(self) -> ut.CArray:
         """

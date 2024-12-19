@@ -42,9 +42,11 @@ class Voronoi:
         return indices, output.data[:n_edges]
 
     def true_delaunay(self):
+        from .orders import Delaunay
         return Delaunay(False, *self.delaunay_template(ker.dll.trueDelaunay))
 
     def weighted_delaunay(self):
+        from .orders import Delaunay
         return Delaunay(True, *self.delaunay_template(ker.dll.weightedDelaunay))
 
     def delaunay(self, weighted: bool):
@@ -54,7 +56,11 @@ class Voronoi:
             return self.true_delaunay()
 
 
-class Delaunay:
+class DelaunayBase:
+    """
+    Inherited by orders.Delaunay. This class provides interaction with cpp.
+    """
+
     def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray):
         self.weighted = weighted
         self.indices = indices
@@ -66,16 +72,16 @@ class Delaunay:
         ker.dll.sumOverWeights(self.num_edges, self.num_rods, self.indices.ptr,
                                self.edges.ptr, self.weights.ptr, self.weight_sums.ptr)
 
-    def z_number(self, arg=None):
+    def z_number(self, arg=None) -> np.ndarray:
         if self.weighted:
             result = ut.CArrayFZeros((self.num_rods,))
             one_weights = ut.CArray(np.ones((self.num_edges,), dtype=np.float32))
             ker.dll.sumOverWeights(
                 self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, one_weights.ptr, result.ptr
             )
-            return result
+            return result.data.copy()
         else:
-            return self.weight_sums
+            return self.weight_sums.data.copy()
 
     def phi_p(self, p: int, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         """
@@ -88,18 +94,6 @@ class Delaunay:
         z_p.data *= self.weights.data
         ker.dll.sumComplex(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, z_p.ptr, Phi.ptr)
         return Phi.data / self.weight_sums.data
-
-    def Phi6Complex(self, xyt: ut.CArray) -> np.ndarray[np.complex64]:
-        return self.phi_p(6, xyt)
-
-    def Phi4Complex(self, xyt: ut.CArray) -> np.ndarray[np.complex64]:
-        return self.phi_p(4, xyt)
-
-    def Phi6(self, xyt: ut.CArray) -> np.ndarray:
-        return np.abs(self.phi_p(6, xyt))
-
-    def Phi4(self, xyt: ut.CArray) -> np.ndarray:
-        return np.abs(self.phi_p(4, xyt))
 
     def phi_p_ellipse(self, p: int, gamma: float, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         pass
@@ -135,19 +129,3 @@ class Delaunay:
             sum_ux.data *= self.weights.data
             sum_uy.data *= self.weights.data
         return sum_ux, sum_uy
-
-    def S_local(self, xyt: ut.CArray) -> np.ndarray:
-        """
-        Use the director as the eigenvector of Q-tensor, then S_local is the eigenvalue.
-        """
-        sum_ux, sum_uy = self.Q_tensor(xyt)
-        S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return S.data / (self.weight_sums.data + 1)
-
-    def director_angle(self, xyt: ut.CArray) -> np.ndarray:
-        """
-        Calculate the director as the eigenvector of Q-tensor.
-        """
-        sum_ux, sum_uy = self.Q_tensor(xyt)
-        S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return np.atan2(sum_uy, sum_ux + S)

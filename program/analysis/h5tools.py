@@ -51,8 +51,8 @@ def dict_to_analysis_hdf5(file_name: str, data_dict: dict):
         for key, value in data_dict.items():
             if isinstance(value, tuple):
                 group = hdf5_file.create_group(key)
-                group.create_dataset('mean', data=value[0], dtype=np.float32)
-                group.create_dataset('ci', data=value[1], dtype=np.float32)
+                group.create_dataset('mean', data=value[0].astype(np.float32), dtype=np.float32)
+                group.create_dataset('ci', data=value[1].astype(np.float32), dtype=np.float32)
             else:
                 hdf5_file.create_dataset(key, data=value, dtype=np.float32)
 

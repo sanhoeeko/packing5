@@ -95,6 +95,16 @@ class HasMeta:
         return np.array([tuple(values)], dtype=self.dtype)
 
 
+class Timer:
+    def __enter__(self):
+        self.start_t = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end_t = time.perf_counter()
+        self.elapse_t = self.end_t - self.start_t
+
+
 class Profile:
     def __init__(self, output_file: str):
         self.file_name = output_file

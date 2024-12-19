@@ -69,3 +69,39 @@ def struct_to_dict(arr: np.ndarray):
         if type(values[i]) is bytes:
             values[i] = values[i].decode('utf-8')
     return dict(zip(fields, values))
+
+
+def dict_to_struct_array(dic: dict) -> np.ndarray:
+    """
+    Assume that all fields in the struct array / dict are 'f4'.
+    """
+
+    def get_shape(obj):
+        if isinstance(obj, (list, tuple)):
+            return get_shape(obj[0])
+        elif isinstance(obj, dict):
+            return get_shape(next(iter(obj.values())))
+        else:
+            return obj.shape
+
+    field_names = list(dic.keys())
+    dtype = [(name, 'f4') for name in field_names]
+    shape = get_shape(dic)
+    structured_array = np.zeros(shape, dtype=dtype)
+    for name in field_names:
+        structured_array[name] = dic[name]
+    return structured_array
+
+
+def apply_struct(func, *args, **kwargs):
+    """
+    :param func: numpy function. e.g., np.mean, np.abs , ...
+    :return: a wrapped function for structured array
+    """
+
+    def inner(arr) -> np.ndarray:
+        field_names = arr.dtype.names
+        dic = {name: func(arr[name], *args, **kwargs) for name in field_names}
+        return dict_to_struct_array(dic)
+
+    return inner
