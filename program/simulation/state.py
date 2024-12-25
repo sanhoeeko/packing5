@@ -68,8 +68,9 @@ class State(ut.HasMeta):
         self.gradient.potential = potential
         return self
 
-    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool):
-        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks)
+    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float,
+                     as_disks: bool, anneal_factor: float = 1):
+        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks, anneal_factor)
         self.optimizer.init()
         return self
 
@@ -110,9 +111,10 @@ class State(ut.HasMeta):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size_init)
             if gradient_amp <= min_grad_init: break
         energy = self.CalEnergy_pure()
+        self.optimizer = None  # detach optimizer
         return gradient_amp, energy
 
-    def equilibrium(self, step_size: float, n_steps: int, stride: int, noise_factor: float, cal_energy=False) \
+    def equilibrium(self, step_size: float, n_steps: int, stride: int, cal_energy=False) \
             -> (int, np.ndarray, np.float32):
         """
         :return:
@@ -124,10 +126,9 @@ class State(ut.HasMeta):
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         grad = 0
 
-        self.setOptimizer(noise_factor, 0.9, 1, False)
+        self.setOptimizer(10.0, 0, 1, False, anneal_factor=0.999)
         for t in range(int(n_steps)):
             grad = self.descent(self.optimizer.calGradient(), step_size)
-            # self.optimizer.anneal(0.99)
             if t % stride == 0:
                 if cal_energy:
                     current_ge = self.CalEnergy_pure()
@@ -143,7 +144,9 @@ class State(ut.HasMeta):
         For class State, most methods are impure that leaves some caches.
         The method is pure and returns a gradient CArray.
         """
-        gradient = self.optimizer.calGradient()
+        self.grid.gridLocate()
+        self.gradient.calGradient()
+        gradient = self.gradient.sum.g()
         self.clear_dependency()
         return gradient
 

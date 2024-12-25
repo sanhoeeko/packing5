@@ -121,7 +121,6 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            noise_factor = 0.4
             self.current_ge = np.full((self.max_relaxation // self.descent_curve_stride,), np.nan)
             part_iterations = self.max_relaxation // self.epochs
             part_length = part_iterations // self.descent_curve_stride
@@ -130,9 +129,8 @@ class Simulator(ut.HasMeta):
                     self.state, default.max_step_size, default.step_size_searching_samples
                 )
                 self.current_relaxations, final_grad, ge_array = self.state.equilibrium(
-                    self.current_step_size, part_iterations, self.descent_curve_stride, noise_factor, self.if_cal_energy
+                    self.current_step_size, part_iterations, self.descent_curve_stride, self.if_cal_energy
                 )
-                noise_factor *= 0.95
                 if self.if_cal_energy:
                     self.current_ge[part_length * i:part_length * (i + 1)] = ge_array
                 else:
@@ -151,9 +149,9 @@ def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
 
 def testSingleThread(profile=True):
     N = 1000
-    n = 3
-    d = 0.05
-    phi0 = 0.4
+    n = 5
+    d = 0.025
+    phi0 = 0.5
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
     compress_func_B = boundary.RatioCompress(0.001)

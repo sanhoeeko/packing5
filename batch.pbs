@@ -8,5 +8,6 @@
 
 hostname
 date "+%Y/%m/%d %H:%M:%S"
+cd /home/gengjie/packing5
 bash run.sh
 date "+%Y/%m/%d %H:%M:%S"
