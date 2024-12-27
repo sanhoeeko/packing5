@@ -111,11 +111,9 @@ class State(ut.HasMeta):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size_init)
             if gradient_amp <= min_grad_init: break
         energy = self.CalEnergy_pure()
-        self.optimizer = None  # detach optimizer
         return gradient_amp, energy
 
-    def equilibrium(self, step_size: float, n_steps: int, stride: int, cal_energy=False) \
-            -> (int, np.ndarray, np.float32):
+    def relax(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
         """
         :return:
         if cal_energy:
@@ -124,20 +122,54 @@ class State(ut.HasMeta):
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
-        grad = 0
+        gradient_amp = 0
 
         self.setOptimizer(10.0, 0, 1, False, anneal_factor=0.999)
         for t in range(int(n_steps)):
-            grad = self.descent(self.optimizer.calGradient(), step_size)
+            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
             if t % stride == 0:
                 if cal_energy:
                     current_ge = self.CalEnergy_pure()
                 else:
-                    current_ge = grad
+                    current_ge = gradient_amp
                 ge_array[t // stride] = current_ge
-            if grad <= State.min_grad:
-                return t, grad, ge_array
-        return n_steps, grad, ge_array
+            if gradient_amp <= State.min_grad:
+                return t, gradient_amp, ge_array
+        return n_steps, gradient_amp, ge_array
+
+    def fineRelax(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
+        min_grad_init = 1e-3
+
+        ge_array = np.full((n_steps // stride,), np.float32(np.nan))
+        gradient_amp = 0
+
+        self.setOptimizer(0, 0, 1, True)
+        for t in range(n_steps):
+            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
+            if t % stride == 0:
+                if cal_energy:
+                    current_ge = self.CalEnergy_pure()
+                else:
+                    current_ge = gradient_amp
+                ge_array[t // stride] = current_ge
+            if gradient_amp <= min_grad_init:
+                return t, gradient_amp, ge_array
+        return n_steps, gradient_amp, ge_array
+
+    # def fineRelax(self) -> (np.float32, np.float32):
+    #     """
+    #     Relax near the minimum. Call scipy algorithms.
+    #     :return: (final gradient amplitude, final energy)
+    #     """
+    #     agent = GEAgent(self)
+    #     opt_result = opt.minimize(fun=agent.energy_func, x0=self.xyt.data[:, :3].reshape(-1),
+    #                               method='TNC', jac=agent.gradient_func)
+    #     print(opt_result)
+    #     self.xyt.set_data(agent.convert_3N_array_to_4N_matrix(opt_result.x))
+    #     final_grad = self.CalGradient_pure()
+    #     final_grad_amp = ker.dll.FastNorm(final_grad.ptr, self.N * 4) / np.sqrt(self.N)
+    #     final_energy = self.CalEnergy_pure()
+    #     return final_grad_amp, final_energy
 
     def CalGradient_pure(self) -> ut.CArray:
         """
@@ -176,3 +208,41 @@ def randomConfiguration(N: int, A: float, B: float):
     xyt[:, 1] = r * np.sin(phi) * B
     xyt[:, 2] = np.random.rand(N) * np.pi
     return xyt
+
+
+class GEAgent:
+    def __init__(self, state: State):
+        self.state = state.copy(train=True)
+        self.N = state.N
+        self.N_void = np.zeros((self.N, 1), dtype=np.float32)
+        self.x_cache = None
+        self.g_cache = None
+        self.E_cache = None
+
+    def convert_3N_array_to_4N_matrix(self, x) -> np.ndarray:
+        X = x.reshape(self.N, 3)
+        return np.hstack([X, self.N_void])
+
+    def compute(self, x: np.ndarray):
+        """
+        :param x: 1d array: xyt.reshape(-1)
+        """
+        self.x_cache = x  # exactly the same object as x
+        self.state.xyt.set_data(self.convert_3N_array_to_4N_matrix(x))
+        self.state.grid.gridLocate()
+        self.state.gradient.calGradientAndEnergy()
+        self.g_cache, self.E_cache = self.state.gradient.sum.gE()
+        self.state.clear_dependency()
+
+    def gradient_func(self, x: np.ndarray) -> np.ndarray:
+        """
+        :return: (3 * N,) array
+        """
+        if self.x_cache is None or not np.array_equal(x, self.x_cache):
+            self.compute(x)
+        return self.g_cache.data[:, :3].reshape(-1)
+
+    def energy_func(self, x: np.ndarray) -> np.float32:
+        if self.x_cache is None or not np.array_equal(x, self.x_cache):
+            self.compute(x)
+        return self.E_cache

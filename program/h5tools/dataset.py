@@ -121,14 +121,16 @@ def package_simulations_cwd_once(file_name='data.h5', summary_table_name='simula
     # write to disk
     ht.write_dict_to_hdf5(file_name, dic)
 
-    # clear (unsafe)
-    # for file in h5_files:
-    #     os.remove(file)
     return [file.split('\\')[-1] for file in h5_files]  # return file names
 
 
 def package_simulations_cwd(file_name='data.h5'):
-    temp_file_name = 'temp01.h5'
-    h5_files = package_simulations_cwd_once(temp_file_name, 'simulation_table')
-    package_simulations_cwd_once(file_name, 'shape_table', excluding=h5_files)
-    os.remove(temp_file_name)
+    if os.path.exists(file_name):
+        raise FileExistsError('Target file already exists!')
+    temp_file_name_1 = 'temp01.h5'
+    temp_file_name_2 = 'temp02.h5'
+    h5_files = package_simulations_cwd_once(temp_file_name_1, 'simulation_table')
+    package_simulations_cwd_once(temp_file_name_2, 'shape_table', excluding=h5_files)
+    ht.compress_hdf5_file(temp_file_name_2, file_name)
+    os.remove(temp_file_name_1)
+    os.remove(temp_file_name_2)

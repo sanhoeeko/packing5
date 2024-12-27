@@ -69,6 +69,11 @@ class GradientSum:
         self.g()
         return np.sum(self.data[:, 3])
 
+    def gE(self) -> (ut.CArray, np.float32):
+        g = self.g()
+        E = np.sum(self.data[:, 3])
+        return g, E
+
 
 class Optimizer:
     def __init__(self, state, noise_factor: float, momentum_beta: float, stochastic_p: float,
