@@ -8,9 +8,9 @@ from analysis.analysis import *
 if __name__ == '__main__':
 
     db = Database('data.h5')
-    checkEnergy(db)
+    # checkGradient(db)
     # calAllOrderParameters(db, 'rho')
-    # InteractiveViewer(db.simulation_at(0, 0), RenderSetup('S_local', False, 'default', True)).show()
+    InteractiveViewer(db.simulation_at(0, 0), RenderSetup('S_local', False, 'default', True)).show()
     # checkDescentCurveAt(db, 0, 0)
 
     # db = AnalysisData('analysis.h5')

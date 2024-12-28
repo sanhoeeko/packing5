@@ -121,9 +121,8 @@ class Simulator(ut.HasMeta):
         """
         with ut.Timer() as timer:
             if self.state.CalEnergy_pure() < 100:
-                relaxations_1, _, _ = self.state.relax(
-                    0.005, 10000, self.descent_curve_stride, self.if_cal_energy
-                )
+                self.state.brown(1e-3, 10000, 1000)
+                relaxations_1 = 10000
             else:
                 relaxations_1 = 0
 
@@ -131,7 +130,7 @@ class Simulator(ut.HasMeta):
                 self.state, default.max_step_size, default.step_size_searching_samples
             )
             relaxations_2, final_grad, ge_array_2 = self.state.fineRelax(
-                self.current_step_size * 0.1, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
+                self.current_step_size, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
             )
 
             self.current_relaxations = relaxations_1 + relaxations_2
@@ -147,10 +146,10 @@ def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
 
 
 def testSingleThread(profile=True):
-    N = 1000
+    N = 200
     n = 5
     d = 0.025
-    phi0 = 0.5
+    phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
     compress_func_B = boundary.RatioCompress(0.001)
