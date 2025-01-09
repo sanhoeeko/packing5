@@ -5,9 +5,8 @@ import numpy as np
 import default
 import simulation.utils as ut
 from h5tools.dataset import SimulationData
-from h5tools.utils import randomString
-from . import boundary, stepsize
-from .potential import Potential, PowerFunc
+from . import stepsize
+from .potential import Potential
 from .state import State
 
 
@@ -23,14 +22,17 @@ class Simulator(ut.HasMeta):
     meta_hint = ("id: S4, N: i4, n: i4, d: f4, gamma: f4, A0: f4, B0: f4, rho0: f4, phi0: f4, "
                  "potential_shape: S32, potential_scalar: S32, if_cal_energy: i4")
 
-    def __init__(self, N: int, n: int, d: float, A0: float, B0: float):
+    def __init__(self, Id: str, N: int, n: int, d: float, A0: float, B0: float):
+        """
+        :param id0x: Given by Ensemble.
+        """
         super().__init__()
         self.has_settings = settings()
         self.N = N
         self.n = n
         self.d = d
         self.A0, self.B0 = A0, B0
-        self.id = randomString()
+        self.id = Id
         self.state = State.random(N, n, d, A0, B0).train()
 
         # derived properties
@@ -60,18 +62,18 @@ class Simulator(ut.HasMeta):
 
     @classmethod
     def loadState(cls, s: State, potential: Potential, state_id: str = None):
-        obj = cls(s.N, s.n, s.d, s.A, s.B)
+        obj = cls(None, s.N, s.n, s.d, s.A, s.B)
         obj.state = s.copy()
         if state_id is not None:
             obj.id = state_id
         return obj.setPotential(potential)
 
     @classmethod
-    def fromPackingFractionPhi(cls, N: int, n: int, d: float, phi0: float, Gamma0: float):
+    def fromPackingFractionPhi(cls, Id: str, N: int, n: int, d: float, phi0: float, Gamma0: float):
         gamma = 1 + (n - 1) * d / 2
         B = np.sqrt(N * (np.pi + 4 * (gamma - 1)) / (np.pi * Gamma0 * phi0)) / gamma
         A = Gamma0 * B
-        return cls(N, n, d, A, B)
+        return cls(Id, N, n, d, A, B)
 
     def setPotential(self, potential: Potential):
         self.state.setPotential(potential)
@@ -121,46 +123,24 @@ class Simulator(ut.HasMeta):
         """
         with ut.Timer() as timer:
             if self.state.CalEnergy_pure() < 100:
-                self.state.brown(1e-3, 10000, 1000)
-                relaxations_1 = 10000
+                self.state.brown(4e-4, default.max_pre_relaxation, 1000)
             else:
-                relaxations_1 = 0
+                self.state.sgd(4e-4, default.max_pre_relaxation)
 
             self.current_step_size = stepsize.findBestStepsize(
                 self.state, default.max_step_size, default.step_size_searching_samples
             )
             relaxations_2, final_grad, ge_array_2 = self.state.fineRelax(
-                self.current_step_size, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
+                self.current_step_size * 0.02, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
             )
 
-            self.current_relaxations = relaxations_1 + relaxations_2
+            self.current_relaxations = default.max_pre_relaxation + relaxations_2
             self.current_ge = ge_array_2
         return self.current_relaxations / timer.elapse_t
 
 
-def createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
-    return (Simulator.fromPackingFractionPhi(N, n, d, phi0, Gamma0)
+def createSimulator(Id: str, N, n, d, phi0, Gamma0, compress_func_A, compress_func_B):
+    return (Simulator.fromPackingFractionPhi(Id, N, n, d, phi0, Gamma0)
             .setCompressMethod(compress_func_A, compress_func_B, default.max_compress)
             .schedule(default.max_relaxation, default.descent_curve_stride, default.if_cal_energy)
             )
-
-
-def testSingleThread(profile=True):
-    N = 200
-    n = 5
-    d = 0.025
-    phi0 = 0.7
-    Gamma0 = 1
-    compress_func_A = boundary.NoCompress()
-    compress_func_B = boundary.RatioCompress(0.001)
-    ex = createSimulator(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B)
-    ex.setPotential(Potential(n, d, PowerFunc(2.5)))
-    ex.state.gradient.potential.cal_potential(4)
-    if profile:
-        with ut.Profile('../main.prof'):
-            try:
-                ex.execute()
-            except KeyboardInterrupt:
-                pass  # terminate the simulation and collect profiling data
-    else:
-        ex.execute()

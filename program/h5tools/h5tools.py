@@ -1,3 +1,6 @@
+import glob
+import re
+
 import h5py
 import numpy as np
 
@@ -58,70 +61,6 @@ def write_metadata_to_hdf5(hdf5_filename: str, metadata: dict):
             f.attrs[key] = value
 
 
-def merge_dicts(dict_list: list[dict]):
-    """
-    Merges a list of dictionaries into a single dictionary. If multiple dictionaries have the same key:
-    1. If the values are all np.ndarray, they are concatenated along a new axis (axis=0).
-    2. If any value is not a np.ndarray, they are packed into a list as the new value.
-
-    Parameters:
-    dict_list (list of dict): List of dictionaries to be merged.
-
-    Returns:
-    dict: A merged dictionary with combined values.
-    """
-    merged_dict = {}
-    arrays_to_stack = {}
-
-    for d in dict_list:
-        for key, value in d.items():
-            if key in merged_dict:
-                if isinstance(value, np.ndarray) and isinstance(merged_dict[key], np.ndarray):
-                    # Collect arrays to stack later
-                    if key not in arrays_to_stack:
-                        arrays_to_stack[key] = [merged_dict[key]]
-                    arrays_to_stack[key].append(value)
-                else:
-                    # Pack non-np.ndarray values into a list
-                    if not isinstance(merged_dict[key], list):
-                        merged_dict[key] = [merged_dict[key]]
-                    merged_dict[key].append(value)
-            else:
-                # Add new key-value pair to the merged dictionary
-                merged_dict[key] = value
-                if isinstance(value, np.ndarray):
-                    arrays_to_stack[key] = [value]
-
-    # Stack collected arrays and update the merged dictionary
-    for key, arrays in arrays_to_stack.items():
-        merged_dict[key] = stack_and_fill_nan(arrays)
-
-    return merged_dict
-
-
-def stack_and_fill_nan(matrices: list[np.ndarray]):
-    """
-    Stack a list of matrices along a new dimension and fill with NaN.
-
-    Parameters:
-    matrices (list of np.ndarray): List of matrices, which may have misaligned dimensions.
-
-    Returns:
-    np.ndarray: Stacked matrices with NaN filling.
-    """
-    # Find the maximum size for each dimension
-    max_shape = tuple(max(s) for s in zip(*[m.shape for m in matrices]))
-
-    # Create a new dataset filled with NaN
-    stacked_data = np.full((len(matrices), *max_shape), invalid_value_of(matrices[0]))
-
-    for i, matrix in enumerate(matrices):
-        slices = tuple(slice(0, s) for s in matrix.shape)
-        stacked_data[i][slices] = matrix
-
-    return stacked_data
-
-
 def invalid_value_of(array: np.ndarray):
     if array.dtype.fields is not None:
         return _get_struct_invalid_value(array.dtype)
@@ -152,6 +91,69 @@ def _get_invalid_value(field_type):
         return '*' * field_type.itemsize
     else:
         raise ValueError(f"Unsupported field type: {field_type}")
+
+
+def numerical_sort(value):
+    parts = re.split(r'(\d+)', value)
+    return [int(text) if text.isdigit() else text for text in parts]
+
+
+def stack_h5_datasets(ensemble_id: str):
+    file_pattern = f'{ensemble_id}_*.h5'
+    output_file = f'{ensemble_id}.h5'
+
+    # Find all files matching the pattern
+    files = sorted(glob.glob(file_pattern), key=numerical_sort)
+
+    if not files:
+        raise FileNotFoundError(f"No files matching the pattern {file_pattern} found.")
+
+    # Create the new file
+    with h5py.File(output_file, 'w') as f_out:
+        # Copy datasets and add a new dimension
+        for file in files:
+            with h5py.File(file, 'r') as f:
+                for key, data in f.items():
+                    if key not in f_out:
+                        # Initialize dataset with a new dimension
+                        shape = (len(files),) + data.shape
+                        maxshape = (None,) + data.shape
+                        f_out.create_dataset(key, shape=shape, maxshape=maxshape, dtype=f[key].dtype, chunks=True)
+                    # Insert data into the appropriate slice
+                    f_out[key][files.index(file), ...] = data[:]
+
+        # Copy all attributes from the first file to the new file
+        with h5py.File(files[0], 'r') as f_first:
+            for key, value in f_first.attrs.items():
+                f_out.attrs[key] = value
+
+
+def pack_h5_files(files: list[str], output_filename: str):
+    def copy_item(group, name, obj):
+        # Copy datasets and attributes
+        if isinstance(obj, h5py.Dataset):
+            # Copy dataset
+            group.create_dataset(name, data=obj[:])
+        elif isinstance(obj, h5py.Group):
+            # Recursively copy group
+            sub_group = group.create_group(name)
+            for sub_name, sub_obj in obj.items():
+                copy_item(sub_group, sub_name, sub_obj)
+        # Copy attributes
+        for key, value in obj.attrs.items():
+            group[name].attrs[key] = value
+
+    with h5py.File(output_filename, 'w') as f_out:
+        for file in files:
+            group_name = file.split('.')[0]
+            with h5py.File(file, 'r') as f_in:
+                # Create a group in the output file named after the original file path
+                group = f_out.create_group(group_name)
+                for name, obj in f_in.items():
+                    copy_item(group, name, obj)
+                # Copy attributes
+                for key, value in f_in.attrs.items():
+                    group.attrs[key] = value
 
 
 def compress_hdf5_file(input_file: str, output_file: str, compression='gzip', compression_opts=9):

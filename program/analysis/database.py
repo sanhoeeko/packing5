@@ -1,68 +1,58 @@
 """
 analysis.database: Data Access Layer
 """
-
+import h5py
 import numpy as np
 
 from simulation.state import State
 from . import utils as ut
-from .h5tools import LazyArray, read_hdf5_to_dict_lazy, struct_array_to_dataframe
+from .h5tools import extract_metadata
 
 
-class DatabaseBase:
-    def __init__(self, dic: dict):
-        # state_table summary each state in a struct scalar: 3 dim
-        self.state_table: np.ndarray = dic['state_table']
-
-        self.simulation_table: np.ndarray = dic['simulation_table']
-        if 'particle_shape_table' in dic.keys():
-            self.particle_shape_table: np.ndarray = dic['particle_shape_table']
-
-        # shapes
-        self.shape = self.state_table.shape
-        self.m_groups, self.n_parallels, self.l_max_states = self.shape
-
-        self.summary = struct_array_to_dataframe(self.simulation_table)
-
-
-class Database(DatabaseBase):
-    """
-    The first three dimensions of data:
-    1. for the same "external" conditions
-    2. for the same shape of particles
-    3. for one simulation
-    """
-
+class Database:
     def __init__(self, file_name: str):
         self.file_name = file_name
-        dic = read_hdf5_to_dict_lazy(file_name)
-
-        # configuration: 3 + 2 = 5 dim
-        self.configuration: LazyArray = dic['configuration']
-
-        # descent_curve: 3 + 1 = 4 dim
-        self.descent_curve: LazyArray = dic['descent_curve']
-
-        # some metadata
-        super().__init__(dic)
+        self.file = h5py.File(self.file_name, 'r')
+        self.summary = extract_metadata(self.file_name)
+        self.ids = self.summary['id'].tolist()
 
     def __repr__(self):
         return str(self.summary)
 
-    def id(self, state_id: str):
-        try:
-            index = self.summary[self.summary['id'] == state_id].index.tolist()[0]
-        except:
-            raise KeyError("Simulation ID not found!")
-        i = index // self.shape[1]
-        j = index % self.shape[1]
-        return self.simulation_at(i, j)
+    def __getitem__(self, index: int):
+        return self.id(self.ids[index])
 
-    def simulation_at(self, i: int, j: int):
-        return PickledSimulation(
-            self.simulation_table[i, j], self.state_table[i, j, :],
-            self.descent_curve[i, j, :, :], self.configuration[i, j, :, :, :]
-        )
+    def id(self, ensemble_id: str):
+        return PickledEnsemble(self.file[ensemble_id])
+
+    def __iter__(self):
+        for ensemble_id in self.ids:
+            obj = self.id(ensemble_id)
+            yield obj
+            del obj  # Explicitly delete the PickledEnsemble object to release memory
+
+    def apply(self, func):
+        """
+        :param func: function act on an ensemble
+        :return: tuple of lists: [result 1 for ensembles], [result 2 for ensembles], ...
+        """
+        result = list(map(func, self))
+        return tuple(zip(*result))
+
+
+class PickledEnsemble:
+    def __init__(self, h5_group):
+        self.configuration = h5_group['configuration']  # shape: (replica, rho, N, 3)
+        self.descent_curve = h5_group['descent_curve']  # shape: (replica, rho, m)
+        self.state_table = h5_group['state_table']  # struct array, shape: (replica, rho)
+        self.metadata = h5_group.attrs['metadata']
+
+    def __len__(self):
+        return self.state_table.shape[0]
+
+    def simulation_at(self, nth_replica: int):
+        return PickledSimulation(self.metadata, self.state_table[nth_replica], self.descent_curve[nth_replica],
+                                 self.configuration[nth_replica])
 
     def property(self, prop: str) -> np.ndarray:
         """

@@ -92,7 +92,10 @@ class State(ut.HasMeta):
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4) / np.sqrt(self.N)
         if np.isnan(g) or np.isinf(g):
             raise ValueError("NAN detected in gradient!")
-        ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, np.float32(step_size) / g)
+        # this condition is to avoid division by zero
+        if g > 1e-6:
+            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, np.float32(step_size) / g)
+        # always clear dependency. If not, it will cause segment fault.
         self.clear_dependency()
         return np.float32(g)
 
@@ -114,7 +117,7 @@ class State(ut.HasMeta):
         return gradient_amp, energy
 
     def brown(self, step_size: float, n_steps: int, n_samples) -> (int, np.ndarray, np.float32):
-        self.setOptimizer(0.2, 0.5, 1, False)
+        self.setOptimizer(0.2, 0.8, 0.5, False)
         for t in range(int(n_steps)):
             self.descent(self.optimizer.calGradient(), step_size)
         state_pool = np.zeros((n_samples, self.N, 4))
@@ -123,6 +126,11 @@ class State(ut.HasMeta):
             state_pool[t, :, :] = self.xyt.data.copy()
         averaged_state = np.mean(state_pool, axis=0)
         self.xyt.set_data(averaged_state)
+
+    def sgd(self, step_size: float, n_steps) -> (int, np.ndarray, np.float32):
+        self.setOptimizer(0, 0.9, 0.2, False)
+        for t in range(int(n_steps)):
+            self.descent(self.optimizer.calGradient(), step_size)
 
     def fineRelax(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
         """

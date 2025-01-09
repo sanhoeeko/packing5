@@ -1,9 +1,11 @@
-from analysis.database import DatabaseBase
 from art.curves import plotMeanCurvesWithCI
 from .h5tools import read_hdf5_groups_to_dicts
 
 
-class AnalysisData(DatabaseBase):
+class AnalysisData:
+    """
+    This class parses `analysis.h5`
+    """
     def __init__(self, file_name: str):
         self.file_name = file_name
         dic, self.order_parameters = read_hdf5_groups_to_dicts(file_name)

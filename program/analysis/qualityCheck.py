@@ -2,27 +2,27 @@ import numpy as np
 
 from art.art import Figure
 from art.curves import plotMeanCurvesWithCI, plotListOfArray
+from h5tools.utils import flatten
 from .analysis import averageEnergy
-from .database import Database
+from .database import Database, PickledEnsemble
 
 
 def ScalarCurve(x_name: str, y_name: str):
     if y_name == 'state_distance':
-        def inner(db: Database, i: int, j: int) -> (np.ndarray, np.ndarray):
-            return db.property(x_name)[i, j, :-1], db.simulation_at(i, j).stateDistance()
+        def inner(e: PickledEnsemble) -> (np.ndarray, np.ndarray):
+            return [(e.property(x_name)[i, :-1], e.simulation_at(i).stateDistance()) for i in range(len(e))]
     else:
-        def inner(db: Database, i: int, j: int) -> (np.ndarray, np.ndarray):
-            return db.property(x_name)[i, j, :], db.property(y_name)[i, j, :]
+        def inner(e: PickledEnsemble) -> (np.ndarray, np.ndarray):
+            return [(e.property(x_name)[i, :], e.property(y_name)[i, :]) for i in range(len(e))]
 
     return inner
 
 
 def plotCurves(db: Database, x_name: str, y_name: str):
-    curve = ScalarCurve(x_name, y_name)
     with Figure() as fig:
-        for i in range(db.m_groups):
-            for j in range(db.n_parallels):
-                fig.ax.scatter(*curve(db, i, j), s=2)
+        xs_ys = flatten(db.apply(ScalarCurve(x_name, y_name)))
+        for x, y in xs_ys:
+            fig.ax.scatter(x, y, s=2)
 
 
 def checkGradient(db: Database):
@@ -34,8 +34,11 @@ def checkStateDistance(db: Database):
 
 
 def checkEnergy(db: Database):
-    plotMeanCurvesWithCI(*averageEnergy(db, 'phi'), x_label='packing fraction', y_label='energy')
+    plotMeanCurvesWithCI(
+        *db.apply(lambda ensemble: averageEnergy(ensemble, 'phi')),
+        x_label='packing fraction', y_label='energy'
+    )
 
 
 def checkDescentCurveAt(db: Database, i: int, j: int):
-    plotListOfArray(db.simulation_at(i, j).normalizedDescentCurve())
+    plotListOfArray(db[i].simulation_at(j).normalizedDescentCurve())

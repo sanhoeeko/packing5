@@ -86,3 +86,22 @@ def read_hdf5_groups_to_dicts(file_path: str) -> (dict, dict[dict]):
                     # if it is a dataset
                     data_dict[dataset_name] = file[dataset_name][:]
     return data_dict, group_dict
+
+
+def extract_metadata(file_path: str) -> pd.DataFrame:
+    metadata_list = []
+
+    # Open the HDF5 file
+    with h5py.File(file_path, 'r') as f:
+        # Iterate through all groups in the file
+        def collect_metadata(name, obj):
+            if isinstance(obj, h5py.Group):
+                if 'metadata' in obj.attrs:
+                    metadata_list.append(obj.attrs['metadata'])
+
+        f.visititems(collect_metadata)
+
+    # Combine all metadata into a single structured ndarray
+    metadata_array = np.concatenate(metadata_list)
+
+    return struct_array_to_dataframe(metadata_array)

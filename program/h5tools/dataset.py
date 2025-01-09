@@ -1,10 +1,12 @@
 import os
+import re
 import threading
 
 import h5py
 import numpy as np
 
 from . import h5tools as ht
+from .h5tools import pack_h5_files, stack_h5_datasets
 from .utils import randomString
 
 
@@ -40,18 +42,6 @@ class Dataset:
         os.rename(self.file_name, new_file_name)
         self.file_name = new_file_name
 
-    def compress_file(self) -> (int, int):
-        """
-        :return: original_size (KB), compressed_size (KB)
-        """
-        temp_file_name = f"temp_{threading.get_ident()}_{randomString()}.h5"
-        ht.compress_hdf5_file(self.file_name, temp_file_name)
-        original_size = os.path.getsize(self.file_name) // 1024
-        compressed_size = os.path.getsize(temp_file_name) // 1024
-        os.remove(self.file_name)
-        os.rename(temp_file_name, self.file_name)
-        return original_size, compressed_size
-
 
 class SimulationData(Dataset):
     def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], summary_table_name: str,
@@ -68,69 +58,46 @@ class SimulationData(Dataset):
         ht.append_dict_to_hdf5_head(self.file_name, data)
 
 
-class ExperimentData(Dataset):
-    def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], summary_table_name: str):
-        super().__init__(file_name, metadata, summary_dtype, summary_table_name)
+def pack_simulations_cwd(file_name='data.h5'):
+    pattern = re.compile(r'^(.*?)_\d+\.h5$')
 
-    def write(self, data: dict):
-        ht.write_dict_to_hdf5(self.file_name, data)
+    def get_ensemble_names(files):
+        res = []
+        for file in files:
+            match = pattern.match(file)
+            if match: res.append(match.group(1))
+        return set(res)
 
-
-def package_simulations_into_experiment(
-        file_name: str,
-        summary_table_name: str,
-        experiment_metadata: np.ndarray,
-        simulations: list[Dataset]) -> ExperimentData:
-    """
-    This function creates an integrated HDF5 file, but does not destroy old files.
-    """
-
-    # create ExperimentData object
-    experiment_data = ExperimentData(file_name, experiment_metadata, None, None)
-
-    # collect data
-    dic = ht.merge_dicts([s.read_data() for s in simulations])
-
-    # collect metadata
-    metadata_list = np.array([s.read_metadata() for s in simulations])
-    dic[summary_table_name] = metadata_list
-
-    # write to disk
-    experiment_data.write(dic)
-    return experiment_data
-
-
-def package_simulations_cwd_once(file_name='data.h5', summary_table_name='simulation_table', excluding=None):
-    # collect h5 files
-    if excluding is None: excluding = []
-    folder = os.getcwd()
-    files = os.listdir(folder)
-    h5_files = [os.path.abspath(os.path.join(folder, file)) for file in files if
-                file.endswith('.h5') and file not in ['data.h5', file_name] + excluding]
-
-    # collect data
-    dic = ht.merge_dicts([ht.read_hdf5_to_dict(file) for file in h5_files])
-
-    # collect metadata
-    try:
-        metadata_list = np.array([ht.read_metadata_to_struct(file) for file in h5_files])
-        dic[summary_table_name] = metadata_list
-    except:
-        pass  # If there is no metadata
-
-    # write to disk
-    ht.write_dict_to_hdf5(file_name, dic)
-
-    return [file.split('\\')[-1] for file in h5_files]  # return file names
-
-
-def package_simulations_cwd(file_name='data.h5'):
     if os.path.exists(file_name):
         raise FileExistsError('Target file already exists!')
-    temp_file_name_1 = 'temp01.h5'
-    temp_file_name_2 = 'temp02.h5'
-    h5_files = package_simulations_cwd_once(temp_file_name_1, 'simulation_table')
-    package_simulations_cwd_once(temp_file_name_2, 'shape_table', excluding=h5_files)
-    ht.compress_hdf5_file(temp_file_name_2, file_name)
-    os.remove(temp_file_name_1)
-    os.remove(temp_file_name_2)
+
+    # pack into ensembles
+    files = [file for file in os.listdir() if pattern.match(file)]
+    ensemble_ids = get_ensemble_names(files)
+    for eid in ensemble_ids:
+        stack_h5_datasets(eid)
+    for file in files: os.remove(file)
+
+    # pack into single file
+    files = [file for file in os.listdir() if file.endswith('.h5')]
+    pack_h5_files(files, file_name)
+    for file in files: os.remove(file)
+    compress_file(file_name)
+
+
+def auto_pack():
+    if not os.path.exists('data.h5'):
+        pack_simulations_cwd()
+
+
+def compress_file(file_name) -> (int, int):
+    """
+    :return: original_size (KB), compressed_size (KB)
+    """
+    temp_file_name = f"temp_{threading.get_ident()}_{randomString()}.h5"
+    ht.compress_hdf5_file(file_name, temp_file_name)
+    original_size = os.path.getsize(file_name) // 1024
+    compressed_size = os.path.getsize(temp_file_name) // 1024
+    os.remove(file_name)
+    os.rename(temp_file_name, file_name)
+    return original_size, compressed_size

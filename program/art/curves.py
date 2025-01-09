@@ -10,12 +10,12 @@ def plotListOfArray(lst: np.ndarray):
             f.ax.plot(lst[i], color=colors[i], alpha=0.5)
 
 
-def plotMeanCurvesWithCI(x: np.ndarray, y_mean_lst: list[np.ndarray], y_ci_lst: list[np.ndarray],
+def plotMeanCurvesWithCI(x_lst: list[np.ndarray], y_mean_lst: list[np.ndarray], y_ci_lst: list[np.ndarray],
                          x_label='', y_label=''):
-    assert len(y_mean_lst) == len(y_ci_lst)
+    assert len(x_lst) == len(y_mean_lst) == len(y_ci_lst)
     colors = ListColor01('cool', len(y_mean_lst))
     with Figure() as f:
-        for i, (y_mean, y_ci) in enumerate(zip(y_mean_lst, y_ci_lst)):
+        for i, (x, y_mean, y_ci) in enumerate(zip(x_lst, y_mean_lst, y_ci_lst)):
             color = colors[i]
             f.ax.fill_between(x, y_mean - y_ci, y_mean + y_ci, color=color, alpha=0.2)
             f.ax.plot(x, y_mean, color=color)

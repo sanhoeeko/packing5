@@ -7,7 +7,7 @@ if __name__ == '__main__':
         N=1024,
         n=6,
         d=0.05,
-        Gamma0=1,
+        Gamma0=[1, 1.5],
         phi0=0.6,
         compress_func_A=boundary.NoCompress(),
         compress_func_B=boundary.RatioCompress(0.002)
