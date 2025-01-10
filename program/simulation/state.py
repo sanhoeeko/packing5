@@ -1,5 +1,6 @@
 import numpy as np
 
+import default
 from . import utils as ut
 from .boundary import EllipticBoundary
 from .gradient import Optimizer, GradientMatrix
@@ -89,15 +90,16 @@ class State(ut.HasMeta):
         return self.xyt[:, :3].copy()
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
-        g = ker.dll.FastNorm(gradient.ptr, self.N * 4) / np.sqrt(self.N)
+        g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
+        s = np.float32(step_size) / (np.sqrt(g))
         if np.isnan(g) or np.isinf(g):
             raise ValueError("NAN detected in gradient!")
         # this condition is to avoid division by zero
         if g > 1e-6:
-            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, np.float32(step_size) / g)
+            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
         # always clear dependency. If not, it will cause segment fault.
         self.clear_dependency()
-        return np.float32(g)
+        return np.float32(g / np.sqrt(self.N))
 
     def initAsDisks(self) -> (np.float32, np.float32):
         """
@@ -128,11 +130,12 @@ class State(ut.HasMeta):
         self.xyt.set_data(averaged_state)
 
     def sgd(self, step_size: float, n_steps) -> (int, np.ndarray, np.float32):
-        self.setOptimizer(0, 0.9, 0.2, False)
+        self.setOptimizer(0, 0.9, 0.1, False)
         for t in range(int(n_steps)):
             self.descent(self.optimizer.calGradient(), step_size)
 
     def fineRelax(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
+        from simulation import stepsize
         """
         :return:
         if cal_energy:
@@ -140,21 +143,20 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
-        min_grad_init = 1e-3
+        min_grad = 1e-3
 
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         gradient_amp = 0
-        E0 = self.CalEnergy_pure()
 
-        self.setOptimizer(0, 0.5, 1, False)
+        self.setOptimizer(0, 0, 1, False)
         for t in range(n_steps):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
-            energy = self.CalEnergy_pure()
-            if energy / E0 >= 2:
-                step_size *= 0.5
             if t % stride == 0:
-                ge_array[t // stride] = energy if cal_energy else gradient_amp
-            if gradient_amp <= min_grad_init:
+                step_size = 0.1 * stepsize.findGoodStepsize(
+                    self, default.max_step_size, default.step_size_searching_samples
+                )
+                ge_array[t // stride] = self.CalEnergy_pure() if cal_energy else gradient_amp
+            if gradient_amp <= min_grad:
                 return t, gradient_amp, ge_array
         return n_steps, gradient_amp, ge_array
 
@@ -169,10 +171,11 @@ class State(ut.HasMeta):
         self.clear_dependency()
         return gradient
 
-    def CalGradientNormalized_pure(self) -> ut.CArray:
+    def CalGradientNormalized_pure(self, power=1) -> ut.CArray:
         gradient = self.CalGradient_pure()
-        g = ker.dll.FastNorm(gradient.ptr, self.N * 4) / np.sqrt(self.N)
-        ker.dll.CwiseMulVector4(gradient.ptr, self.N, np.float32(1) / g)
+        g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
+        s = np.float32(1) / (g ** power / np.sqrt(self.N))
+        ker.dll.CwiseMulVector4(gradient.ptr, self.N, s)
         return gradient
 
     def CalEnergy_pure(self) -> np.float32:

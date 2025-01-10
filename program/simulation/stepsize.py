@@ -17,14 +17,14 @@ def energyScan(s: State, g: ut.CArray, max_stepsize: float, n_samples: int):
 
 
 def findBestStepsize(s: State, max_stepsize: float, n_samples: int) -> np.float32:
-    normalized_gradient = s.CalGradientNormalized_pure()
+    normalized_gradient = s.CalGradientNormalized_pure(0.5)
     xs, ys = energyScan(s, normalized_gradient, max_stepsize, n_samples)
     index = np.argmin(ys)
     return np.float32(xs[index])
 
 
 def findGoodStepsize(s: State, max_stepsize: float, n_samples: int) -> np.float32:
-    normalized_gradient = s.CalGradientNormalized_pure()
+    normalized_gradient = s.CalGradientNormalized_pure(0.5)
     state = s.copy(train=True)
     stepsize = np.float32(max_stepsize)
     energy = state.CalEnergy_pure()

@@ -123,15 +123,12 @@ class Simulator(ut.HasMeta):
         """
         with ut.Timer() as timer:
             if self.state.CalEnergy_pure() < 100:
-                self.state.brown(4e-4, default.max_pre_relaxation, 1000)
+                self.state.brown(1e-3, default.max_pre_relaxation, 1000)
             else:
-                self.state.sgd(4e-4, default.max_pre_relaxation)
+                self.state.sgd(1e-3, default.max_pre_relaxation)
 
-            self.current_step_size = stepsize.findBestStepsize(
-                self.state, default.max_step_size, default.step_size_searching_samples
-            )
             relaxations_2, final_grad, ge_array_2 = self.state.fineRelax(
-                self.current_step_size * 0.02, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
+                1e-4, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
             )
 
             self.current_relaxations = default.max_pre_relaxation + relaxations_2
