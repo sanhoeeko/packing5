@@ -41,6 +41,16 @@ DLLEXPORT void StochasticCalGradientAsDisks(float p, void* p_shape, void* p_stat
 DLLEXPORT void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
     void* p_Gij, void* p_z, int lines, int cols, int N);
 
+DLLEXPORT void* CreateLBFGS(int N, void* configuration_src, void* gradient_src);
+
+DLLEXPORT void DeleteLBFGS(void* ptr);
+
+DLLEXPORT void LbfgsInit(void* ptr, float initial_stepsize);
+
+DLLEXPORT void LbfgsUpdate(void* ptr);
+
+DLLEXPORT void LbfgsDirection(void* ptr, void* dst);
+
 DLLEXPORT void SumTensor4(void* p_z, void* p_Gij, void* p_gi, int N);
 
 DLLEXPORT void AddVector4(void* p_x, void* p_g, void* p_dst, int N, float s);

@@ -61,23 +61,6 @@ def orderParameterCurve(ensemble: PickledEnsemble, order_parameter_names: list[s
     return x_tensor, y_tensor
 
 
-def interpolatedOrderParameterCurve(ensemble: PickledEnsemble, order_parameter_names: list[str], x_axis_name: str,
-                                    weighted=False, num_threads=1, from_to=None) -> (np.ndarray, np.ndarray):
-    """
-    :return: (interpolated x: 1 dim, interpolated y: 3 dim)
-    """
-
-    def interpolate(y):
-        return mm.interpolate_y(x_tensor, y, x_interpolated, num_threads)
-
-    x_tensor, y_tensor = orderParameterCurve(
-        ensemble, order_parameter_names, x_axis_name, weighted, num_threads, from_to
-    )
-    min_parameter_variation = np.min(np.abs(np.diff(x_tensor, axis=2)))
-    x_interpolated = mm.interpolate_x(x_tensor, min_parameter_variation)
-    return x_interpolated, ut.apply_struct(interpolate)(y_tensor)
-
-
 def averageByReplica(x: np.ndarray, y: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
     """
     :param x: interpolated 1 dim
@@ -105,13 +88,14 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
                            weighted=False, num_threads=1, from_to=None):
     out_file = 'analysis.h5'
     dic = {}
-    x, y_mean, y_ci = database.apply(
-        lambda ensemble: averageByReplica(
+    for ensemble in database:
+        sub_dic = {}
+        x, y_mean, y_ci = averageByReplica(
             *orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)
         )
-    )
-    for order_parameter in order_parameters:
-        dic[order_parameter] = (y_mean[order_parameter], y_ci[order_parameter])
+        for order_parameter in order_parameters:
+            sub_dic[order_parameter] = (y_mean[order_parameter], y_ci[order_parameter])
+        dic[ensemble.metadata['id']] = sub_dic
 
     # add x-axis
     dic['x_axis'] = x
@@ -120,9 +104,7 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
 
     # add metadata
     add_array_to_hdf5(out_file, 'state_table', database.state_table)
-    add_array_to_hdf5(out_file, 'simulation_table', database.simulation_table)
-    if hasattr(database, 'particle_shape_table'):
-        add_array_to_hdf5(out_file, 'particle_shape_table', database.particle_shape_table)
+    add_array_to_hdf5(out_file, 'summary_table', database.summary_table_array)
 
 
 def calAllOrderParameters(database: Database, x_axis_name: str, weighted=False, num_threads=4):

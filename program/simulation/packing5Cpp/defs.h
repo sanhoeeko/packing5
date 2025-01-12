@@ -1,7 +1,6 @@
 #pragma once
 
 #define max_neighbors 12
-#define simd_256_bits true
 
 #define DIGIT_X 9
 #define DIGIT_Y 9

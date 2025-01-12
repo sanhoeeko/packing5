@@ -6,14 +6,15 @@ import numpy as np
 
 from simulation.state import State
 from . import utils as ut
-from .h5tools import extract_metadata
+from .h5tools import extract_metadata, struct_array_to_dataframe
 
 
 class Database:
     def __init__(self, file_name: str):
         self.file_name = file_name
         self.file = h5py.File(self.file_name, 'r')
-        self.summary = extract_metadata(self.file_name)
+        self.summary_table_array = extract_metadata(self.file_name)
+        self.summary = struct_array_to_dataframe(self.summary_table_array)
         self.ids = self.summary['id'].tolist()
 
     def __repr__(self):
@@ -22,14 +23,14 @@ class Database:
     def __getitem__(self, index: int):
         return self.id(self.ids[index])
 
-    def id(self, ensemble_id: str):
-        return PickledEnsemble(self.file[ensemble_id])
-
     def __iter__(self):
         for ensemble_id in self.ids:
             obj = self.id(ensemble_id)
             yield obj
             del obj  # Explicitly delete the PickledEnsemble object to release memory
+
+    def id(self, ensemble_id: str):
+        return PickledEnsemble(self.file[ensemble_id])
 
     def apply(self, func):
         """

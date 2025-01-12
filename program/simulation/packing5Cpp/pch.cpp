@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "gradient.h"
+#include "lbfgs.h"
 #include <algorithm>
 #include <time.h>
 
@@ -90,4 +91,37 @@ void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* 
     int lines, int cols, int N)
 {
     return calGradient_general<Normal, true>(p_shape, p_state, p_boundary, p_grid, p_Gij, p_z, lines, cols, N);
+}
+
+typedef L_bfgs<20> LBFGS;
+
+void* CreateLBFGS(int N, void* configuration_src, void* gradient_src)
+{
+    LBFGS* ptr = new LBFGS(N, (float*)configuration_src, (float*)gradient_src);
+    return ptr;
+}
+
+void DeleteLBFGS(void* ptr)
+{
+    LBFGS* lbfgs = (LBFGS*)ptr;
+    delete lbfgs;
+}
+
+void LbfgsInit(void* ptr, float initial_stepsize)
+{
+    LBFGS* lbfgs = (LBFGS*)ptr;
+    lbfgs->init(initial_stepsize);
+}
+
+void LbfgsUpdate(void* ptr)
+{
+    LBFGS* lbfgs = (LBFGS*)ptr;
+    lbfgs->update();
+}
+
+void LbfgsDirection(void* ptr, void* dst)
+{
+    LBFGS* lbfgs = (LBFGS*)ptr;
+    v4 v_dst(lbfgs->N, (float*)dst);
+    lbfgs->calDirection_to(v_dst);
 }

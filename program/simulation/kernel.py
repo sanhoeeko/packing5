@@ -28,7 +28,12 @@ class Kernel:
             ('FastClear', [ct.c_void_p, ct.c_int], None),
             ('HollowClear', [ct.c_void_p, ct.c_int, ct.c_int], None),
             ('FastNorm', [ct.c_void_p, ct.c_int], ct.c_float),
-            ('CwiseMulVector4', [ct.c_void_p, ct.c_int, ct.c_float], None)
+            ('CwiseMulVector4', [ct.c_void_p, ct.c_int, ct.c_float], None),
+            ('CreateLBFGS', [ct.c_int, ct.c_void_p, ct.c_void_p], ct.c_void_p),
+            ('DeleteLBFGS', [ct.c_void_p], None),
+            ('LbfgsInit', [ct.c_void_p, ct.c_float], None),
+            ('LbfgsUpdate', [ct.c_void_p], None),
+            ('LbfgsDirection', [ct.c_void_p] * 2, None)
         )
 
     def setTypes(self, *tup):

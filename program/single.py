@@ -9,7 +9,7 @@ from simulation.simulator import createSimulator
 
 def testSingleThread(profile=True):
     N = 200
-    n = 5
+    n = 1
     d = 0.025
     phi0 = 0.7
     Gamma0 = 1

@@ -127,8 +127,8 @@ class Simulator(ut.HasMeta):
             else:
                 self.state.sgd(1e-3, default.max_pre_relaxation)
 
-            relaxations_2, final_grad, ge_array_2 = self.state.fineRelax(
-                1e-4, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
+            relaxations_2, final_grad, ge_array_2 = self.state.lbfgs(
+                0.05, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
             )
 
             self.current_relaxations = default.max_pre_relaxation + relaxations_2

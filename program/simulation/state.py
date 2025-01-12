@@ -6,6 +6,7 @@ from .boundary import EllipticBoundary
 from .gradient import Optimizer, GradientMatrix
 from .grid import Grid
 from .kernel import ker
+from .lbfgs import LBFGS
 from .potential import Potential
 
 
@@ -27,6 +28,7 @@ class State(ut.HasMeta):
         self.grid: Grid = None
         self.gradient: GradientMatrix = None
         self.optimizer: Optimizer = None
+        self.lbfgs_agent: LBFGS = None
 
     @property
     def A(self):
@@ -63,6 +65,7 @@ class State(ut.HasMeta):
     def train(self):
         self.grid = Grid(self)
         self.gradient = GradientMatrix(self, self.grid)
+        self.lbfgs_agent = LBFGS(self)
         return self
 
     def setPotential(self, potential: Potential):
@@ -130,12 +133,11 @@ class State(ut.HasMeta):
         self.xyt.set_data(averaged_state)
 
     def sgd(self, step_size: float, n_steps) -> (int, np.ndarray, np.float32):
-        self.setOptimizer(0, 0.9, 0.1, False)
+        self.setOptimizer(0, 0.8, 0.2, False)
         for t in range(int(n_steps)):
             self.descent(self.optimizer.calGradient(), step_size)
 
-    def fineRelax(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
-        from simulation import stepsize
+    def lbfgs(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
         """
         :return:
         if cal_energy:
@@ -143,7 +145,32 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
-        min_grad = 1e-3
+        min_grad = 1e-2
+        ge_array = np.full((n_steps // stride,), np.float32(np.nan))
+        gradient_amp = 0
+
+        self.lbfgs_agent.init(step_size)
+        for t in range(n_steps):
+            self.descent(self.lbfgs_agent.CalDirection(), step_size)
+            gradient_amp = self.lbfgs_agent.gradientAmp()
+            self.lbfgs_agent.update()
+            # print(t, self.CalEnergy_pure())
+            if t % stride == 0:
+                ge_array[t // stride] = self.CalEnergy_pure() if cal_energy else gradient_amp
+            if gradient_amp <= min_grad:
+                return t, gradient_amp, ge_array
+        return n_steps, gradient_amp, ge_array
+
+    def fineRelax(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
+        """
+        :return:
+        if cal_energy:
+            (relaxations_steps, final gradient amplitude, energy curve)
+        else:
+            (relaxations_steps, final gradient amplitude, gradient amplitudes)
+        """
+        from simulation import stepsize
+        min_grad = 1e-2
 
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         gradient_amp = 0

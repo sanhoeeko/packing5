@@ -3,37 +3,6 @@ import pandas as pd
 from h5tools.h5tools import *
 
 
-class LazyArray:
-    def __init__(self, hdf5_file: str, dataset_name: str):
-        self.file = h5py.File(hdf5_file, 'r')
-        self.dataset = self.file[dataset_name]
-        self.shape = self.dataset.shape
-        self.dtype = self.dataset.dtype
-
-    def __getitem__(self, index):
-        return self.dataset[index]
-
-    def __len__(self):
-        return self.shape[0]
-
-    def __repr__(self):
-        return f"LazyArray(shape={self.shape}, dtype={self.dtype})"
-
-    def close(self):
-        self.file.close()
-
-
-def read_hdf5_to_dict_lazy(file_path: str) -> dict:
-    data_dict = {}
-    with h5py.File(file_path, 'r') as file:
-        for dataset_name in file:
-            if dataset_name.endswith('table'):
-                data_dict[dataset_name] = file[dataset_name][:]
-            else:
-                data_dict[dataset_name] = LazyArray(file_path, dataset_name)
-    return data_dict
-
-
 def struct_array_to_dataframe(data: np.ndarray) -> pd.DataFrame:
     df = pd.DataFrame(data.reshape(-1))
     # convert strings
@@ -88,7 +57,7 @@ def read_hdf5_groups_to_dicts(file_path: str) -> (dict, dict[dict]):
     return data_dict, group_dict
 
 
-def extract_metadata(file_path: str) -> pd.DataFrame:
+def extract_metadata(file_path: str) -> np.ndarray:
     metadata_list = []
 
     # Open the HDF5 file
@@ -103,5 +72,4 @@ def extract_metadata(file_path: str) -> pd.DataFrame:
 
     # Combine all metadata into a single structured ndarray
     metadata_array = np.concatenate(metadata_list)
-
-    return struct_array_to_dataframe(metadata_array)
+    return metadata_array
