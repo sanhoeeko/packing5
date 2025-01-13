@@ -92,6 +92,17 @@ class State(ut.HasMeta):
     def xyt3d(self) -> np.ndarray:
         return self.xyt[:, :3].copy()
 
+    def isOutOfBoundary(self) -> bool:
+        abs_xyt = np.abs(self.xyt.data)
+        x_max = np.max(abs_xyt[:, 0])
+        y_max = np.max(abs_xyt[:, 1])
+        return x_max >= self.boundary.A or y_max >= self.boundary.B
+
+    def MaskOutOfBoundary(self) -> np.ndarray:
+        abs_xyt = np.abs(self.xyt.data)
+        mask = np.bitwise_or(abs_xyt[:, 0] >= self.boundary.A, abs_xyt[:, 1] >= self.boundary.B)
+        return np.where(mask)[0]
+
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
         s = np.float32(step_size) / (np.sqrt(g))
@@ -100,6 +111,17 @@ class State(ut.HasMeta):
         # this condition is to avoid division by zero
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
+        if self.isOutOfBoundary():
+            # raise ValueError("Out of Boundary!")
+            # if the descent makes a particle go out of boundary, do not update its coordinates
+            # previous_xyt = self.xyt.copy()
+            # ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, previous_xyt.ptr, self.N, -s)
+            # particle_id_out_of_boundary = self.MaskOutOfBoundary()
+            # for i in particle_id_out_of_boundary:
+            #     np.copyto(self.xyt.data[i, :], previous_xyt.data[i, :])
+            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, -s)
+            ker.dll.AddVector4(self.xyt.ptr, self.lbfgs_agent.gradient_cache.ptr, self.xyt.ptr, self.N, 1e-3)
+            # print("OOB!")
         # always clear dependency. If not, it will cause segment fault.
         self.clear_dependency()
         return np.float32(g / np.sqrt(self.N))
@@ -145,6 +167,7 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
+        from simulation import stepsize
         min_grad = 1e-2
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         gradient_amp = 0
@@ -156,6 +179,9 @@ class State(ut.HasMeta):
             self.lbfgs_agent.update()
             # print(t, self.CalEnergy_pure())
             if t % stride == 0:
+                step_size = min(default.max_step_size, 10 * stepsize.findGoodStepsize(
+                    self, default.max_step_size, default.step_size_searching_samples
+                ))
                 ge_array[t // stride] = self.CalEnergy_pure() if cal_energy else gradient_amp
             if gradient_amp <= min_grad:
                 return t, gradient_amp, ge_array
@@ -171,7 +197,6 @@ class State(ut.HasMeta):
         """
         from simulation import stepsize
         min_grad = 1e-2
-
         ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         gradient_amp = 0
 

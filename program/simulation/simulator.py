@@ -122,13 +122,13 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            if self.state.CalEnergy_pure() < 100:
-                self.state.brown(1e-3, default.max_pre_relaxation, 1000)
-            else:
-                self.state.sgd(1e-3, default.max_pre_relaxation)
+            # if self.state.CalEnergy_pure() < 100:
+            #     self.state.brown(1e-3, default.max_pre_relaxation, 1000)
+            # else:
+            #     self.state.sgd(1e-3, default.max_pre_relaxation)
 
             relaxations_2, final_grad, ge_array_2 = self.state.lbfgs(
-                0.05, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
+                0.1, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
             )
 
             self.current_relaxations = default.max_pre_relaxation + relaxations_2
