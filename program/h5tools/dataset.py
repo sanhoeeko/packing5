@@ -47,10 +47,13 @@ class SimulationData(Dataset):
     def __init__(self, file_name: str, metadata: np.ndarray, summary_dtype: list[tuple], summary_table_name: str,
                  descent_curve_size: int):
         super().__init__(file_name, metadata, summary_dtype, summary_table_name)
-        N = metadata[0]['N']
+        self.N = metadata[0]['N']
+        self.descent_curve_size = descent_curve_size
         with h5py.File(self.file_name, 'a') as f:
-            f.create_dataset('configuration', shape=(0, N, 3), maxshape=(None, N, 3), chunks=True)
-            f.create_dataset('descent_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
+            f.create_dataset('configuration', shape=(0, self.N, 3), maxshape=(None, self.N, 3), chunks=True)
+            f.create_dataset('gradient_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
+                             chunks=True)
+            f.create_dataset('energy_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
                              chunks=True)
 
     def append(self, summary: np.ndarray, data: dict):

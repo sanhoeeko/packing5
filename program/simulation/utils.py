@@ -73,6 +73,52 @@ def CArrayFZeros(*args, **kwargs):
     return CArray(np.zeros(*args, **kwargs), np.float32)
 
 
+class DescentCurve:
+    def __init__(self):
+        self.gradient_curve = None
+        self.energy_curve = None
+        self.current_gradient_curve = None
+        self.current_energy_curve = None
+        self.clear()
+
+    def clear(self):
+        self.gradient_curve = np.zeros((0,), dtype=np.float32)
+        self.energy_curve = np.zeros((0,), dtype=np.float32)
+
+    def reserve(self, n: int):
+        n = int(n)
+        self.current_gradient_curve = np.full((n,), np.float32(np.nan))
+        self.current_energy_curve = np.full((n,), np.float32(np.nan))
+
+    def join(self):
+        self.g_append(self.current_gradient_curve)
+        self.e_append(self.current_energy_curve)
+        self.current_gradient_curve = None
+        self.current_energy_curve = None
+
+    def g_append(self, g_array: np.ndarray):
+        self.gradient_curve = np.hstack((self.gradient_curve, g_array))
+
+    def e_append(self, e_array: np.ndarray):
+        self.energy_curve = np.hstack((self.gradient_curve, e_array))
+
+    def get(self, length: int) -> (np.ndarray, np.ndarray):
+        def process_array(arr):
+            arr_len = len(arr)
+            if arr_len < length:
+                res = np.full((length,), np.float32(np.nan))
+                res[-arr_len:] = arr
+                return res
+            elif length <= arr_len < 2 * length:
+                return arr[-length:]
+            else:
+                step = arr_len // length
+                sampled_arr = arr[::step]
+                return process_array(sampled_arr)
+
+        return process_array(self.gradient_curve), process_array(self.energy_curve)
+
+
 # h5 metadata management
 
 def strToTuple(s: str):

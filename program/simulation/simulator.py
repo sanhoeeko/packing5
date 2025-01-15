@@ -43,7 +43,6 @@ class Simulator(ut.HasMeta):
 
         # cache for diagnosis
         self.current_step_size = default.max_step_size
-        self.current_ge = None
 
     def is_setting_complete(self):
         return all_true(self.has_settings)
@@ -92,14 +91,16 @@ class Simulator(ut.HasMeta):
         self.has_settings['has_compress'] = True
         return self
 
-    def fetchData(self, grads):
+    def fetchData(self):
+        g_array, e_array = self.state.descent_curve.get(self.dataset.descent_curve_size)
         return {
             'configuration': self.state.xyt3d(),
-            'descent_curve': grads.astype(np.float32),
+            'gradient_curve': g_array,
+            'energy_curve': e_array
         }
 
-    def save(self, grads):
-        self.dataset.append(self.state.metadata, self.fetchData(grads))
+    def save(self):
+        self.dataset.append(self.state.metadata, self.fetchData())
 
     def execute(self):
         assert self.is_setting_complete()
@@ -108,9 +109,10 @@ class Simulator(ut.HasMeta):
             self.state.initAsDisks()
             for i in range(default.max_compress_turns):
                 if self.state.phi > default.terminal_phi: break
+                self.state.descent_curve.clear()
                 self.state.boundary.compress(i)
                 current_speed = self.equilibrium()
-                self.save(self.current_ge)
+                self.save()
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
         except Exception as e:
             print(f"An exception occurred in simulation [{self.id}]!\n")
@@ -122,17 +124,19 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            # if self.state.CalEnergy_pure() < 100:
-            #     self.state.brown(1e-3, default.max_pre_relaxation, 1000)
-            # else:
-            #     self.state.sgd(1e-3, default.max_pre_relaxation)
+            if self.state.CalEnergy_pure() < 100:
+                self.state.brown(1e-3, default.max_pre_relaxation, 1000)
+            else:
+                self.state.sgd(1e-3, default.max_pre_relaxation)
 
-            relaxations_2, final_grad, ge_array_2 = self.state.lbfgs(
-                0.1, self.max_relaxation, self.descent_curve_stride, self.if_cal_energy
+            relaxations_2, final_grad = self.state.lbfgs(
+                0.1, self.max_relaxation, self.descent_curve_stride
             )
+            # relaxations_2, final_grad = self.state.fineRelax(
+            #     1e-4, self.max_relaxation, self.descent_curve_stride
+            # )
 
             self.current_relaxations = default.max_pre_relaxation + relaxations_2
-            self.current_ge = ge_array_2
         return self.current_relaxations / timer.elapse_t
 
 

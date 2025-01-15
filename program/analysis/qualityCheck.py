@@ -40,5 +40,9 @@ def checkEnergy(db: Database):
     )
 
 
-def checkDescentCurveAt(db: Database, i: int, j: int):
-    plotListOfArray(db[i].simulation_at(j).normalizedDescentCurve())
+def checkEnergyCurveAt(db: Database, i: int, j: int):
+    plotListOfArray(db[i].simulation_at(j).energyCurve())
+
+
+def checkGradientCurveAt(db: Database, i: int, j: int):
+    plotListOfArray(db[i].simulation_at(j).gradientCurve())

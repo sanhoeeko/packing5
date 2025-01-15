@@ -44,7 +44,8 @@ class Database:
 class PickledEnsemble:
     def __init__(self, h5_group):
         self.configuration = h5_group['configuration']  # shape: (replica, rho, N, 3)
-        self.descent_curve = h5_group['descent_curve']  # shape: (replica, rho, m)
+        self.gradient_curve = h5_group['gradient_curve']  # shape: (replica, rho, m)
+        self.energy_curve = h5_group['energy_curve']  # shape: (replica, rho, m)
         self.state_table = h5_group['state_table']  # struct array, shape: (replica, rho)
         self.metadata = h5_group.attrs['metadata']
 
@@ -52,8 +53,8 @@ class PickledEnsemble:
         return self.state_table.shape[0]
 
     def simulation_at(self, nth_replica: int):
-        return PickledSimulation(self.metadata, self.state_table[nth_replica], self.descent_curve[nth_replica],
-                                 self.configuration[nth_replica])
+        return PickledSimulation(self.metadata, self.state_table[nth_replica], self.gradient_curve[nth_replica],
+                                 self.energy_curve[nth_replica], self.configuration[nth_replica])
 
     def property(self, prop: str) -> np.ndarray:
         """
@@ -87,12 +88,14 @@ class PickledEnsemble:
 
 
 class PickledSimulation:
-    def __init__(self, metadata: np.ndarray, state_info: np.ndarray, descent_curve: np.ndarray, xyt: np.ndarray):
+    def __init__(self, metadata: np.ndarray, state_info: np.ndarray, gradient_curve: np.ndarray,
+                 energy_curve: np.ndarray, xyt: np.ndarray):
         self.n = ut.actual_length_of_1d_array(state_info)
         self.metadata = ut.struct_to_dict(metadata)
         # clip nan data
         self.state_info = state_info[:self.n]
-        self.descent_curve = descent_curve[:self.n, :]
+        self.gradient_curve = gradient_curve[:self.n, :]
+        self.energy_curve = energy_curve[:self.n, :]
         self.xyt = xyt[:self.n, :, :]
 
     def __len__(self):
@@ -102,7 +105,8 @@ class PickledSimulation:
         state_info = ut.struct_to_dict(self.state_info[idx])
         return {
             'metadata': {**self.metadata, **state_info},
-            'descent_curve': self.descent_curve[idx, :],
+            'gradient_curve': self.gradient_curve[idx, :],
+            'energy_curve': self.energy_curve[idx, :],
             'xyt': self.xyt[idx, :, :]
         }
 
@@ -116,14 +120,15 @@ class PickledSimulation:
         return State(self.metadata['N'], self.metadata['n'], self.metadata['d'], info['A'], info['B'],
                      configuration=xyt4)
 
-    def normalizedDescentCurve(self) -> np.ndarray:
+    def energyCurve(self):
         """
         :return: 2d array, a set of normalized descent curves of one simulation.
         """
-        if self.metadata['if_cal_energy']:
-            return self.descent_curve / self.descent_curve[:, 0:1]
-        else:
-            return self.descent_curve
+        assert self.metadata['if_cal_energy']
+        return self.energy_curve / self.energy_curve[:, 0:1]
+
+    def gradientCurve(self) -> np.ndarray:
+        return self.gradient_curve
 
     def stateDistance(self) -> np.ndarray:
         """

@@ -29,6 +29,7 @@ class State(ut.HasMeta):
         self.gradient: GradientMatrix = None
         self.optimizer: Optimizer = None
         self.lbfgs_agent: LBFGS = None
+        self.descent_curve : ut.DescentCurve = None
 
     @property
     def A(self):
@@ -66,6 +67,7 @@ class State(ut.HasMeta):
         self.grid = Grid(self)
         self.gradient = GradientMatrix(self, self.grid)
         self.lbfgs_agent = LBFGS(self)
+        self.descent_curve = ut.DescentCurve()
         return self
 
     def setPotential(self, potential: Potential):
@@ -89,6 +91,12 @@ class State(ut.HasMeta):
         ker.dll.HollowClear(self.grid.grid.ptr, self.grid.size, ut.max_neighbors)
         ker.dll.FastClear(self.gradient.z.ptr, self.N)
 
+    def record(self, t: int, stride: int, gradient_amp: np.float32, cal_energy: bool):
+        if t % stride == 0:
+            self.descent_curve.current_gradient_curve[t // stride] = gradient_amp
+            if cal_energy:
+                self.descent_curve.current_energy_curve[t // stride] = self.CalEnergy_pure()
+
     def xyt3d(self) -> np.ndarray:
         return self.xyt[:, :3].copy()
 
@@ -97,11 +105,6 @@ class State(ut.HasMeta):
         x_max = np.max(abs_xyt[:, 0])
         y_max = np.max(abs_xyt[:, 1])
         return x_max >= self.boundary.A or y_max >= self.boundary.B
-
-    def MaskOutOfBoundary(self) -> np.ndarray:
-        abs_xyt = np.abs(self.xyt.data)
-        mask = np.bitwise_or(abs_xyt[:, 0] >= self.boundary.A, abs_xyt[:, 1] >= self.boundary.B)
-        return np.where(mask)[0]
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
@@ -143,23 +146,29 @@ class State(ut.HasMeta):
         energy = self.CalEnergy_pure()
         return gradient_amp, energy
 
-    def brown(self, step_size: float, n_steps: int, n_samples) -> (int, np.ndarray, np.float32):
+    def brown(self, step_size: float, n_steps: int, n_samples):
         self.setOptimizer(0.2, 0.8, 0.5, False)
+        self.descent_curve.reserve(n_steps // 100)
         for t in range(int(n_steps)):
-            self.descent(self.optimizer.calGradient(), step_size)
+            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
+            self.record(t, 100, gradient_amp, default.if_cal_energy)
         state_pool = np.zeros((n_samples, self.N, 4))
         for t in range(int(n_samples)):
             self.descent(self.optimizer.calGradient(), step_size)
             state_pool[t, :, :] = self.xyt.data.copy()
         averaged_state = np.mean(state_pool, axis=0)
         self.xyt.set_data(averaged_state)
+        self.descent_curve.join()
 
-    def sgd(self, step_size: float, n_steps) -> (int, np.ndarray, np.float32):
+    def sgd(self, step_size: float, n_steps):
         self.setOptimizer(0, 0.8, 0.2, False)
+        self.descent_curve.reserve(n_steps // 100)
         for t in range(int(n_steps)):
-            self.descent(self.optimizer.calGradient(), step_size)
+            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
+            self.record(t, 100, gradient_amp, default.if_cal_energy)
+        self.descent_curve.join()
 
-    def lbfgs(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
+    def lbfgs(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):
         """
         :return:
         if cal_energy:
@@ -169,25 +178,27 @@ class State(ut.HasMeta):
         """
         from simulation import stepsize
         min_grad = 1e-2
-        ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         gradient_amp = 0
 
         self.lbfgs_agent.init(step_size)
+        self.descent_curve.reserve(n_steps // stride)
         for t in range(n_steps):
             self.descent(self.lbfgs_agent.CalDirection(), step_size)
             gradient_amp = self.lbfgs_agent.gradientAmp()
             self.lbfgs_agent.update()
             # print(t, self.CalEnergy_pure())
+            self.record(t, stride, gradient_amp, default.if_cal_energy)
             if t % stride == 0:
-                step_size = min(default.max_step_size, 10 * stepsize.findGoodStepsize(
+                step_size = min(default.max_step_size, 1.0 * stepsize.findGoodStepsize(
                     self, default.max_step_size, default.step_size_searching_samples
                 ))
-                ge_array[t // stride] = self.CalEnergy_pure() if cal_energy else gradient_amp
             if gradient_amp <= min_grad:
-                return t, gradient_amp, ge_array
-        return n_steps, gradient_amp, ge_array
+                return t, gradient_amp
 
-    def fineRelax(self, step_size: float, n_steps: int, stride: int, cal_energy=False) -> (int, np.ndarray, np.float32):
+        self.descent_curve.join()
+        return n_steps, gradient_amp
+
+    def fineRelax(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):
         """
         :return:
         if cal_energy:
@@ -197,20 +208,22 @@ class State(ut.HasMeta):
         """
         from simulation import stepsize
         min_grad = 1e-2
-        ge_array = np.full((n_steps // stride,), np.float32(np.nan))
         gradient_amp = 0
 
         self.setOptimizer(0, 0, 1, False)
+        self.descent_curve.reserve(n_steps // stride)
         for t in range(n_steps):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
+            self.record(t, stride, gradient_amp, default.if_cal_energy)
             if t % stride == 0:
                 step_size = 0.1 * stepsize.findGoodStepsize(
                     self, default.max_step_size, default.step_size_searching_samples
                 )
-                ge_array[t // stride] = self.CalEnergy_pure() if cal_energy else gradient_amp
             if gradient_amp <= min_grad:
-                return t, gradient_amp, ge_array
-        return n_steps, gradient_amp, ge_array
+                return t, gradient_amp
+
+        self.descent_curve.join()
+        return n_steps, gradient_amp
 
     def CalGradient_pure(self) -> ut.CArray:
         """

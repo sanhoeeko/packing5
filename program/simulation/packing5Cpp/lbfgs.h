@@ -126,5 +126,6 @@ inline void L_bfgs<m>::calDirection_to(v4& dst)
         }
         z *= -1;
         dst.set(z.data);
+        z.die();
     }
 }

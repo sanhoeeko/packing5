@@ -93,7 +93,7 @@ void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* 
     return calGradient_general<Normal, true>(p_shape, p_state, p_boundary, p_grid, p_Gij, p_z, lines, cols, N);
 }
 
-typedef L_bfgs<20> LBFGS;
+typedef L_bfgs<LBFGS_MEMORY_SIZE> LBFGS;
 
 void* CreateLBFGS(int N, void* configuration_src, void* gradient_src)
 {
