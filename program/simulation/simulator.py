@@ -125,18 +125,18 @@ class Simulator(ut.HasMeta):
         """
         with ut.Timer() as timer:
             if self.state.CalEnergy_pure() < 100:
-                self.state.brown(1e-3, default.max_pre_relaxation, 1000)
+                self.state.brown(1e-3, 20000, 1000)
             else:
-                self.state.sgd(1e-3, default.max_pre_relaxation)
+                self.state.sgd(1e-4, 20000)
 
             relaxations_2, final_grad = self.state.lbfgs(
-                0.1, self.max_relaxation, self.descent_curve_stride
+                1e-4, 10000, self.descent_curve_stride
             )
-            # relaxations_2, final_grad = self.state.fineRelax(
-            #     1e-4, self.max_relaxation, self.descent_curve_stride
-            # )
+            relaxations_3, final_grad = self.state.fineRelax(
+                1e-5, 100000, self.descent_curve_stride
+            )
 
-            self.current_relaxations = default.max_pre_relaxation + relaxations_2
+            self.current_relaxations = default.max_pre_relaxation + relaxations_2 + relaxations_3
         return self.current_relaxations / timer.elapse_t
 
 
