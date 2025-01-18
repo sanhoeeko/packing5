@@ -32,7 +32,7 @@ class Simulator(ut.HasMeta):
         self.d = d
         self.A0, self.B0 = A0, B0
         self.id = Id
-        self.state = State.random(N, n, d, A0, B0).train()
+        self.state = State.random(N, n, d, A0, B0)
 
         # derived properties
         self.gamma = self.state.gamma
@@ -128,19 +128,15 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            # if self.state.CalEnergy_pure() < 100:
-            #     self.state.brown(1e-3, 20000, 1000)
-            # else:
-            #     self.state.sgd(1e-4, 20000)
-
-            relaxations_2, final_grad = self.state.lbfgs(
-                5e-4, 20000, self.descent_curve_stride
-            )
+            self.state.brown(1e-3, 10000)
+            # relaxations_2, final_grad = self.state.lbfgs(
+            #     5e-4, 20000, self.descent_curve_stride
+            # )
             # relaxations_3, final_grad = self.state.fineRelax(
             #     1e-5, 100000, self.descent_curve_stride
             # )
 
-            self.current_relaxations = default.max_pre_relaxation + relaxations_2 # + relaxations_3
+            self.current_relaxations = default.max_pre_relaxation  # + relaxations_2 + relaxations_3
         return self.current_relaxations / timer.elapse_t
 
 

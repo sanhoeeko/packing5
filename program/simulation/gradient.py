@@ -76,15 +76,14 @@ class GradientSum:
 
 
 class Optimizer:
-    def __init__(self, state, noise_factor: float, momentum_beta: float, stochastic_p: float,
-                 as_disks: bool, anneal_factor: float = 1):
+    def __init__(self, state, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool):
         self.N = state.N
         self.grid = state.grid
         self.momentum = ut.CArrayFZeros((self.N, 4))
         self.beta = np.float32(momentum_beta)
         self.noise_factor = np.float32(noise_factor)
-        self.anneal_factor = np.float32(anneal_factor)
         self.pure_gradient_func = state.CalGradient_pure
+        self.raw_gradient_cache = None
         func_name = 'calGradient' if stochastic_p == 1 else 'stochasticCalGradient'
         if as_disks:
             func_name += 'AsDisks'
@@ -96,7 +95,9 @@ class Optimizer:
         def raw_gradient_func() -> ut.CArray:
             self.grid.gridLocate()
             self.void_gradient_func()
-            return state.gradient.sum.g()
+            gradient = state.gradient.sum.g()
+            self.raw_gradient_cache = gradient.copy()
+            return gradient
 
         self.raw_gradient_func = raw_gradient_func
 
@@ -126,9 +127,7 @@ class Optimizer:
             self.momentum = self.pure_gradient_func()
 
     def calGradient(self):
-        gradient = self.func()
-        self.anneal(self.anneal_factor)
-        return gradient
+        return self.func()
 
-    def anneal(self, anneal_factor: float):
-        self.noise_factor *= anneal_factor
+    def gradientAmp(self) -> np.float32:
+        return ker.dll.FastNorm(self.raw_gradient_cache.ptr, self.N * 4) / np.sqrt(self.N)

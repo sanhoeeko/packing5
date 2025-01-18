@@ -7,6 +7,7 @@ from .gradient import Optimizer, GradientMatrix
 from .grid import Grid
 from .kernel import ker
 from .lbfgs import LBFGS
+from .mc import StatePool
 from .potential import Potential
 
 
@@ -25,11 +26,11 @@ class State(ut.HasMeta):
         self.xyt = ut.CArrayF(configuration)
         self.boundary = EllipticBoundary(A, B)
         # optional objects
-        self.grid: Grid = None
-        self.gradient: GradientMatrix = None
         self.optimizer: Optimizer = None
-        self.lbfgs_agent: LBFGS = None
-        self.descent_curve : ut.DescentCurve = None
+        self.grid = Grid(self)
+        self.gradient = GradientMatrix(self, self.grid)
+        self.lbfgs_agent = LBFGS(self)
+        self.descent_curve = ut.DescentCurve()
 
     @property
     def A(self):
@@ -63,27 +64,19 @@ class State(ut.HasMeta):
     def random(cls, N, n, d, A, B):
         return cls(N, n, d, A, B, randomConfiguration(N, A, B))
 
-    def train(self):
-        self.grid = Grid(self)
-        self.gradient = GradientMatrix(self, self.grid)
-        self.lbfgs_agent = LBFGS(self)
-        self.descent_curve = ut.DescentCurve()
-        return self
-
     def setPotential(self, potential: Potential):
         self.gradient.potential = potential
         return self
 
-    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float,
-                     as_disks: bool, anneal_factor: float = 1):
-        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks, anneal_factor)
+    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool):
+        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks)
         self.optimizer.init()
         return self
 
     def copy(self, train=False) -> 'State':
         s = State(self.N, self.n, self.d, self.boundary.A, self.boundary.B, self.xyt.data.copy())
         if train:
-            return s.train().setPotential(self.gradient.potential)
+            return s.setPotential(self.gradient.potential)
         else:
             return s
 
@@ -108,16 +101,16 @@ class State(ut.HasMeta):
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
-        s = np.float32(step_size) # / (g ** 0.5)
+        s = np.float32(step_size)
         if np.isnan(g) or np.isinf(g):
             raise ValueError("NAN detected in gradient!")
         # this condition is to avoid division by zero
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
-        if self.isOutOfBoundary():
-            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, -s)
-            ker.dll.AddVector4(self.xyt.ptr, self.lbfgs_agent.gradient_cache.ptr, self.xyt.ptr, self.N, 1e-4)
-            # print("OOB!")
+        # if self.isOutOfBoundary():
+        #     ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, -s)
+        #     ker.dll.AddVector4(self.xyt.ptr, self.lbfgs_agent.gradient_cache.ptr, self.xyt.ptr, self.N, 1e-4)
+        #     # print("OOB!")
         # always clear dependency. If not, it will cause segment fault.
         self.clear_dependency()
         return np.float32(g / np.sqrt(self.N))
@@ -139,18 +132,25 @@ class State(ut.HasMeta):
         energy = self.CalEnergy_pure()
         return gradient_amp, energy
 
-    def brown(self, step_size: float, n_steps: int, n_samples):
-        self.setOptimizer(0.2, 0.8, 1, False)
+    def brown(self, step_size: float, n_steps: int):
+        self.setOptimizer(0.2, 0.9, 1, False)
         self.descent_curve.reserve(n_steps // 100)
-        for t in range(int(n_steps)):
-            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
-            self.record(t, 100, gradient_amp, default.if_cal_energy)
-        state_pool = np.zeros((n_samples, self.N, 4))
-        for t in range(int(n_samples)):
-            self.descent(self.optimizer.calGradient(), step_size)
-            state_pool[t, :, :] = self.xyt.data.copy()
-        averaged_state = np.mean(state_pool, axis=0)
-        self.xyt.set_data(averaged_state)
+
+        for t in range(int(n_steps) // 100):
+            state_pool = StatePool(self.N, 100)
+            # print(ker.dll.FastNorm(self.CalGradient_pure().ptr, self.N * 4) / np.sqrt(self.N))
+            for i in range(100):
+                gradient = self.optimizer.calGradient()
+                g = self.gradientAmp()
+                state_pool.add(self, g)
+                self.descent(gradient, step_size)
+
+            self.xyt.set_data(state_pool.average().data)
+            gradient_amp = np.min(state_pool.energies.data)
+            # print(gradient_amp, end='\t')
+            self.record(t * 100, 100, gradient_amp, default.if_cal_energy)
+            if gradient_amp < 0.2: break
+
         self.descent_curve.join()
 
     def sgd(self, step_size: float, n_steps):
@@ -169,7 +169,6 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
-        from simulation import stepsize
         min_grad = 0.2
         gradient_amp = 0
 
@@ -183,9 +182,10 @@ class State(ut.HasMeta):
             self.record(t, stride, gradient_amp, default.if_cal_energy)
 
             if t % stride == 0:
-                step_size = stepsize.findBestStepsize(
-                    self, default.max_step_size, default.step_size_searching_samples
-                )
+                # step_size = stepsize.findBestStepsize(
+                #     self, default.max_step_size, default.step_size_searching_samples
+                #
+                pass
 
             if gradient_amp <= min_grad:
                 self.descent_curve.join()
@@ -253,6 +253,9 @@ class State(ut.HasMeta):
         energy = self.gradient.sum.E()
         self.clear_dependency()
         return energy
+
+    def gradientAmp(self):
+        return self.optimizer.gradientAmp()
 
 
 def randomConfiguration(N: int, A: float, B: float):

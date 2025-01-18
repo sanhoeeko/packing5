@@ -125,7 +125,8 @@ class PickledSimulation:
         :return: 2d array, a set of normalized descent curves of one simulation.
         """
         assert self.metadata['if_cal_energy']
-        return self.energy_curve / self.energy_curve[:, 0:1]
+        # return self.energy_curve / self.energy_curve[:, 0:1]
+        return self.energy_curve / self.energy_curve[:, 25:26]
 
     def gradientCurve(self) -> np.ndarray:
         return self.gradient_curve

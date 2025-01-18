@@ -8,10 +8,11 @@ from analysis.analysis import *
 if __name__ == '__main__':
     auto_pack()
     db = Database('data.h5')
+    # checkGradient(db)
     # checkEnergy(db)
     # calAllOrderParameters(db, 'rho')
     # InteractiveViewer(db[0].simulation_at(0), RenderSetup('z_number', False, 'voronoi', True)).show()
-    checkEnergyCurveAt(db, 0, 0)
+    # checkGradientCurveAt(db, 0, 0)
 
     # db = AnalysisData('analysis.h5')
     # db.plot('Phi6')
