@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <immintrin.h>
 #include <random>
+#include <string.h>
 #include "lbfgs.h"
 
 void SumTensor4(void* p_z, void* p_Gij, void* p_gi, int N)

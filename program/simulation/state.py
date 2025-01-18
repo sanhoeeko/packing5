@@ -114,10 +114,10 @@ class State(ut.HasMeta):
         # this condition is to avoid division by zero
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
-        # if self.isOutOfBoundary():
-        #     ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, -s)
-        #     # ker.dll.AddVector4(self.xyt.ptr, self.lbfgs_agent.gradient_cache.ptr, self.xyt.ptr, self.N, 1e-4)
-        #     # print("OOB!")
+        if self.isOutOfBoundary():
+            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, -s)
+            ker.dll.AddVector4(self.xyt.ptr, self.lbfgs_agent.gradient_cache.ptr, self.xyt.ptr, self.N, 1e-4)
+            # print("OOB!")
         # always clear dependency. If not, it will cause segment fault.
         self.clear_dependency()
         return np.float32(g / np.sqrt(self.N))
