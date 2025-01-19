@@ -133,7 +133,7 @@ class State(ut.HasMeta):
         return gradient_amp, energy
 
     def brown(self, step_size: float, n_steps: int):
-        self.setOptimizer(0.2, 0.9, 1, False)
+        self.setOptimizer(0.1, 0.9, 1, False)
         self.descent_curve.reserve(n_steps // 100)
 
         for t in range(int(n_steps) // 100):

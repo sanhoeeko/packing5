@@ -1,7 +1,6 @@
 import os
 import time
 from collections.abc import Iterable
-from threading import Thread
 
 import dask
 import numpy as np
@@ -57,13 +56,8 @@ class Ensemble:
 
     def execute(self):
         self.init()
-        self.threads = []
-        for s in self.simulators:
-            thread = Thread(target=s.execute)
-            self.threads.append(thread)
-            thread.start()
-        for thread in self.threads:
-            thread.join()
+        tasks = [dask.delayed(s.execute)() for s in self.simulators]
+        dask.compute(*tasks)
         self.pack()
 
 

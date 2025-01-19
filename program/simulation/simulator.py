@@ -128,7 +128,7 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            self.state.brown(1e-3, 10000)
+            self.state.brown(4e-4, 100000)
             # relaxations_2, final_grad = self.state.lbfgs(
             #     5e-4, 20000, self.descent_curve_stride
             # )

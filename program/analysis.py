@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # checkGradient(db)
     # checkEnergy(db)
     # calAllOrderParameters(db, 'rho')
-    # InteractiveViewer(db[0].simulation_at(0), RenderSetup('z_number', False, 'voronoi', True)).show()
+    InteractiveViewer(db[0].simulation_at(0), RenderSetup('z_number', False, 'voronoi', True)).show()
     # checkGradientCurveAt(db, 0, 0)
 
     # db = AnalysisData('analysis.h5')
