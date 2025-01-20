@@ -1,22 +1,26 @@
 import itertools
 import os
 import subprocess
+import sys
 from collections.abc import Iterable
 
 from h5tools.utils import current_time
+from simulation import utils as ut
 
 
 def run_command(func_name, *args, **kwargs):
-    cmd = ["python", "shell.py", func_name]
+    ut.setWorkingDirectory()
+    cmd = [sys.executable, "shell.py", func_name]
     cmd.extend(list(map(str, args)))
     for k, v in kwargs.items():
         cmd.append(f"{k}={str(v)}")
 
-    # 创建日志文件
+    # create and open log
     log_filename = f"{os.getpid()}.log"
     log_file = open(log_filename, "w")
 
-    # 启动子进程并将输出重定向到日志文件
+    # start subprocess
+    print("Run command:", " ".join(cmd))
     process = subprocess.Popen(cmd, stdout=log_file, stderr=log_file, text=True)
     return process, log_file
 
