@@ -83,14 +83,16 @@ class RenderState:
         self.handle.ax.set_aspect('equal')
 
         # Add a text [at the top left side] to show information of the state
-        self.handle.ax.text(-self.A, self.B * 1.1,
-                            (
-                                f"n={metadata['n']}, d={'{:.3f}'.format(metadata['d'])}, "
-                                f"ρ={'{:.3f}'.format(metadata['rho'])}, "
-                                f"A={'{:.2f}'.format(metadata['A'])}, B={'{:.2f}'.format(metadata['B'])}, "
-                                f"E={'{:.3f}'.format(metadata['energy'])}"
-                            )
-                            )
+        self.handle.ax.text(
+            -self.A, self.B * 1.1,
+            (
+                f"n={metadata['n']}, d={'{:.3f}'.format(metadata['d'])}, "
+                f"ρ={'{:.3f}'.format(metadata['rho'])}, "
+                f"A={'{:.2f}'.format(metadata['A'])}, B={'{:.2f}'.format(metadata['B'])}, "
+                f"\n"
+                f"E={'{:.3f}'.format(metadata['energy'])}, g={'{:.3f}'.format(metadata['gradient_amp'])}"
+            )
+        )
         self.handle.colorbar(col, 'θ')
         return self
 

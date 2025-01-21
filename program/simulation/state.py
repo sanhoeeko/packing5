@@ -133,22 +133,26 @@ class State(ut.HasMeta):
         return gradient_amp, energy
 
     def brown(self, step_size: float, n_steps: int):
-        self.setOptimizer(0.1, 0.9, 1, False)
-        self.descent_curve.reserve(n_steps // 100)
+        from . import stepsize
 
-        for t in range(int(n_steps) // 100):
-            state_pool = StatePool(self.N, 100)
-            # print(ker.dll.FastNorm(self.CalGradient_pure().ptr, self.N * 4) / np.sqrt(self.N))
-            for i in range(100):
+        stride = default.descent_curve_stride
+        self.setOptimizer(0.1, 0.9, 1, False)
+        self.descent_curve.reserve(n_steps // stride)
+
+        for t in range(int(n_steps) // stride):
+            state_pool = StatePool(self.N, stride)
+            for i in range(stride):
+                step_size = stepsize.findBestStepsize(
+                    self, default.max_step_size, default.step_size_searching_samples
+                )
                 gradient = self.optimizer.calGradient()
                 g = self.gradientAmp()
                 state_pool.add(self, g)
                 self.descent(gradient, step_size)
 
-            self.xyt.set_data(state_pool.average().data)
+            self.xyt.set_data(state_pool.average(0.1).data)
             gradient_amp = np.min(state_pool.energies.data)
-            # print(gradient_amp, end='\t')
-            self.record(t * 100, 100, gradient_amp, default.if_cal_energy)
+            self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
             if gradient_amp < 0.2: break
 
         self.descent_curve.join()

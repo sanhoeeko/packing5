@@ -33,7 +33,9 @@ class Kernel:
             ('DeleteLBFGS', [ct.c_void_p], None),
             ('LbfgsInit', [ct.c_void_p, ct.c_float], None),
             ('LbfgsUpdate', [ct.c_void_p], None),
-            ('LbfgsDirection', [ct.c_void_p] * 2, None)
+            ('LbfgsDirection', [ct.c_void_p] * 2, None),
+            ('AverageState', [ct.c_float] + [ct.c_void_p] * 3 + [ct.c_int] * 2, None),
+            ('AverageStateZeroTemperature', [ct.c_void_p] * 3 + [ct.c_int] * 2, None),
         )
 
     def setTypes(self, *tup):

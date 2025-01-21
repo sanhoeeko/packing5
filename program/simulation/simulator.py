@@ -109,13 +109,7 @@ class Simulator(ut.HasMeta):
             for i in range(default.max_compress_turns):
                 if self.state.phi > default.terminal_phi: break
                 self.state.descent_curve.clear()
-
                 self.state.boundary.compress(i)
-                # b0 = self.state.boundary.B
-                # self.state.boundary.compress(i)
-                # b1 = self.state.boundary.B
-                # self.state.xyt.data[:, 1] *= b1 / b0  # affine transformation
-
                 current_speed = self.equilibrium()
                 self.save()
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
@@ -129,7 +123,7 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            self.state.brown(4e-4, 100000)
+            self.state.brown(5e-4, 100000)
             # relaxations_2, final_grad = self.state.lbfgs(
             #     5e-4, 20000, self.descent_curve_stride
             # )

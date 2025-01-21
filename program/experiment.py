@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 from collections.abc import Iterable
+import random
 
 from h5tools.utils import current_time
 from simulation import utils as ut
@@ -16,7 +17,7 @@ def run_command(func_name, *args, **kwargs):
         cmd.append(f"{k}={str(v)}")
 
     # create and open log
-    log_filename = f"{os.getpid()}.log"
+    log_filename = f"{str(random.randint(0, 1073741824))}.log"
     log_file = open(log_filename, "w")
 
     # start subprocess

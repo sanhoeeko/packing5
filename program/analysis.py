@@ -8,7 +8,7 @@ from analysis.analysis import *
 if __name__ == '__main__':
     auto_pack()
     db = Database('data.h5')
-    # checkGradient(db)
+    checkGradient(db)
     # checkEnergy(db)
     # calAllOrderParameters(db, 'rho')
     # InteractiveViewer(db[0].simulation_at(0), RenderSetup('z_number', False, 'voronoi', True)).show()

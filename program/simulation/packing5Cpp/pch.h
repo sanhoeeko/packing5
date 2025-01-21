@@ -65,6 +65,10 @@ DLLEXPORT float FastNorm(void* p_x, int n);
 
 DLLEXPORT void CwiseMulVector4(void* p_g, int N, float s);
 
+DLLEXPORT void AverageState(float temperature, void* p_state, void* energies, void* dst, int N, int n_samples);
+
+DLLEXPORT void AverageStateZeroTemperature(void* p_state, void* energies, void* dst, int N, int n_samples);
+
 //// test functions /////////////////////////////////////////////////////////////////////////////
 
 DLLEXPORT void preciseGE(void* p_shape, void* scalar_potential, void* scalar_potential_dr, void* p_out,
