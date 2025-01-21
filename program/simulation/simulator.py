@@ -122,16 +122,11 @@ class Simulator(ut.HasMeta):
         :return: current speed. Unit: it/s.
         All black magics for gradient descent should be here.
         """
+        step_sizes = [2e-3, 1e-3, 5e-4, 2e-4, 1e-4]
         with ut.Timer() as timer:
-            self.state.brown(5e-4, 100000)
-            # relaxations_2, final_grad = self.state.lbfgs(
-            #     5e-4, 20000, self.descent_curve_stride
-            # )
-            # relaxations_3, final_grad = self.state.fineRelax(
-            #     1e-5, 100000, self.descent_curve_stride
-            # )
-
-            self.current_relaxations = default.max_pre_relaxation  # + relaxations_2 + relaxations_3
+            for i in range(5):
+                self.state.brown(step_sizes[i], 20000)
+            self.current_relaxations = 100000
         return self.current_relaxations / timer.elapse_t
 
 

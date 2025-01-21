@@ -11,6 +11,7 @@
 
 #include <omp.h>
 #include <cmath>
+#include <iostream>
 using namespace std;
 #undef max
 #undef min

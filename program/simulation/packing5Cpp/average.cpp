@@ -25,10 +25,10 @@ void AverageStateZeroTemperature(void* p_states, void* p_energies, void* p_dst, 
     float* states = (float*)p_states;
     float* energies = (float*)p_energies;
 
-    int current_e = energies[0];
+    float current_e = energies[0];
     int current_idx = 0;
     for (int i = 1; i < n_samples; i++) {
-        if (energies[i] < current_e) {
+        if (energies[i] <= current_e) {
             current_e = energies[i];
             current_idx = i;
         }

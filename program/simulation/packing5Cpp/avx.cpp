@@ -4,6 +4,7 @@
 #include <random>
 #include <string.h>
 #include "lbfgs.h"
+#include "myrand.h"
 
 void SumTensor4(void* p_z, void* p_Gij, void* p_gi, int N)
 {
@@ -47,18 +48,18 @@ void AddVector4(void* p_x, void* p_g, void* p_dst, int N, float s) {
 }
 
 void PerturbVector4(void* p_input, int N, float sigma) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<float> dis(0.0, sigma);
+    std::random_device true_random;
+    xorshift32 gen(true_random());
     float* g = (float*)p_input;
 
+    __m256 sig_vec = _mm256_set1_ps(sigma);
     for (int i8 = 0; i8 < N * 4; i8 += 8) {
         __m256 g_vec8 = _mm256_loadu_ps(g + i8);
         __m256 rand_vec8 = _mm256_setr_ps(
-            dis(gen), dis(gen), dis(gen), 0,
-            dis(gen), dis(gen), dis(gen), 0
+            fast_gaussian(gen()), fast_gaussian(gen()), fast_gaussian(gen()), 0,
+            fast_gaussian(gen()), fast_gaussian(gen()), fast_gaussian(gen()), 0
         );
-        __m256 result_vec = _mm256_add_ps(g_vec8, rand_vec8);
+        __m256 result_vec = _mm256_add_ps(g_vec8, _mm256_mul_ps(sig_vec, rand_vec8));
         _mm256_storeu_ps(g + i8, result_vec);
     }
 }
