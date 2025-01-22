@@ -11,7 +11,7 @@ from simulation.simulator import createSimulator
 def testSingleThread(profile=True):
     N = 200
     n = 6
-    d = 0.01
+    d = 0.05
     phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()

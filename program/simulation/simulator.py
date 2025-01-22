@@ -111,7 +111,8 @@ class Simulator(ut.HasMeta):
                 self.state.descent_curve.clear()
                 self.state.boundary.compress(i)
                 current_speed = self.equilibrium()
-                self.save()
+                if i % 20 == 0:
+                    self.save()
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
         except Exception as e:
             print(f"An exception occurred in simulation [{self.id}]!\n")

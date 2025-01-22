@@ -131,3 +131,6 @@ class Optimizer:
 
     def gradientAmp(self) -> np.float32:
         return ker.dll.FastNorm(self.raw_gradient_cache.ptr, self.N * 4) / np.sqrt(self.N)
+
+    def maxGradient(self) -> np.float32:
+        return np.max(self.raw_gradient_cache.data)

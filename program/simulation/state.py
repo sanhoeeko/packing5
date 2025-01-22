@@ -141,7 +141,7 @@ class State(ut.HasMeta):
             self.state_pool.clear()
             for i in range(stride):
                 gradient = self.optimizer.calGradient()
-                g = self.gradientAmp()
+                g = self.optimizer.maxGradient()
                 self.state_pool.add(self, g)
                 self.descent(gradient, step_size)
 
@@ -252,9 +252,6 @@ class State(ut.HasMeta):
         energy = self.gradient.sum.E()
         self.clear_dependency()
         return energy
-
-    def gradientAmp(self):
-        return self.optimizer.gradientAmp()
 
 
 def randomConfiguration(N: int, A: float, B: float):
