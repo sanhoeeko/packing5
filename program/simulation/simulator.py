@@ -111,8 +111,7 @@ class Simulator(ut.HasMeta):
                 self.state.descent_curve.clear()
                 self.state.boundary.compress(i)
                 current_speed = self.equilibrium()
-                if i % 20 == 0:
-                    self.save()
+                self.save()
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
         except Exception as e:
             print(f"An exception occurred in simulation [{self.id}]!\n")
@@ -123,11 +122,11 @@ class Simulator(ut.HasMeta):
         :return: current speed. Unit: it/s.
         All black magics for gradient descent should be here.
         """
-        step_sizes = [2e-3, 1e-3, 5e-4, 2e-4, 1e-4]
+        step_sizes = [1e-3, 5e-4, 2.5e-4, 1.25e-4, 1e-4]
         with ut.Timer() as timer:
             for i in range(5):
-                self.state.brown(step_sizes[i], 20000)
-            self.current_relaxations = 100000
+                self.state.brown(step_sizes[i], 10000)
+            self.current_relaxations = 50000
         return self.current_relaxations / timer.elapse_t
 
 

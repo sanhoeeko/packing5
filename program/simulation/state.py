@@ -8,6 +8,7 @@ from .grid import Grid
 from .kernel import ker
 from .mc import StatePool
 from .potential import Potential
+from .utils import NaNInGradientException
 
 
 class State(ut.HasMeta):
@@ -60,6 +61,10 @@ class State(ut.HasMeta):
     def gradient_amp(self):
         return ker.dll.FastNorm(self.CalGradient_pure().ptr, self.N * 4) / np.sqrt(self.N)
 
+    @property
+    def min_dist(self):
+        return ker.dll.MinDistanceRijFull(self.xyt.ptr, self.N)
+
     @classmethod
     def random(cls, N, n, d, A, B):
         return cls(N, n, d, A, B, randomConfiguration(N, A, B))
@@ -94,16 +99,19 @@ class State(ut.HasMeta):
         return self.xyt[:, :3].copy()
 
     def isOutOfBoundary(self) -> bool:
-        abs_xyt = np.abs(self.xyt.data)
-        x_max = np.max(abs_xyt[:, 0])
-        y_max = np.max(abs_xyt[:, 1])
-        return x_max >= self.boundary.A or y_max >= self.boundary.B
+        return bool(ker.dll.isOutOfBoundary(self.xyt.ptr, self.boundary.ptr, self.N))
+
+    def legal_pure(self) -> bool:
+        self.grid.gridLocate()
+        is_too_close = self.gradient.isTooClose()
+        self.clear_dependency()
+        return not (is_too_close and self.isOutOfBoundary())
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
         s = np.float32(step_size)
         if np.isnan(g) or np.isinf(g):
-            raise ValueError("NAN detected in gradient!")
+            raise NaNInGradientException()
         # this condition is to avoid division by zero
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
@@ -141,11 +149,16 @@ class State(ut.HasMeta):
             self.state_pool.clear()
             for i in range(stride):
                 gradient = self.optimizer.calGradient()
-                g = self.optimizer.maxGradient()
-                self.state_pool.add(self, g)
-                self.descent(gradient, step_size)
+                if self.optimizer.particles_too_close_cache:
+                    self.state_pool.add(self, 1e6)
+                    self.descent(gradient, step_size)
+                else:
+                    g = self.optimizer.maxGradient()
+                    self.state_pool.add(self, g)
+                    self.descent(gradient, step_size)
 
-            self.xyt.set_data(self.state_pool.average_zero_temperature().data)
+            energy, min_state = self.state_pool.average_zero_temperature()
+            self.xyt.set_data(min_state.data)
             gradient_amp = np.min(self.state_pool.energies.data)
             self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
             if gradient_amp < 0.2: break

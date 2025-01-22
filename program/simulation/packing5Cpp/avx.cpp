@@ -86,6 +86,18 @@ float FastNorm(void* p_x, int n) {
         result[4] + result[5] + result[6] /* + result[7]*/ );
 }
 
+float MaxAbsVector4(void* p_x, int N)
+{
+    /* This is not an avx function. */
+    float* x = (float*)p_x;
+    float current_max = 0;
+    for (int i = 0; i < 4*N; i+=4) {
+        float absg = x[i] * x[i] + x[i + 1] * x[i + 1] + x[i + 1] * x[i + 2];
+        current_max = absg > current_max ? absg : current_max;
+    }
+    return current_max;
+}
+
 void CwiseMulVector4(void* p_g, int N, float s) {
     /*
         require: number of particles being a multiple of 4

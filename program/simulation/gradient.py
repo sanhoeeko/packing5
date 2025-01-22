@@ -52,6 +52,26 @@ class GradientMatrix:
 
         return inner
 
+    def minDistanceRij(self) -> np.float32:
+        """
+        Python code for MinDistanceRijFull:
+            dx = self.state.xyt[:, 0:1] - self.state.xyt[:, 0:1].T
+            dy = self.state.xyt[:, 1:2] - self.state.xyt[:, 1:2].T
+            r2 = dx * dx + dy * dy + np.diag(np.full((self.N,), np.inf))
+            return np.sqrt(np.min(r2))
+        """
+        # do not use this. I don't know why but there is a bug.
+        # return ker.dll.MinDistanceRij(self.state.xyt.ptr, self.grid.grid.ptr, self.grid.lines, self.grid.cols, self.N)
+        return self.state.min_dist
+
+    def averageDistanceRij(self) -> np.float32:
+        return ker.dll.AverageDistanceRij(self.state.xyt.ptr, self.grid.grid.ptr, self.grid.lines, self.grid.cols,
+                                          self.N)
+
+    def isTooClose(self) -> bool:
+        return self.minDistanceRij() < 0.8 * self.averageDistanceRij()
+        # return self.minDistanceRij() < 1.0
+
 
 class GradientSum:
     def __init__(self, Gij):
@@ -81,6 +101,7 @@ class Optimizer:
         self.grid = state.grid
         self.momentum = ut.CArrayFZeros((self.N, 4))
         self.raw_gradient_cache = ut.CArrayFZeros((self.N, 4))
+        self.particles_too_close_cache = False
         self.beta = np.float32(momentum_beta)
         self.noise_factor = np.float32(noise_factor)
         self.pure_gradient_func = state.CalGradient_pure
@@ -95,6 +116,7 @@ class Optimizer:
         def raw_gradient_func() -> ut.CArray:
             self.grid.gridLocate()
             self.void_gradient_func()
+            self.particles_too_close_cache = state.gradient.isTooClose()
             gradient = state.gradient.sum.g()
             gradient.copyto(self.raw_gradient_cache)
             return gradient
@@ -133,4 +155,4 @@ class Optimizer:
         return ker.dll.FastNorm(self.raw_gradient_cache.ptr, self.N * 4) / np.sqrt(self.N)
 
     def maxGradient(self) -> np.float32:
-        return np.max(self.raw_gradient_cache.data)
+        return ker.dll.MaxAbsVector4(self.raw_gradient_cache.ptr, self.N)

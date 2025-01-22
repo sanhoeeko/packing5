@@ -15,6 +15,10 @@ class Grid:
         grid[:, 0] = 0
         self.grid = ut.CArray(grid)
 
+        self.m, self.n = None, None
+        self.x_shift, self.y_shift = None, None
+        self.lines, self.cols, self.size = None, None, None
+
     def init(self, A: float, B: float):
         """
         Call it when the boundary changes

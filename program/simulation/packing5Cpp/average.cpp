@@ -20,7 +20,7 @@ void AverageState(float temperature, void* p_states, void* p_energies, void* p_d
     delete[] exps;
 }
 
-void AverageStateZeroTemperature(void* p_states, void* p_energies, void* p_dst, int N, int n_samples)
+float AverageStateZeroTemperature(void* p_states, void* p_energies, void* p_dst, int N, int n_samples)
 {
     float* states = (float*)p_states;
     float* energies = (float*)p_energies;
@@ -34,4 +34,5 @@ void AverageStateZeroTemperature(void* p_states, void* p_energies, void* p_dst, 
         }
     }
     memcpy(p_dst, states + current_idx * (4 * N), 4 * N * sizeof(float));
+    return current_e;
 }

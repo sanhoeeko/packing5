@@ -17,14 +17,15 @@ class StatePool:
         ker.dll.AverageState(temperature, self.pool.ptr, self.energies.ptr, self.averaged.ptr, self.N, self.capacity)
         return self.averaged
 
-    def average_zero_temperature(self) -> ut.CArray:
+    def average_zero_temperature(self) -> (np.float32, ut.CArray):
         """
         Python code:
         idx = np.argmin(self.energies.data)
         return ut.CArray(self.pool[idx, :, :])
         """
-        ker.dll.AverageStateZeroTemperature(self.pool.ptr, self.energies.ptr, self.averaged.ptr, self.N, self.capacity)
-        return self.averaged
+        energy = ker.dll.AverageStateZeroTemperature(self.pool.ptr, self.energies.ptr, self.averaged.ptr, self.N,
+                                                     self.capacity)
+        return energy, self.averaged
 
     def add(self, state, value):
         np.copyto(self.pool.data[self.current_ptr, :, :], state.xyt.data)

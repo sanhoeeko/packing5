@@ -22,12 +22,17 @@ class Kernel:
             ('StochasticCalGradient', [ct.c_float] + [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
             ('StochasticCalGradientAsDisks', [ct.c_float] + [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
             ('CalGradientAndEnergy', [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
+            ('MinDistanceRij', [ct.c_void_p] * 2 + [ct.c_int] * 3, ct.c_float),
+            ('AverageDistanceRij', [ct.c_void_p] * 2 + [ct.c_int] * 3, ct.c_float),
+            ('MinDistanceRijFull', [ct.c_void_p, ct.c_int], ct.c_float),
+            ('isOutOfBoundary', [ct.c_void_p] * 2 + [ct.c_int], ct.c_int),
             ('SumTensor4', [ct.c_void_p] * 3 + [ct.c_int], None),
             ('AddVector4', [ct.c_void_p] * 3 + [ct.c_int, ct.c_float], None),
             ('PerturbVector4', [ct.c_void_p, ct.c_int, ct.c_float], None),
             ('FastClear', [ct.c_void_p, ct.c_int], None),
             ('HollowClear', [ct.c_void_p, ct.c_int, ct.c_int], None),
             ('FastNorm', [ct.c_void_p, ct.c_int], ct.c_float),
+            ('MaxAbsVector4', [ct.c_void_p, ct.c_int], ct.c_float),
             ('CwiseMulVector4', [ct.c_void_p, ct.c_int, ct.c_float], None),
             ('CreateLBFGS', [ct.c_int, ct.c_void_p, ct.c_void_p], ct.c_void_p),
             ('DeleteLBFGS', [ct.c_void_p], None),
@@ -35,7 +40,7 @@ class Kernel:
             ('LbfgsUpdate', [ct.c_void_p], None),
             ('LbfgsDirection', [ct.c_void_p] * 2, None),
             ('AverageState', [ct.c_float] + [ct.c_void_p] * 3 + [ct.c_int] * 2, None),
-            ('AverageStateZeroTemperature', [ct.c_void_p] * 3 + [ct.c_int] * 2, None),
+            ('AverageStateZeroTemperature', [ct.c_void_p] * 3 + [ct.c_int] * 2, ct.c_float),
         )
 
     def setTypes(self, *tup):

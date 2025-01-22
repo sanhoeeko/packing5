@@ -37,6 +37,16 @@ potential_table_shape = (2 ** digit_x, 2 ** digit_y, 2 ** digit_t)
 sz1d = 2 ** digit_r
 
 
+# exceptions
+
+class ParticlesTooCloseException(Exception):
+    def __init__(self): super().__init__("Particle too close!")
+
+
+class NaNInGradientException(Exception):
+    def __init__(self): super().__init__("NAN detected in gradient!")
+
+
 # C++ data management
 
 class CArray:

@@ -1,6 +1,6 @@
 max_compress = 0.1
-compress_rate = 1e-4
-descent_curve_stride = 400
+compress_rate = 1e-3
+descent_curve_stride = 100
 max_pre_relaxation = 5e3
 max_relaxation = 2e3
 max_step_size = 1e-3
