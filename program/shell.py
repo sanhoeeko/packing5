@@ -1,6 +1,7 @@
 import os
 import sys
 
+import default
 from h5tools import dataset as dset, h5tools as ht
 from simulation import potential, boundary
 from simulation.ensemble import CreateEnsemble
@@ -14,7 +15,7 @@ def start_ensemble(replica, N, n, d, phi0, Gamma0):
     """
     radial_func = potential.PowerFunc(2.5)
     compress_func_A = boundary.NoCompress()
-    compress_func_B = boundary.RatioCompress(0.002)
+    compress_func_B = boundary.RatioCompress(default.compress_rate)
     ensemble = CreateEnsemble(int(N), int(n), float(d), float(phi0), float(Gamma0),
                               compress_func_A, compress_func_B, radial_func)
     ensemble.setReplica(int(replica))

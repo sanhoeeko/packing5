@@ -1,5 +1,6 @@
 import platform
 
+import default
 import simulation.utils as ut
 from h5tools.utils import randomString
 from simulation import boundary
@@ -14,7 +15,7 @@ def testSingleThread(profile=True):
     phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
-    compress_func_B = boundary.RatioCompress(2e-4)
+    compress_func_B = boundary.RatioCompress(default.compress_rate)
     ex = createSimulator(f'{randomString()}_0', N, n, d, phi0, Gamma0, compress_func_A, compress_func_B)
     ex.setPotential(Potential(n, d, PowerFunc(2.5)))
     ex.state.gradient.potential.cal_potential(4)

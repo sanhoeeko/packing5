@@ -58,6 +58,9 @@ class CArray:
     def copy(self) -> 'CArray':
         return CArray(self.data.copy())
 
+    def copyto(self, dst: 'CArray'):
+        np.copyto(dst.data, self.data)
+
     def set_data(self, src: np.ndarray):
         """
         Dangerous! Only for test! We assume that all calculation including CArray should happen in C++.

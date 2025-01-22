@@ -27,7 +27,9 @@ class StatePool:
         return self.averaged
 
     def add(self, state, value):
-        np.copyto(self.pool[self.current_ptr, :, :], state.xyt.data)
-        # self.energies.data[self.current_ptr] = ker.dll.FastNorm(state.CalGradient_pure().ptr, state.N * 4)
+        np.copyto(self.pool.data[self.current_ptr, :, :], state.xyt.data)
         self.energies.data[self.current_ptr] = value
         self.current_ptr += 1
+
+    def clear(self):
+        self.current_ptr = 0

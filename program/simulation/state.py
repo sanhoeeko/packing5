@@ -6,7 +6,6 @@ from .boundary import EllipticBoundary
 from .gradient import Optimizer, GradientMatrix
 from .grid import Grid
 from .kernel import ker
-from .lbfgs import LBFGS
 from .mc import StatePool
 from .potential import Potential
 
@@ -29,8 +28,9 @@ class State(ut.HasMeta):
         self.optimizer: Optimizer = None
         self.grid = Grid(self)
         self.gradient = GradientMatrix(self, self.grid)
-        self.lbfgs_agent = LBFGS(self)
         self.descent_curve = ut.DescentCurve()
+        self.state_pool = StatePool(self.N, default.descent_curve_stride)
+        # self.lbfgs_agent = LBFGS(self)
 
     @property
     def A(self):
@@ -138,15 +138,15 @@ class State(ut.HasMeta):
         self.descent_curve.reserve(n_steps // stride)
 
         for t in range(int(n_steps) // stride):
-            state_pool = StatePool(self.N, stride)
+            self.state_pool.clear()
             for i in range(stride):
                 gradient = self.optimizer.calGradient()
                 g = self.gradientAmp()
-                state_pool.add(self, g)
+                self.state_pool.add(self, g)
                 self.descent(gradient, step_size)
 
-            self.xyt.set_data(state_pool.average_zero_temperature().data)
-            gradient_amp = np.min(state_pool.energies.data)
+            self.xyt.set_data(self.state_pool.average_zero_temperature().data)
+            gradient_amp = np.min(self.state_pool.energies.data)
             self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
             if gradient_amp < 0.2: break
 

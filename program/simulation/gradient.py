@@ -80,10 +80,10 @@ class Optimizer:
         self.N = state.N
         self.grid = state.grid
         self.momentum = ut.CArrayFZeros((self.N, 4))
+        self.raw_gradient_cache = ut.CArrayFZeros((self.N, 4))
         self.beta = np.float32(momentum_beta)
         self.noise_factor = np.float32(noise_factor)
         self.pure_gradient_func = state.CalGradient_pure
-        self.raw_gradient_cache = None
         func_name = 'calGradient' if stochastic_p == 1 else 'stochasticCalGradient'
         if as_disks:
             func_name += 'AsDisks'
@@ -96,7 +96,7 @@ class Optimizer:
             self.grid.gridLocate()
             self.void_gradient_func()
             gradient = state.gradient.sum.g()
-            self.raw_gradient_cache = gradient.copy()
+            gradient.copyto(self.raw_gradient_cache)
             return gradient
 
         self.raw_gradient_func = raw_gradient_func
