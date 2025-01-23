@@ -47,6 +47,10 @@ class NaNInGradientException(Exception):
     def __init__(self): super().__init__("NAN detected in gradient!")
 
 
+class InitFailException(Exception):
+    def __init__(self): super().__init__("Random Initialization failed!")
+
+
 # C++ data management
 
 class CArray:

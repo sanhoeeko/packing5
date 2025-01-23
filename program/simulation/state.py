@@ -142,14 +142,14 @@ class State(ut.HasMeta):
 
     def brown(self, step_size: float, n_steps: int):
         stride = default.descent_curve_stride
-        self.setOptimizer(0.1, 0.9, 1, False)
+        self.setOptimizer(0.01, 0.9, 1, False)
         self.descent_curve.reserve(n_steps // stride)
 
         for t in range(int(n_steps) // stride):
             self.state_pool.clear()
             for i in range(stride):
                 gradient = self.optimizer.calGradient()
-                if self.optimizer.particles_too_close_cache:
+                if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
                     self.state_pool.add(self, 1e6)
                     self.descent(gradient, step_size)
                 else:
@@ -161,16 +161,17 @@ class State(ut.HasMeta):
             self.xyt.set_data(min_state.data)
             gradient_amp = np.min(self.state_pool.energies.data)
             self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
-            if gradient_amp < 0.2: break
+            if gradient_amp < 0.1: break
 
         self.descent_curve.join()
 
     def sgd(self, step_size: float, n_steps):
-        self.setOptimizer(0, 0.8, 1, False)
+        self.setOptimizer(0, 0, 1, False)
         self.descent_curve.reserve(n_steps // 100)
         for t in range(int(n_steps)):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
             self.record(t, 100, gradient_amp, default.if_cal_energy)
+            if gradient_amp < 0.1: break
         self.descent_curve.join()
 
     def lbfgs(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):

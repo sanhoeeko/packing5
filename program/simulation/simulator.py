@@ -105,11 +105,24 @@ class Simulator(ut.HasMeta):
         assert self.is_setting_complete()
         self.create_dataset()
         try:
-            self.state.initAsDisks()
+            while True:
+                self.state.initAsDisks()
+                if self.state.legal_pure():
+                    print(f"[{self.id}] Successfully initialized.")
+                    break
+                else:
+                    print(f"[{self.id}] Initialization Failed.")
+
             for i in range(default.max_compress_turns):
                 if self.state.phi > default.terminal_phi: break
                 self.state.descent_curve.clear()
+
+                # self.state.boundary.compress(i)
+                b0 = self.state.boundary.B
                 self.state.boundary.compress(i)
+                b1 = self.state.boundary.B
+                self.state.xyt.data[:, 1] *= b1 / b0  # affine transformation
+
                 current_speed = self.equilibrium()
                 self.save()
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
@@ -126,7 +139,8 @@ class Simulator(ut.HasMeta):
         with ut.Timer() as timer:
             for i in range(5):
                 self.state.brown(step_sizes[i], 10000)
-            self.current_relaxations = 50000
+            self.state.sgd(1e-4, 20000)
+            self.current_relaxations = 50000 + 20000
         return self.current_relaxations / timer.elapse_t
 
 
