@@ -29,6 +29,24 @@ class PowerFunc(RadialFunc):
         return f"power({'%.1f' % self.power})"
 
 
+class ScreenedCoulomb(RadialFunc):
+    def __init__(self, r0: float):
+        self.r0 = r0
+        V0 = 1e-1
+        x2 = np.linspace(0, 4, num=ut.sz1d, endpoint=True, dtype=np.float32)
+        x = np.sqrt(x2)
+        r = x / r0
+        vr = ut.CArray(V0 * np.exp(-r) / r, np.float32)
+        vr.data[0] = 0
+        dvr = ut.CArray(-V0 * np.exp(-r) * (x + r0) / x ** 2, np.float32)
+        dvr.data[0] = 0
+        super().__init__(vr, dvr)
+
+    @property
+    def name(self):
+        return f"screened coulomb({'%.1f' % self.r0})"
+
+
 class Potential:
     def __init__(self, n: int, d: float, vr: RadialFunc):
         self.radial_func = vr

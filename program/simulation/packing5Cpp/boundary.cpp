@@ -25,8 +25,7 @@ bool EllipticBoundary::maybeCollide(const xyt& q)
 float EllipticBoundary::distOutOfBoundary(const xyt& q)
 {
 	float f = (q.x) * (q.x) / a2 + (q.y) * (q.y) / b2 - 1;
-	if (f < 0)return 0;
-	return f;
+	return f <= 0 ? 0 : f * a * b;
 }
 
 /*

@@ -6,6 +6,7 @@ from .boundary import EllipticBoundary
 from .gradient import Optimizer, GradientMatrix
 from .grid import Grid
 from .kernel import ker
+from .lbfgs import LBFGS
 from .mc import StatePool
 from .potential import Potential
 from .utils import NaNInGradientException
@@ -31,7 +32,7 @@ class State(ut.HasMeta):
         self.gradient = GradientMatrix(self, self.grid)
         self.descent_curve = ut.DescentCurve()
         self.state_pool = StatePool(self.N, default.descent_curve_stride)
-        # self.lbfgs_agent = LBFGS(self)
+        self.lbfgs_agent = LBFGS(self)
 
     @property
     def A(self):
@@ -115,11 +116,6 @@ class State(ut.HasMeta):
         # this condition is to avoid division by zero
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
-        # if self.isOutOfBoundary():
-        #     ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, -s)
-        #     ker.dll.AddVector4(self.xyt.ptr, self.lbfgs_agent.gradient_cache.ptr, self.xyt.ptr, self.N, 1e-4)
-        #     # print("OOB!")
-        # always clear dependency. If not, it will cause segment fault.
         self.clear_dependency()
         return np.float32(g / np.sqrt(self.N))
 
@@ -168,11 +164,17 @@ class State(ut.HasMeta):
     def sgd(self, step_size: float, n_steps):
         self.setOptimizer(0, 0, 1, False)
         self.descent_curve.reserve(n_steps // 100)
+        state_cache = self.xyt.copy()
+
         for t in range(int(n_steps)):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
             self.record(t, 100, gradient_amp, default.if_cal_energy)
             if gradient_amp < 0.1: break
-        self.descent_curve.join()
+
+        if self.legal_pure():
+            self.descent_curve.join()
+        else:
+            self.xyt.set_data(state_cache.data)
 
     def lbfgs(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):
         """
@@ -182,7 +184,7 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
-        min_grad = 0.2
+        min_grad = 0.1
         gradient_amp = 0
 
         self.lbfgs_agent.init(step_size)
