@@ -54,8 +54,7 @@ if __name__ == "__main__":
         func_name = sys.argv[1]
         args = sys.argv[2:]
         positional_args = [arg for arg in args if '=' not in arg]
-        keyword_args = {arg.split('=')[0]: arg.split('=')[1]
-                        for arg in args if '=' in arg}
+        keyword_args = {arg.split('=')[0]: arg.split('=')[1] for arg in args if '=' in arg}
         call_function_by_name(func_name, *positional_args, **keyword_args)
     else:
         print("Please provide a function name.")

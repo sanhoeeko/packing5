@@ -49,6 +49,8 @@ DLLEXPORT float MinDistanceRijFull(void* p_state, int N);
 
 DLLEXPORT int isOutOfBoundary(void* p_state, void* p_boundary, int N);
 
+DLLEXPORT void ClipGradient(void* q_ptr, int N);
+
 DLLEXPORT void* CreateLBFGS(int N, void* configuration_src, void* gradient_src);
 
 DLLEXPORT void DeleteLBFGS(void* ptr);

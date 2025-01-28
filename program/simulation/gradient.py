@@ -32,23 +32,23 @@ class GradientMatrix:
         )
 
     def calGradientAndEnergy(self):
-        return ker.dll.CalGradientAndEnergy(*self.params)
+        ker.dll.CalGradientAndEnergy(*self.params)
 
     def calGradient(self):
-        return ker.dll.CalGradient(*self.params)
+        ker.dll.CalGradient(*self.params)
 
     def calGradientAsDisks(self):
-        return ker.dll.CalGradientAsDisks(*self.params_zero)
+        ker.dll.CalGradientAsDisks(*self.params_zero)
 
     def stochasticCalGradient(self, p: float):
         def inner():
-            return ker.dll.StochasticCalGradient(p, *self.params)
+            ker.dll.StochasticCalGradient(p, *self.params)
 
         return inner
 
     def stochasticCalGradientAsDisks(self, p: float):
         def inner():
-            return ker.dll.StochasticCalGradientAsDisks(p, *self.params_zero)
+            ker.dll.StochasticCalGradientAsDisks(p, *self.params_zero)
 
         return inner
 
@@ -83,16 +83,18 @@ class GradientSum:
 
     def g(self) -> ut.CArray:
         ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
+        # gradient is clipped only in "gradient only" mode
+        # ker.dll.ClipGradient(self.data.ptr, self.N)
         return self.data
 
     def E(self) -> np.float32:
-        self.g()
+        ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
         return np.sum(self.data[:, 3])
 
     def gE(self) -> (ut.CArray, np.float32):
-        g = self.g()
+        ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
         E = np.sum(self.data[:, 3])
-        return g, E
+        return self.data, E
 
 
 class Optimizer:

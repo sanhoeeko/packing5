@@ -25,7 +25,8 @@ class LBFGS:
 
     def CalDirection(self) -> ut.CArray:
         ker.dll.LbfgsDirection(self.ptr, self.direction.ptr)
+        ker.dll.ClipGradient(self.direction.ptr, self.N)
         return self.direction
 
     def gradientAmp(self) -> np.float32:
-        return np.float32(ker.dll.FastNorm(self.gradient_cache.ptr, self.N * 4) / np.sqrt(self.N))
+        return self.gradient_cache.norm(self.N)

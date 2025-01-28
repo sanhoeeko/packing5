@@ -251,3 +251,17 @@ void v4::lbfgs_alg_2(float a_b, const v4& v_s)
         _mm256_storeu_ps(z + i8, _mm256_add_ps(z_vec, _mm256_mul_ps(s_vec, a_b_vec)));
     }
 }
+
+void ClipGradient(void* q_ptr, int N) {
+    xyt* q = (xyt*)q_ptr;
+    for (int i = 0; i < N; i++) {
+        float absg2 = q[i].x * q[i].x + q[i].y * q[i].y + q[i].t * q[i].t;
+        if (absg2 > max_gradient_amp * max_gradient_amp) {
+            float ratio = max_gradient_amp / sqrtf(absg2);
+            float* ptr = (float*)&q[i];
+            __m128 vec = _mm_loadu_ps(ptr);
+            __m128 r = _mm_set_ps1(ratio);
+            _mm_storer_ps(ptr, _mm_mul_ps(vec, r));
+        }
+    }
+}

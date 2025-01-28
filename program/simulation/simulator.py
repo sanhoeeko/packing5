@@ -139,8 +139,9 @@ class Simulator(ut.HasMeta):
         with ut.Timer() as timer:
             for i in range(5):
                 self.state.brown(step_sizes[i], 2000)
-            self.state.lbfgs(2e-4, 4000, default.descent_curve_stride)
-            self.current_relaxations = 10000 + 4000
+            for i in range(5):
+                self.state.lbfgs(0.1 * step_sizes[i], 1000, default.descent_curve_stride)
+            self.current_relaxations = 10000 + 5000
         return self.current_relaxations / timer.elapse_t
 
 

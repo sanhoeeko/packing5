@@ -109,7 +109,7 @@ class State(ut.HasMeta):
         return not (is_too_close and self.isOutOfBoundary())
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
-        g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
+        g = gradient.norm(self.N)
         s = np.float32(step_size)
         if np.isnan(g) or np.isinf(g):
             raise NaNInGradientException()
@@ -117,7 +117,7 @@ class State(ut.HasMeta):
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
         self.clear_dependency()
-        return np.float32(g / np.sqrt(self.N))
+        return g
 
     def initAsDisks(self) -> (np.float32, np.float32):
         """
@@ -161,21 +161,6 @@ class State(ut.HasMeta):
 
         self.descent_curve.join()
 
-    def sgd(self, step_size: float, n_steps):
-        self.setOptimizer(0, 0, 1, False)
-        self.descent_curve.reserve(n_steps // 100)
-        state_cache = self.xyt.copy()
-
-        for t in range(int(n_steps)):
-            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
-            self.record(t, 100, gradient_amp, default.if_cal_energy)
-            if gradient_amp < 0.1: break
-
-        if self.legal_pure():
-            self.descent_curve.join()
-        else:
-            self.xyt.set_data(state_cache.data)
-
     def lbfgs(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):
         """
         :return:
@@ -189,6 +174,8 @@ class State(ut.HasMeta):
 
         self.lbfgs_agent.init(step_size)
         self.descent_curve.reserve(n_steps // stride)
+        state_cache = self.xyt.copy()
+        g_cache = self.CalGradient_pure().norm(self.N)
 
         for t in range(n_steps):
             self.descent(self.lbfgs_agent.CalDirection(), step_size)
@@ -196,49 +183,14 @@ class State(ut.HasMeta):
             self.lbfgs_agent.update()
             self.record(t, stride, gradient_amp, default.if_cal_energy)
 
-            if t % stride == 0:
-                # step_size = stepsize.findBestStepsize(
-                #     self, default.max_step_size, default.step_size_searching_samples
-                #
-                pass
-
             if gradient_amp <= min_grad:
                 self.descent_curve.join()
                 return t, gradient_amp
 
+        if gradient_amp > g_cache:
+            self.xyt.set_data(state_cache.data)
+            self.descent_curve.rewrite(g=g_cache)
         self.descent_curve.join()
-        return n_steps, gradient_amp
-
-    def fineRelax(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):
-        """
-        :return:
-        if cal_energy:
-            (relaxations_steps, final gradient amplitude, energy curve)
-        else:
-            (relaxations_steps, final gradient amplitude, gradient amplitudes)
-        """
-        from simulation import stepsize
-        min_grad = 0.1
-        gradient_amp = 0
-
-        self.setOptimizer(0, 0.8, 1, False)
-        self.descent_curve.reserve(n_steps // stride)
-
-        for t in range(n_steps):
-            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
-            self.record(t, stride, gradient_amp, default.if_cal_energy)
-
-            if t % stride == 0:
-                step_size = 0.1 * stepsize.findGoodStepsize(
-                    self, default.max_step_size, default.step_size_searching_samples
-                )
-
-            if gradient_amp <= min_grad:
-                self.descent_curve.join()
-                return t, gradient_amp
-
-        self.descent_curve.join()
-        return n_steps, gradient_amp
 
     def CalGradient_pure(self) -> ut.CArray:
         """

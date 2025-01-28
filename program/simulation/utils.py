@@ -81,6 +81,10 @@ class CArray:
         """
         np.copyto(self.data, src)
 
+    def norm(self, N: int) -> np.float32:
+        from .kernel import ker
+        return np.float32(ker.dll.FastNorm(self.ptr, N * 4) / np.sqrt(N))
+
 
 def CArrayF(arr: np.ndarray):
     return CArray(arr, np.float32)
@@ -106,6 +110,12 @@ class DescentCurve:
         n = int(n)
         self.current_gradient_curve = np.full((n,), np.float32(np.nan))
         self.current_energy_curve = np.full((n,), np.float32(np.nan))
+
+    def rewrite(self, g: np.float32 = None, e: np.float32 = None):
+        if g is not None:
+            self.current_gradient_curve[-1] = g
+        if e is not None:
+            self.current_energy_curve[-1] = e
 
     def join(self):
         self.g_append(self.current_gradient_curve)
