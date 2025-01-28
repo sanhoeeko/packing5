@@ -41,6 +41,14 @@ DLLEXPORT void StochasticCalGradientAsDisks(float p, void* p_shape, void* p_stat
 DLLEXPORT void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
     void* p_Gij, void* p_z, int lines, int cols, int N);
 
+DLLEXPORT float MinDistanceRij(void* p_state, void* p_grid, int lines, int cols, int N);
+
+DLLEXPORT float AverageDistanceRij(void* p_state, void* p_grid, int lines, int cols, int N);
+
+DLLEXPORT float MinDistanceRijFull(void* p_state, int N);
+
+DLLEXPORT int isOutOfBoundary(void* p_state, void* p_boundary, int N);
+
 DLLEXPORT void* CreateLBFGS(int N, void* configuration_src, void* gradient_src);
 
 DLLEXPORT void DeleteLBFGS(void* ptr);
@@ -63,7 +71,13 @@ DLLEXPORT void HollowClear(void* p_float, int N, int stride);
 
 DLLEXPORT float FastNorm(void* p_x, int n);
 
+DLLEXPORT float MaxAbsVector4(void* p_x, int n);
+
 DLLEXPORT void CwiseMulVector4(void* p_g, int N, float s);
+
+DLLEXPORT void AverageState(float temperature, void* p_state, void* energies, void* dst, int N, int n_samples);
+
+DLLEXPORT float AverageStateZeroTemperature(void* p_state, void* energies, void* dst, int N, int n_samples);
 
 //// test functions /////////////////////////////////////////////////////////////////////////////
 

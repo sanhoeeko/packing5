@@ -9,9 +9,9 @@ if __name__ == '__main__':
     auto_pack()
     db = Database('data.h5')
     checkGradient(db)
-    # calAllOrderParameters(db, 'rho')
-    # InteractiveViewer(db[0].simulation_at(0), RenderSetup('z_number', False, 'voronoi', True)).show()
-    # checkEnergyCurveAt(db, 0, 0)
+    checkEnergy(db)
+    checkGradientCurveAt(db, 0, 0)
+    InteractiveViewer(db[0].simulation_at(0), RenderSetup('z_number', False, 'voronoi', True)).show()
 
     # db = AnalysisData('analysis.h5')
     # db.plot('Phi6')

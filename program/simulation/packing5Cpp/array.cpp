@@ -28,6 +28,10 @@ void xyt::operator-=(const xyt& q) {
     x -= q.x; y -= q.y; t -= q.t;
 }
 
+xyt xyt::operator*(const float a){
+    return { a * x,a * y,a * t,a * unused };
+}
+
 bool isnan(const xyt& q) {
     return isnan(q.x) || isnan(q.y) || isnan(q.t);
 }

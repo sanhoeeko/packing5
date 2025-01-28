@@ -1,22 +1,23 @@
 import platform
 
+import simulation.potential as pot
 import simulation.utils as ut
 from h5tools.utils import randomString
 from simulation import boundary
-from simulation.potential import Potential, PowerFunc
 from simulation.simulator import createSimulator
 
 
 def testSingleThread(profile=True):
-    N = 200
+    N = 1024
     n = 6
-    d = 0.02
+    d = 0.05
     phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
     compress_func_B = boundary.RatioCompress(0.002)
     ex = createSimulator(f'{randomString()}_0', N, n, d, phi0, Gamma0, compress_func_A, compress_func_B)
-    ex.setPotential(Potential(n, d, PowerFunc(2.5)))
+    ex.setPotential(pot.Potential(n, d, pot.PowerFunc(2.5)))
+    # ex.setPotential(pot.Potential(n, d, pot.ScreenedCoulomb(2.0)))
     ex.state.gradient.potential.cal_potential(4)
     if profile:
         with ut.Profile('../main.prof'):

@@ -11,6 +11,7 @@
 
 #include <omp.h>
 #include <cmath>
+#include <iostream>
 using namespace std;
 #undef max
 #undef min
@@ -23,6 +24,7 @@ enum HashFunc { _h2pi, _h4 };
 struct xyt {
     float x, y, t, unused;
     void operator+=(const xyt&); void operator-=(const xyt&);
+    xyt operator*(const float);
 };
 typedef xyt ge;                             // struct ge { float gx, gy, gt, E; };
 struct XytPair { xyt first, second; };

@@ -37,6 +37,20 @@ potential_table_shape = (2 ** digit_x, 2 ** digit_y, 2 ** digit_t)
 sz1d = 2 ** digit_r
 
 
+# exceptions
+
+class ParticlesTooCloseException(Exception):
+    def __init__(self): super().__init__("Particle too close!")
+
+
+class NaNInGradientException(Exception):
+    def __init__(self): super().__init__("NAN detected in gradient!")
+
+
+class InitFailException(Exception):
+    def __init__(self): super().__init__("Random Initialization failed!")
+
+
 # C++ data management
 
 class CArray:
@@ -57,6 +71,9 @@ class CArray:
 
     def copy(self) -> 'CArray':
         return CArray(self.data.copy())
+
+    def copyto(self, dst: 'CArray'):
+        np.copyto(dst.data, self.data)
 
     def set_data(self, src: np.ndarray):
         """

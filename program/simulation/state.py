@@ -7,7 +7,9 @@ from .gradient import Optimizer, GradientMatrix
 from .grid import Grid
 from .kernel import ker
 from .lbfgs import LBFGS
+from .mc import StatePool
 from .potential import Potential
+from .utils import NaNInGradientException
 
 
 class State(ut.HasMeta):
@@ -25,11 +27,12 @@ class State(ut.HasMeta):
         self.xyt = ut.CArrayF(configuration)
         self.boundary = EllipticBoundary(A, B)
         # optional objects
-        self.grid: Grid = None
-        self.gradient: GradientMatrix = None
         self.optimizer: Optimizer = None
-        self.lbfgs_agent: LBFGS = None
-        self.descent_curve : ut.DescentCurve = None
+        self.grid = Grid(self)
+        self.gradient = GradientMatrix(self, self.grid)
+        self.descent_curve = ut.DescentCurve()
+        self.state_pool = StatePool(self.N, default.descent_curve_stride)
+        self.lbfgs_agent = LBFGS(self)
 
     @property
     def A(self):
@@ -59,31 +62,27 @@ class State(ut.HasMeta):
     def gradient_amp(self):
         return ker.dll.FastNorm(self.CalGradient_pure().ptr, self.N * 4) / np.sqrt(self.N)
 
+    @property
+    def min_dist(self):
+        return ker.dll.MinDistanceRijFull(self.xyt.ptr, self.N)
+
     @classmethod
     def random(cls, N, n, d, A, B):
         return cls(N, n, d, A, B, randomConfiguration(N, A, B))
-
-    def train(self):
-        self.grid = Grid(self)
-        self.gradient = GradientMatrix(self, self.grid)
-        self.lbfgs_agent = LBFGS(self)
-        self.descent_curve = ut.DescentCurve()
-        return self
 
     def setPotential(self, potential: Potential):
         self.gradient.potential = potential
         return self
 
-    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float,
-                     as_disks: bool, anneal_factor: float = 1):
-        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks, anneal_factor)
+    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool):
+        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks)
         self.optimizer.init()
         return self
 
     def copy(self, train=False) -> 'State':
         s = State(self.N, self.n, self.d, self.boundary.A, self.boundary.B, self.xyt.data.copy())
         if train:
-            return s.train().setPotential(self.gradient.potential)
+            return s.setPotential(self.gradient.potential)
         else:
             return s
 
@@ -101,24 +100,22 @@ class State(ut.HasMeta):
         return self.xyt[:, :3].copy()
 
     def isOutOfBoundary(self) -> bool:
-        abs_xyt = np.abs(self.xyt.data)
-        x_max = np.max(abs_xyt[:, 0])
-        y_max = np.max(abs_xyt[:, 1])
-        return x_max >= self.boundary.A or y_max >= self.boundary.B
+        return bool(ker.dll.isOutOfBoundary(self.xyt.ptr, self.boundary.ptr, self.N))
+
+    def legal_pure(self) -> bool:
+        self.grid.gridLocate()
+        is_too_close = self.gradient.isTooClose()
+        self.clear_dependency()
+        return not (is_too_close and self.isOutOfBoundary())
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
-        s = np.float32(step_size) # / (g ** 0.5)
+        s = np.float32(step_size)
         if np.isnan(g) or np.isinf(g):
-            raise ValueError("NAN detected in gradient!")
+            raise NaNInGradientException()
         # this condition is to avoid division by zero
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
-        # if self.isOutOfBoundary():
-        #     ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, -s)
-        #     # ker.dll.AddVector4(self.xyt.ptr, self.lbfgs_agent.gradient_cache.ptr, self.xyt.ptr, self.N, 1e-4)
-        #     # print("OOB!")
-        # always clear dependency. If not, it will cause segment fault.
         self.clear_dependency()
         return np.float32(g / np.sqrt(self.N))
 
@@ -139,27 +136,45 @@ class State(ut.HasMeta):
         energy = self.CalEnergy_pure()
         return gradient_amp, energy
 
-    def brown(self, step_size: float, n_steps: int, n_samples):
-        self.setOptimizer(0.2, 0.8, 1, False)
-        self.descent_curve.reserve(n_steps // 100)
-        for t in range(int(n_steps)):
-            gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
-            self.record(t, 100, gradient_amp, default.if_cal_energy)
-        state_pool = np.zeros((n_samples, self.N, 4))
-        for t in range(int(n_samples)):
-            self.descent(self.optimizer.calGradient(), step_size)
-            state_pool[t, :, :] = self.xyt.data.copy()
-        averaged_state = np.mean(state_pool, axis=0)
-        self.xyt.set_data(averaged_state)
+    def brown(self, step_size: float, n_steps: int):
+        stride = default.descent_curve_stride
+        self.setOptimizer(0.01, 0.9, 1, False)
+        self.descent_curve.reserve(n_steps // stride)
+
+        for t in range(int(n_steps) // stride):
+            self.state_pool.clear()
+            for i in range(stride):
+                gradient = self.optimizer.calGradient()
+                if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
+                    self.state_pool.add(self, 1e6)
+                    self.descent(gradient, step_size)
+                else:
+                    g = self.optimizer.maxGradient()
+                    self.state_pool.add(self, g)
+                    self.descent(gradient, step_size)
+
+            energy, min_state = self.state_pool.average_zero_temperature()
+            self.xyt.set_data(min_state.data)
+            gradient_amp = np.min(self.state_pool.energies.data)
+            self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
+            if gradient_amp < 0.1: break
+
         self.descent_curve.join()
 
     def sgd(self, step_size: float, n_steps):
-        self.setOptimizer(0, 0.8, 1, False)
+        self.setOptimizer(0, 0, 1, False)
         self.descent_curve.reserve(n_steps // 100)
+        state_cache = self.xyt.copy()
+
         for t in range(int(n_steps)):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size)
             self.record(t, 100, gradient_amp, default.if_cal_energy)
-        self.descent_curve.join()
+            if gradient_amp < 0.1: break
+
+        if self.legal_pure():
+            self.descent_curve.join()
+        else:
+            self.xyt.set_data(state_cache.data)
 
     def lbfgs(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):
         """
@@ -169,8 +184,7 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
-        from simulation import stepsize
-        min_grad = 0.2
+        min_grad = 0.1
         gradient_amp = 0
 
         self.lbfgs_agent.init(step_size)
@@ -183,9 +197,10 @@ class State(ut.HasMeta):
             self.record(t, stride, gradient_amp, default.if_cal_energy)
 
             if t % stride == 0:
-                step_size = stepsize.findBestStepsize(
-                    self, default.max_step_size, default.step_size_searching_samples
-                )
+                # step_size = stepsize.findBestStepsize(
+                #     self, default.max_step_size, default.step_size_searching_samples
+                #
+                pass
 
             if gradient_amp <= min_grad:
                 self.descent_curve.join()

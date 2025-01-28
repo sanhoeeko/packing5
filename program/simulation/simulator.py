@@ -5,7 +5,6 @@ import numpy as np
 import default
 import simulation.utils as ut
 from h5tools.dataset import SimulationData
-from . import stepsize
 from .potential import Potential
 from .state import State
 
@@ -33,7 +32,7 @@ class Simulator(ut.HasMeta):
         self.d = d
         self.A0, self.B0 = A0, B0
         self.id = Id
-        self.state = State.random(N, n, d, A0, B0).train()
+        self.state = State.random(N, n, d, A0, B0)
 
         # derived properties
         self.gamma = self.state.gamma
@@ -106,11 +105,24 @@ class Simulator(ut.HasMeta):
         assert self.is_setting_complete()
         self.create_dataset()
         try:
-            self.state.initAsDisks()
+            while True:
+                self.state.initAsDisks()
+                if self.state.legal_pure():
+                    print(f"[{self.id}] Successfully initialized.")
+                    break
+                else:
+                    print(f"[{self.id}] Initialization Failed.")
+
             for i in range(default.max_compress_turns):
                 if self.state.phi > default.terminal_phi: break
                 self.state.descent_curve.clear()
+
+                # self.state.boundary.compress(i)
+                b0 = self.state.boundary.B
                 self.state.boundary.compress(i)
+                b1 = self.state.boundary.B
+                self.state.xyt.data[:, 1] *= b1 / b0  # affine transformation
+
                 current_speed = self.equilibrium()
                 self.save()
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
@@ -123,20 +135,12 @@ class Simulator(ut.HasMeta):
         :return: current speed. Unit: it/s.
         All black magics for gradient descent should be here.
         """
+        step_sizes = [1e-3, 5e-4, 2.5e-4, 1.25e-4, 1e-4]
         with ut.Timer() as timer:
-            if self.state.CalEnergy_pure() < 100:
-                self.state.brown(1e-3, 20000, 1000)
-            else:
-                self.state.sgd(1e-4, 20000)
-
-            relaxations_2, final_grad = self.state.lbfgs(
-                1e-4, 10000, self.descent_curve_stride
-            )
-            relaxations_3, final_grad = self.state.fineRelax(
-                1e-5, 100000, self.descent_curve_stride
-            )
-
-            self.current_relaxations = default.max_pre_relaxation + relaxations_2 + relaxations_3
+            for i in range(5):
+                self.state.brown(step_sizes[i], 2000)
+            self.state.lbfgs(2e-4, 4000, default.descent_curve_stride)
+            self.current_relaxations = 10000 + 4000
         return self.current_relaxations / timer.elapse_t
 
 

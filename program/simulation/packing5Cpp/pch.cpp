@@ -125,3 +125,35 @@ void LbfgsDirection(void* ptr, void* dst)
     v4 v_dst(lbfgs->N, (float*)dst);
     lbfgs->calDirection_to(v_dst);
 }
+
+float MinDistanceRij(void* p_state, void* p_grid, int lines, int cols, int N)
+{
+    xyt* state = (xyt*)p_state;
+    int* grid = (int*)p_grid;
+    return minDistancePP(state, grid, lines, cols, N);
+}
+
+float AverageDistanceRij(void* p_state, void* p_grid, int lines, int cols, int N)
+{
+    xyt* state = (xyt*)p_state;
+    int* grid = (int*)p_grid;
+    return averageDistancePP(state, grid, lines, cols, N);
+}
+
+float MinDistanceRijFull(void* p_state, int N)
+{
+    return minDistance((xyt*)p_state, N);
+}
+
+int isOutOfBoundary(void* p_state, void* p_boundary, int N)
+{
+    xyt* state = (xyt*)p_state;
+    EllipticBoundary* boundary = (EllipticBoundary*)p_boundary;
+    for (int i = 0; i < N; i++) {
+        float x = state[i].x, y = state[i].y;
+        if (x * x / boundary->a2 + y * y / boundary->b2 > 1) {
+            return true;
+        }
+    }
+    return false;
+}

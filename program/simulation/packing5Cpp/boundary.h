@@ -27,16 +27,16 @@ ge EllipticBoundary::collide(Rod* shape, const xyt& q)
 	// a penalty is marked by {id2 = -114514, theta1 = h}
 	float h = distOutOfBoundary(q);
 	if (h > 0) {
-		float fr = -10 * (expf(h) - 1);
+		float fr = -1 * (expf(0.05 * h) - 1);
 		return { fr * q.x, fr * q.y, 0, 0 };
 	}
 
 	// q.x,	q.y cannot be both zero because of the `maybeCollide` guard. 
 	float absx1 = abs(q.x), absy1 = abs(q.y);
-	if (absx1 < 1e-4) {
+	if (absx1 < 1e-3) {
 		x0 = 0; y0 = q.y > 0 ? b : -b;
 	}
-	else if (absy1 < 1e-4) {
+	else if (absy1 < 1e-3) {
 		y0 = 0; x0 = q.x > 0 ? a : -a;
 	}
 	else {
@@ -60,5 +60,5 @@ ge EllipticBoundary::collide(Rod* shape, const xyt& q)
 		beta = q.t,
 		thetap = 2 * alpha - beta;
 	// calculate the gradient
-	return singleGE<how, need_energy>(shape, 2 * dx, 2 * dy, q.t, thetap).first;
+	return singleGE<how, need_energy>(shape, 2 * dx, 2 * dy, q.t, thetap).first * 10;
 }

@@ -2,7 +2,9 @@
 #include <algorithm>
 #include <immintrin.h>
 #include <random>
+#include <string.h>
 #include "lbfgs.h"
+#include "myrand.h"
 
 void SumTensor4(void* p_z, void* p_Gij, void* p_gi, int N)
 {
@@ -46,18 +48,18 @@ void AddVector4(void* p_x, void* p_g, void* p_dst, int N, float s) {
 }
 
 void PerturbVector4(void* p_input, int N, float sigma) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<float> dis(0.0, sigma);
+    std::random_device true_random;
+    xorshift32 gen(true_random());
     float* g = (float*)p_input;
 
+    __m256 sig_vec = _mm256_set1_ps(sigma);
     for (int i8 = 0; i8 < N * 4; i8 += 8) {
         __m256 g_vec8 = _mm256_loadu_ps(g + i8);
         __m256 rand_vec8 = _mm256_setr_ps(
-            dis(gen), dis(gen), dis(gen), 0,
-            dis(gen), dis(gen), dis(gen), 0
+            fast_gaussian(gen()), fast_gaussian(gen()), fast_gaussian(gen()), 0,
+            fast_gaussian(gen()), fast_gaussian(gen()), fast_gaussian(gen()), 0
         );
-        __m256 result_vec = _mm256_add_ps(g_vec8, rand_vec8);
+        __m256 result_vec = _mm256_add_ps(g_vec8, _mm256_mul_ps(sig_vec, rand_vec8));
         _mm256_storeu_ps(g + i8, result_vec);
     }
 }
@@ -82,6 +84,18 @@ float FastNorm(void* p_x, int n) {
     _mm256_storeu_ps(result, sum);
     return std::sqrt(result[0] + result[1] + result[2] /* + result[3]*/ +
         result[4] + result[5] + result[6] /* + result[7]*/ );
+}
+
+float MaxAbsVector4(void* p_x, int N)
+{
+    /* This is not an avx function. */
+    float* x = (float*)p_x;
+    float current_max = 0;
+    for (int i = 0; i < 4*N; i+=4) {
+        float absg = x[i] * x[i] + x[i + 1] * x[i + 1] + x[i + 1] * x[i + 2];
+        current_max = absg > current_max ? absg : current_max;
+    }
+    return current_max;
 }
 
 void CwiseMulVector4(void* p_g, int N, float s) {
