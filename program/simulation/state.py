@@ -9,7 +9,7 @@ from .kernel import ker
 from .lbfgs import LBFGS
 from .mc import StatePool
 from .potential import Potential
-from .utils import NaNInGradientException
+from .utils import NaNInGradientException, OutOfBoundaryException
 
 
 class State(ut.HasMeta):
@@ -116,6 +116,8 @@ class State(ut.HasMeta):
         # this condition is to avoid division by zero
         if g > 1e-6:
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
+        if self.isOutOfBoundary():
+            raise OutOfBoundaryException()
         self.clear_dependency()
         return g
 
@@ -138,7 +140,7 @@ class State(ut.HasMeta):
 
     def brown(self, step_size: float, n_steps: int):
         stride = default.descent_curve_stride
-        self.setOptimizer(0.01, 0.9, 1, False)
+        self.setOptimizer(0.1, 0.9, 1, False)
         self.descent_curve.reserve(n_steps // stride)
 
         for t in range(int(n_steps) // stride):
@@ -146,7 +148,7 @@ class State(ut.HasMeta):
             for i in range(stride):
                 gradient = self.optimizer.calGradient()
                 if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
-                    self.state_pool.add(self, 1e6)
+                    self.state_pool.add(self, 1e5)
                     self.descent(gradient, step_size)
                 else:
                     g = self.optimizer.maxGradient()

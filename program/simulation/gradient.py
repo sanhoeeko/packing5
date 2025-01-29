@@ -35,7 +35,9 @@ class GradientMatrix:
         ker.dll.CalGradientAndEnergy(*self.params)
 
     def calGradient(self):
-        ker.dll.CalGradient(*self.params)
+        status_code = ker.dll.CalGradient(*self.params)
+        if status_code:
+            raise ut.CalGradientException
 
     def calGradientAsDisks(self):
         ker.dll.CalGradientAsDisks(*self.params_zero)

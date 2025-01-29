@@ -149,9 +149,11 @@ int isOutOfBoundary(void* p_state, void* p_boundary, int N)
 {
     xyt* state = (xyt*)p_state;
     EllipticBoundary* boundary = (EllipticBoundary*)p_boundary;
+    float a2 = (boundary->a + 0.8) * (boundary->a + 0.8);
+    float b2 = (boundary->b + 0.8) * (boundary->b + 0.8);
     for (int i = 0; i < N; i++) {
         float x = state[i].x, y = state[i].y;
-        if (x * x / boundary->a2 + y * y / boundary->b2 > 1) {
+        if (x * x / a2 + y * y / b2 > 1) {
             return true;
         }
     }

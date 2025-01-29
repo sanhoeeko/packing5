@@ -123,24 +123,41 @@ class Simulator(ut.HasMeta):
                 b1 = self.state.boundary.B
                 self.state.xyt.data[:, 1] *= b1 / b0  # affine transformation
 
-                current_speed = self.equilibrium()
+                state_cache = self.state.xyt.copy()
+                step_size_ratio = 1
+                while True:
+                    try:
+                        current_speed = self.equilibrium(step_size_ratio)
+                        break
+                    except (ut.NaNInGradientException, ut.OutOfBoundaryException) as e:
+                        print(f"[{self.id}] Compress {i}: Caught an exception: {str(e)}")
+                        self.state.xyt.set_data(state_cache.data)
+                        self.state.clear_dependency()
+                        step_size_ratio /= 2
+                        continue
+                    except Exception as e:
+                        raise e
+
                 self.save()
                 print(f"[{self.id}] Compress {i}: {round(current_speed)} it/s")
         except Exception as e:
             print(f"An exception occurred in simulation [{self.id}]!\n")
             traceback.print_exc()
 
-    def equilibrium(self) -> float:
+    def equilibrium(self, step_size_ratio: float) -> float:
         """
         :return: current speed. Unit: it/s.
         All black magics for gradient descent should be here.
         """
-        step_sizes = [1e-3, 5e-4, 2.5e-4, 1.25e-4, 1e-4]
         with ut.Timer() as timer:
-            for i in range(5):
-                self.state.brown(step_sizes[i], 2000)
-            for i in range(5):
-                self.state.lbfgs(0.1 * step_sizes[i], 1000, default.descent_curve_stride)
+            step_size = 1e-3
+            for i in range(9):
+                self.state.brown(step_size * step_size_ratio, 2000)
+                step_size /= 1.23
+            step_size = 1e-4
+            for i in range(9):
+                self.state.lbfgs(step_size * step_size_ratio, 2000, default.descent_curve_stride)
+                step_size /= 1.23
             self.current_relaxations = 10000 + 5000
         return self.current_relaxations / timer.elapse_t
 

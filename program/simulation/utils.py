@@ -43,6 +43,14 @@ class ParticlesTooCloseException(Exception):
     def __init__(self): super().__init__("Particle too close!")
 
 
+class OutOfBoundaryException(Exception):
+    def __init__(self): super().__init__("Particle out of boundary!")
+
+
+class CalGradientException(Exception):
+    def __init__(self): super().__init__("An C++ error occurred while calculating gradient!")
+
+
 class NaNInGradientException(Exception):
     def __init__(self): super().__init__("NAN detected in gradient!")
 
