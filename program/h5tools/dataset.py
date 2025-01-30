@@ -61,7 +61,7 @@ class SimulationData(Dataset):
         ht.append_dict_to_hdf5_head(self.file_name, data)
 
 
-def pack_simulations_cwd(file_name='data.h5'):
+def pack_simulations_cwd(file_name='data.h5', truncate=False):
     pattern = re.compile(r'^(.*?)_\d+\.h5$')
 
     def get_ensemble_names(files):
@@ -78,7 +78,7 @@ def pack_simulations_cwd(file_name='data.h5'):
     files = [file for file in os.listdir() if pattern.match(file)]
     ensemble_ids = get_ensemble_names(files)
     for eid in ensemble_ids:
-        stack_h5_datasets(eid)
+        stack_h5_datasets(eid, truncate)
     # for file in files: os.remove(file)
 
     # pack into single file
@@ -90,7 +90,7 @@ def pack_simulations_cwd(file_name='data.h5'):
 
 def auto_pack():
     if not os.path.exists('data.h5'):
-        pack_simulations_cwd()
+        pack_simulations_cwd(truncate=True)
 
 
 def compress_file(file_name) -> (int, int):

@@ -98,7 +98,7 @@ def numerical_sort(value):
     return [int(text) if text.isdigit() else text for text in parts]
 
 
-def stack_h5_datasets(ensemble_id: str):
+def stack_h5_datasets(ensemble_id: str, truncate=False):
     file_pattern = f'{ensemble_id}_*.h5'
     output_file = f'{ensemble_id}.h5'
 
@@ -108,7 +108,7 @@ def stack_h5_datasets(ensemble_id: str):
     if not files:
         raise FileNotFoundError(f"No files matching the pattern {file_pattern} found.")
 
-    # Create the new file
+    # Create a new file
     with h5py.File(output_file, 'w') as f_out:
         # Copy datasets and add a new dimension
         for file in files:
@@ -119,8 +119,25 @@ def stack_h5_datasets(ensemble_id: str):
                         shape = (len(files),) + data.shape
                         maxshape = (None,) + data.shape
                         f_out.create_dataset(key, shape=shape, maxshape=maxshape, dtype=f[key].dtype, chunks=True)
+
                     # Insert data into the appropriate slice
-                    f_out[key][files.index(file), ...] = data[:]
+                    if not truncate:
+                        f_out[key][files.index(file), ...] = data[:]
+                    else:
+                        out_data = f_out[key][:]
+                        # Adjust the shape of data if it's too large
+                        if data.shape[-len(out_data.shape[1:]):] > out_data.shape[1:]:
+                            slices = tuple(slice(0, min(dim_data, dim_out)) for dim_data, dim_out in
+                                           zip(data.shape, out_data.shape[1:]))
+                            data = data[slices]
+                        # Adjust the shape of out_data if data is too small
+                        elif data.shape[-len(out_data.shape[1:]):] < out_data.shape[1:]:
+                            slices = tuple(slice(0, min(dim_data, dim_out)) for dim_data, dim_out in
+                                           zip(out_data.shape[1:], data.shape))
+                            out_data = out_data[(slice(None),) + slices]
+                        out_data[files.index(file), ...] = data[:]
+                        del f_out[key]
+                        f_out[key] = out_data
 
         # Copy all attributes from the first file to the new file
         with h5py.File(files[0], 'r') as f_first:
