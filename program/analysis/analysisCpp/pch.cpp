@@ -216,3 +216,30 @@ void sumAnisotropicComplex(int num_edges, int num_rods, void* indices_ptr, void*
         output[2 * id2 + 1] += cplx[4 * j + 3];
     }
 }
+
+struct xyt3f { float x, y, t; };
+
+/*  
+    return: r = min_rij / ave_rij. 0 < r <= 1.
+*/
+float RijRatio(void* p_xyt, int N)
+{
+    xyt3f* q = (xyt3f*)p_xyt;
+    float current_min_rij = 114514;
+    float current_total_rij = 0;
+    int current_rij_cnt = 0;
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < i; j++) {
+            float
+                dx = q[i].x - q[j].x,
+                dy = q[i].y - q[j].y,
+                rij = sqrtf(dx * dx + dy * dy);
+            if (rij < 2) {
+                current_min_rij = rij < current_min_rij ? rij : current_min_rij;
+                current_total_rij += rij;
+                current_rij_cnt++;
+            }
+        }
+    }
+    return current_min_rij / (current_total_rij / current_rij_cnt);
+}

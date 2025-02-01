@@ -3,6 +3,9 @@ from dask import delayed, compute
 from scipy import stats
 from scipy.interpolate import CubicSpline
 
+from . import utils as ut
+from .kernel import ker
+
 
 class DirtyDataException(Exception):
     def __init__(self, nth_state: int, *args):
@@ -77,3 +80,8 @@ def interpolate_tensor(x: np.ndarray, y: np.ndarray, eps: float, num_threads=1):
     X = interpolate_x(x, eps)
     Y = interpolate_y(x, y, X, num_threads)
     return X, Y
+
+
+def isParticleTooClose(xyt: ut.CArray) -> bool:
+    ratio = ker.dll.RijRatio(xyt.ptr, xyt.data.shape[0])
+    return ratio < 0.01

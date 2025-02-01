@@ -71,12 +71,12 @@ class PickledEnsemble:
         """
         if from_to_nth_data is None:
             data = self.configuration[:]
-            abg = np.stack((self.property('A'), self.property('B'), self.property('gamma')), axis=3)
+            abg = np.stack((self.property('A'), self.property('B'), self.property('gamma')), axis=2)
         else:
             data = self.configuration[:, :, from_to_nth_data[0]:from_to_nth_data[1], :, :]
-            abg = np.stack((self.property('A'), self.property('B'), self.property('gamma')), axis=3)
+            abg = np.stack((self.property('A'), self.property('B'), self.property('gamma')), axis=2)
             abg = abg[:, :, from_to_nth_data[0]:from_to_nth_data[1], :]
-        shape_3d = data.shape[:3]
+        shape_3d = data.shape[:2]
         xyt = data.reshape(-1, data.shape[-2], data.shape[-1])
         abg = abg.reshape(-1, 3)
         results = ut.Map(num_threads)(func_act_on_configuration, list(zip(abg, xyt)))

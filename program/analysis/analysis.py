@@ -95,15 +95,15 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
         )
         for order_parameter in order_parameters:
             sub_dic[order_parameter] = (y_mean[order_parameter], y_ci[order_parameter])
-        dic[ensemble.metadata['id']] = sub_dic
+        dic[ensemble.metadata['id'][0].decode('utf-8')] = sub_dic
 
     # add x-axis
-    dic['x_axis'] = x
     dict_to_analysis_hdf5(out_file, dic)
+    dic['x_axis'] = x
     add_property_to_hdf5(out_file, 'x_axis_name', x_axis_name)
 
     # add metadata
-    add_array_to_hdf5(out_file, 'state_table', database.state_table)
+    # add_array_to_hdf5(out_file, 'state_table', database.state_table)
     add_array_to_hdf5(out_file, 'summary_table', database.summary_table_array)
 
 

@@ -17,7 +17,7 @@ using namespace std;
 #undef min
 
 const float pi = 3.141592654;
-const float max_gradient_amp = 10;
+const float max_gradient_amp = 100;
 
 enum HowToCalGradient { Normal, AsDisks, HowToCalGradient_Count };
 enum HashFunc { _h2pi, _h4 };

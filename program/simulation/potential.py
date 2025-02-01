@@ -36,7 +36,7 @@ class ScreenedCoulomb(RadialFunc):
         x2 = np.linspace(0, 4, num=ut.sz1d, endpoint=True, dtype=np.float32)
         x = np.sqrt(x2)
         r = x / r0
-        vr = ut.CArray(V0 * np.exp(-r) / r, np.float32)
+        vr = ut.CArray(V0 * (np.exp(-r) / r - np.exp(-r0) / r0), np.float32)
         vr.data[0] = 0
         dvr = ut.CArray(-V0 * np.exp(-r) * (x + r0) / x ** 2, np.float32)
         dvr.data[0] = 0

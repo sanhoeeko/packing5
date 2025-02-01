@@ -46,7 +46,6 @@ def Map(threads: int):
     else:
         def map_func(func, tasks):
             return [func(task) for task in tasks]
-
     return map_func
 
 

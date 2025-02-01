@@ -151,7 +151,7 @@ class State(ut.HasMeta):
                     self.state_pool.add(self, 1e5)
                     self.descent(gradient, step_size)
                 else:
-                    g = self.optimizer.maxGradient()
+                    g = self.optimizer.gradientAmp()
                     self.state_pool.add(self, g)
                     self.descent(gradient, step_size)
 
@@ -179,15 +179,21 @@ class State(ut.HasMeta):
         state_cache = self.xyt.copy()
         g_cache = self.CalGradient_pure().norm(self.N)
 
-        for t in range(n_steps):
-            self.descent(self.lbfgs_agent.CalDirection(), step_size)
-            gradient_amp = self.lbfgs_agent.gradientAmp()
-            self.lbfgs_agent.update()
-            self.record(t, stride, gradient_amp, default.if_cal_energy)
+        for t in range(int(n_steps) // stride):
+            self.state_pool.clear()
+            for i in range(stride):
+                gradient_amp = self.lbfgs_agent.gradientAmp()
+                self.state_pool.add(self, gradient_amp)
+                self.descent(self.lbfgs_agent.CalDirection(), step_size)
+                self.lbfgs_agent.update()
+                if gradient_amp <= min_grad:
+                    self.descent_curve.join()
+                    return t, gradient_amp
 
-            if gradient_amp <= min_grad:
-                self.descent_curve.join()
-                return t, gradient_amp
+            energy, min_state = self.state_pool.average_zero_temperature()
+            self.xyt.set_data(min_state.data)
+            gradient_amp = np.min(self.state_pool.energies.data)
+            self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
 
         if gradient_amp > g_cache:
             self.xyt.set_data(state_cache.data)

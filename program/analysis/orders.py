@@ -1,3 +1,5 @@
+import tracemalloc
+tracemalloc.start()
 import numpy as np
 
 from . import utils as ut
@@ -20,14 +22,15 @@ def OrderParameterList(order_parameter_names: list[str]):
         xyt_c = ut.CArray(xyt)
         n = xyt.shape[-2]
         voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay(weighted)
-        result = np.zeros((n,), dtype=dtype)
-        for name in order_parameter_names:
-            if name == 'S_global':
-                result[name] = S_global(xyt)
-            elif name.startswith('Elliptic'):
-                result[name] = getattr(voro, name)(xyt_c, abg[2])
-            else:
-                result[name] = getattr(voro, name)(xyt_c)
+        result = np.full((n,), np.nan, dtype=dtype)
+        if voro is not None:
+            for name in order_parameter_names:
+                if name == 'S_global':
+                    result[name] = S_global(xyt)
+                elif name.startswith('Elliptic'):
+                    result[name] = getattr(voro, name)(xyt_c, abg[2])
+                else:
+                    result[name] = getattr(voro, name)(xyt_c)
         return result
 
     return inner
