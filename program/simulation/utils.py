@@ -47,6 +47,10 @@ class OutOfBoundaryException(Exception):
     def __init__(self): super().__init__("Particle out of boundary!")
 
 
+class FinalIllegalException(Exception):
+    def __init__(self): super().__init__("Restart relaxation to find a legal configuration!")
+
+
 class CalGradientException(Exception):
     def __init__(self): super().__init__("An C++ error occurred while calculating gradient!")
 

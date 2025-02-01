@@ -63,8 +63,8 @@ class GradientMatrix:
             return np.sqrt(np.min(r2))
         """
         # do not use this. I don't know why but there is a bug.
-        # return ker.dll.MinDistanceRij(self.state.xyt.ptr, self.grid.grid.ptr, self.grid.lines, self.grid.cols, self.N)
-        return self.state.min_dist
+        return ker.dll.MinDistanceRij(self.state.xyt.ptr, self.grid.grid.ptr, self.grid.lines, self.grid.cols, self.N)
+        # return self.state.min_dist
 
     def averageDistanceRij(self) -> np.float32:
         return ker.dll.AverageDistanceRij(self.state.xyt.ptr, self.grid.grid.ptr, self.grid.lines, self.grid.cols,

@@ -106,7 +106,7 @@ class State(ut.HasMeta):
         self.grid.gridLocate()
         is_too_close = self.gradient.isTooClose()
         self.clear_dependency()
-        return not (is_too_close and self.isOutOfBoundary())
+        return not (is_too_close or self.isOutOfBoundary())
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = gradient.norm(self.N)

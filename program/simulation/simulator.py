@@ -129,11 +129,11 @@ class Simulator(ut.HasMeta):
                     try:
                         current_speed = self.equilibrium(step_size_ratio)
                         break
-                    except (ut.NaNInGradientException, ut.OutOfBoundaryException) as e:
+                    except (ut.NaNInGradientException, ut.OutOfBoundaryException, ut.FinalIllegalException) as e:
                         print(f"[{self.id}] Compress {i}: Caught an exception: {str(e)}")
                         self.state.xyt.set_data(state_cache.data)
                         self.state.clear_dependency()
-                        step_size_ratio /= 2
+                        step_size_ratio /= 1.23
                         continue
                     except Exception as e:
                         raise e
@@ -151,14 +151,17 @@ class Simulator(ut.HasMeta):
         """
         with ut.Timer() as timer:
             step_size = 1e-3
-            for i in range(9):
-                self.state.brown(step_size * step_size_ratio, 2000)
-                step_size /= 1.23
+            for i in range(16):
+                self.state.brown(step_size * step_size_ratio, 1000)
+                step_size /= 1.5
             step_size = 1e-4
-            for i in range(9):
-                self.state.lbfgs(step_size * step_size_ratio, 2000, default.descent_curve_stride)
-                step_size /= 1.23
-            self.current_relaxations = 10000 + 5000
+            for i in range(16):
+                self.state.lbfgs(step_size * step_size_ratio, 1000, default.descent_curve_stride)
+                step_size /= 1.5
+            # final check
+            if not self.state.legal_pure():
+                raise ut.FinalIllegalException
+            self.current_relaxations = 16000 + 16000
         return self.current_relaxations / timer.elapse_t
 
 
