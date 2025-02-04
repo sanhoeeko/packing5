@@ -74,8 +74,9 @@ class State(ut.HasMeta):
         self.gradient.potential = potential
         return self
 
-    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool):
-        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks)
+    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool,
+                     need_energy=False):
+        self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks, need_energy)
         self.optimizer.init()
         return self
 
@@ -101,6 +102,13 @@ class State(ut.HasMeta):
 
     def isOutOfBoundary(self) -> bool:
         return bool(ker.dll.isOutOfBoundary(self.xyt.ptr, self.boundary.ptr, self.N))
+
+    def averageRij_pure(self) -> np.float32:
+        self.grid.gridLocate()
+        self.grid.gridLocate()
+        rij = self.gradient.averageDistanceRij()
+        self.clear_dependency()
+        return rij
 
     def legal_pure(self) -> bool:
         self.grid.gridLocate()
@@ -139,8 +147,25 @@ class State(ut.HasMeta):
         return gradient_amp, energy
 
     def brown(self, step_size: float, n_steps: int):
+        self.setOptimizer(0.1, 0.9, 1, False, True)
+
+        state_pool = StatePool(self.N, n_steps)
+        for i in range(n_steps):
+            gradient = self.optimizer.calGradient()
+            if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
+                state_pool.add(self, 1e5)
+                self.descent(gradient, step_size)
+            else:
+                energy = self.gradient.sum.e()
+                state_pool.add(self, energy)
+                self.descent(gradient, step_size)
+
+        min_state = state_pool.average(temperature=1)
+        self.xyt.set_data(min_state.data)
+
+    def sgd(self, step_size: float, n_steps: int):
         stride = default.descent_curve_stride
-        self.setOptimizer(0.1, 0.9, 1, False)
+        self.setOptimizer(0.01, 0.1, 1, False)
         self.descent_curve.reserve(n_steps // stride)
 
         for t in range(int(n_steps) // stride):

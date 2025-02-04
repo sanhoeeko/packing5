@@ -145,6 +145,13 @@ float MinDistanceRijFull(void* p_state, int N)
     return minDistance((xyt*)p_state, N);
 }
 
+float RijRatio(void* p_state, void* p_grid, int lines, int cols, int N)
+{
+    xyt* state = (xyt*)p_state;
+    int* grid = (int*)p_grid;
+    return distanceRatioPP(state, grid, lines, cols, N);
+}
+
 int isOutOfBoundary(void* p_state, void* p_boundary, int N)
 {
     xyt* state = (xyt*)p_state;

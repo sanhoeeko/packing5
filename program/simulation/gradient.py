@@ -70,9 +70,11 @@ class GradientMatrix:
         return ker.dll.AverageDistanceRij(self.state.xyt.ptr, self.grid.grid.ptr, self.grid.lines, self.grid.cols,
                                           self.N)
 
+    def rijRatio(self) -> np.float32:
+        return ker.dll.RijRatio(self.state.xyt.ptr, self.grid.grid.ptr, self.grid.lines, self.grid.cols, self.N)
+
     def isTooClose(self) -> bool:
-        return self.minDistanceRij() < 0.8 * self.averageDistanceRij()
-        # return self.minDistanceRij() < 1.0
+        return self.rijRatio() < 0.1
 
 
 class GradientSum:
@@ -89,18 +91,21 @@ class GradientSum:
         # ker.dll.ClipGradient(self.data.ptr, self.N)
         return self.data
 
+    def e(self) -> np.float32:
+        return np.sum(self.data[:, 3])
+
     def E(self) -> np.float32:
         ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
-        return np.sum(self.data[:, 3])
+        return self.e()
 
     def gE(self) -> (ut.CArray, np.float32):
         ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
-        E = np.sum(self.data[:, 3])
-        return self.data, E
+        return self.data, self.e()
 
 
 class Optimizer:
-    def __init__(self, state, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool):
+    def __init__(self, state, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool,
+                 need_energy=False):
         self.N = state.N
         self.grid = state.grid
         self.momentum = ut.CArrayFZeros((self.N, 4))
@@ -112,6 +117,8 @@ class Optimizer:
         func_name = 'calGradient' if stochastic_p == 1 else 'stochasticCalGradient'
         if as_disks:
             func_name += 'AsDisks'
+        if need_energy:
+            func_name = 'calGradientAndEnergy'
         if stochastic_p == 1:
             self.void_gradient_func = getattr(state.gradient, func_name)
         else:

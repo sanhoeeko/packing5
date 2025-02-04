@@ -8,13 +8,13 @@ from simulation.simulator import createSimulator
 
 
 def testSingleThread(profile=True):
-    N = 1024
+    N = 200
     n = 6
     d = 0.05
     phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
-    compress_func_B = boundary.RatioCompress(0.004)
+    compress_func_B = boundary.RatioCompress(0.002)
     ex = createSimulator(f'{randomString()}_0', N, n, d, phi0, Gamma0, compress_func_A, compress_func_B)
     ex.setPotential(pot.Potential(n, d, pot.PowerFunc(2.5)))
     # ex.setPotential(pot.Potential(n, d, pot.ScreenedCoulomb(2.0)))

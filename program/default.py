@@ -1,7 +1,7 @@
 max_compress = 0.1
-compress_rate = 5e-3
-descent_curve_stride = 100
-max_pre_relaxation = 5e3
+compress_rate = 2e-3
+descent_curve_stride = 200
+max_brown = 1e4
 max_relaxation = 2e3
 max_step_size = 1e-3
 step_size_searching_samples = 48

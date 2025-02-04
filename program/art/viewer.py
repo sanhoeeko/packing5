@@ -87,7 +87,7 @@ class RenderState:
             -self.A, self.B * 1.1,
             (
                 f"n={metadata['n']}, d={'{:.3f}'.format(metadata['d'])}, "
-                f"ρ={'{:.3f}'.format(metadata['rho'])}, "
+                f"φ={'{:.3f}'.format(metadata['phi'])}, "
                 f"A={'{:.2f}'.format(metadata['A'])}, B={'{:.2f}'.format(metadata['B'])}, "
                 f"\n"
                 f"E={'{:.3f}'.format(metadata['energy'])}, g={'{:.3f}'.format(metadata['gradient_amp'])}"

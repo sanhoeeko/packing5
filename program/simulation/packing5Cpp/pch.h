@@ -47,6 +47,8 @@ DLLEXPORT float AverageDistanceRij(void* p_state, void* p_grid, int lines, int c
 
 DLLEXPORT float MinDistanceRijFull(void* p_state, int N);
 
+DLLEXPORT float RijRatio(void* p_state, void* p_grid, int lines, int cols, int N);
+
 DLLEXPORT int isOutOfBoundary(void* p_state, void* p_boundary, int N);
 
 DLLEXPORT void ClipGradient(void* q_ptr, int N);

@@ -4,6 +4,7 @@
 
 float minDistancePP(xyt* particles, int* grid, int lines, int cols, int N);
 float averageDistancePP(xyt* particles, int* grid, int lines, int cols, int N);
+float distanceRatioPP(xyt* particles, int* grid, int lines, int cols, int N);
 float minDistance(xyt* q, int N);
 
 template<HowToCalGradient how, bool need_energy>

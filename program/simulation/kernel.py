@@ -24,6 +24,7 @@ class Kernel:
             ('CalGradientAndEnergy', [ct.c_void_p] * 6 + [ct.c_int] * 3, None),
             ('MinDistanceRij', [ct.c_void_p] * 2 + [ct.c_int] * 3, ct.c_float),
             ('AverageDistanceRij', [ct.c_void_p] * 2 + [ct.c_int] * 3, ct.c_float),
+            ('RijRatio', [ct.c_void_p] * 2 + [ct.c_int] * 3, ct.c_float),
             ('MinDistanceRijFull', [ct.c_void_p, ct.c_int], ct.c_float),
             ('isOutOfBoundary', [ct.c_void_p] * 2 + [ct.c_int], ct.c_int),
             ('ClipGradient', [ct.c_void_p, ct.c_int], None),

@@ -28,7 +28,7 @@ ge EllipticBoundary::collide(Rod* shape, const xyt& q)
 	// a penalty is marked by {id2 = -114514, theta1 = h}
 	float h = distOutOfBoundary(q);
 	if (h > 0) {
-		float fr = -1.0 * (expf(h) - 1);
+		float fr = -10 * (expf(h) - 1);
 		return { fr * q.x, fr * q.y, 0, 0 };
 	}
 
