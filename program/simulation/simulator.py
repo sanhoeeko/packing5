@@ -107,6 +107,7 @@ class Simulator(ut.HasMeta):
         try:
             while True:
                 self.state.initAsDisks()
+                self.state.brown(1e-2, int(4e6))
                 if self.state.legal_pure():
                     print(f"[{self.id}] Successfully initialized.")
                     break
@@ -150,16 +151,16 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            step_size = 4e-4 * (self.state.averageRij_pure() / 2) ** 4
-            if self.state.CalEnergy_pure() < 100:
+            step_size = 1e-3 * (self.state.averageRij_pure() / 2) ** 4
+            if self.state.CalEnergy_pure() < 10:
                 self.state.brown(step_size * step_size_ratio, int(default.max_brown))
-            for i in range(16):
-                self.state.sgd(step_size * step_size_ratio, 2000)
-                step_size /= 1.23
-            step_size = 4e-5 * (self.state.averageRij_pure() / 2) ** 4
-            for i in range(16):
-                self.state.lbfgs(step_size * step_size_ratio, 2000, default.descent_curve_stride)
-                step_size /= 1.23
+            for i in range(50):
+                self.state.sgd(step_size * step_size_ratio, 1000)
+                step_size *= 0.99
+            step_size = 1e-4 * (self.state.averageRij_pure() / 2) ** 4
+            for i in range(50):
+                self.state.lbfgs(step_size * step_size_ratio, 1000, default.descent_curve_stride)
+                step_size *= 0.99
             # final check
             if not self.state.legal_pure():
                 raise ut.FinalIllegalException

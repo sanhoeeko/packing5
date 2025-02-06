@@ -147,20 +147,25 @@ class State(ut.HasMeta):
         return gradient_amp, energy
 
     def brown(self, step_size: float, n_steps: int):
+        stride = 10
+        samples = 1000
         self.setOptimizer(0.1, 0.9, 1, False, True)
 
-        state_pool = StatePool(self.N, n_steps)
         for i in range(n_steps):
             gradient = self.optimizer.calGradient()
-            if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
-                state_pool.add(self, 1e5)
-                self.descent(gradient, step_size)
-            else:
-                energy = self.gradient.sum.e()
-                state_pool.add(self, energy)
-                self.descent(gradient, step_size)
+            self.descent(gradient, step_size)
+        state_pool = StatePool(self.N, samples // stride)
+        for i in range(samples):
+            gradient = self.optimizer.calGradient()
+            if i % stride == 0:
+                if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
+                    state_pool.add(self, 1e5)
+                else:
+                    energy = self.gradient.sum.e()
+                    state_pool.add(self, energy)
+            self.descent(gradient, step_size)
 
-        min_state = state_pool.average(temperature=1)
+        min_state = state_pool.average(temperature=0.1)
         self.xyt.set_data(min_state.data)
 
     def sgd(self, step_size: float, n_steps: int):

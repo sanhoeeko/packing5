@@ -4,7 +4,7 @@ from . import utils as ut
 from .kernel import ker
 from .state import State
 
-alpha = np.float32(1.414)
+alpha = np.float32(1.1)
 
 
 def energyScan(s: State, g: ut.CArray, max_stepsize: float, n_samples: int):

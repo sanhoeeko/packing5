@@ -7,7 +7,7 @@ void AverageState(float temperature, void* p_states, void* p_energies, void* p_d
     float* states = (float*)p_states;
     float* energies = (float*)p_energies;
     float* dst = (float*)p_dst;
-    float* exps = new float[n_samples];
+    float* exps = (float*)calloc(4 * N, sizeof(float));
 
     float exps_tot = 0;
     for (int i = 0; i < n_samples; i++) {
@@ -17,7 +17,7 @@ void AverageState(float temperature, void* p_states, void* p_energies, void* p_d
     for (int i = 0; i < n_samples; i++) {
         AddVector4(dst, states + i * (4 * N), dst, N, exps[i] / exps_tot);
     }
-    delete[] exps;
+    free(exps);
 }
 
 float AverageStateZeroTemperature(void* p_states, void* p_energies, void* p_dst, int N, int n_samples)
