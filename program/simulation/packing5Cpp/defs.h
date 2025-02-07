@@ -7,6 +7,7 @@
 #define DIGIT_Y 9
 #define DIGIT_T 9
 #define DIGIT_R 20
+#define DIGIT_RAND 24
 #define ENERGY_STRIDE 1000
 
 #include <omp.h>

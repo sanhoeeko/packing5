@@ -6,7 +6,7 @@ import default
 import simulation.utils as ut
 from h5tools.dataset import SimulationData
 from .potential import Potential
-from .state import State
+from .state import State, randomConfiguration
 
 
 def settings():
@@ -106,13 +106,17 @@ class Simulator(ut.HasMeta):
         self.create_dataset()
         try:
             while True:
-                self.state.initAsDisks()
-                self.state.brown(1e-2, int(4e6))
-                if self.state.legal_pure():
-                    print(f"[{self.id}] Successfully initialized.")
-                    break
-                else:
-                    print(f"[{self.id}] Initialization Failed.")
+                try:
+                    self.state.initAsDisksWithPhi(0.84)
+                    if self.state.legal_pure():
+                        print(f"[{self.id}] Successfully initialized.")
+                        break
+                    else:
+                        print(f"[{self.id}] Initialization Failed.")
+                except Exception as e:
+                    print(f"[{self.id}] An error occurred during initialization: {str(e)}")
+                    self.state.xyt.set_data(randomConfiguration(self.state.N, self.state.A, self.state.B))
+                    continue
 
             for i in range(default.max_compress_turns):
                 if self.state.phi > default.terminal_phi: break
@@ -151,20 +155,20 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            step_size = 1e-3 * (self.state.averageRij_pure() / 2) ** 4
             if self.state.CalEnergy_pure() < 10:
-                self.state.brown(step_size * step_size_ratio, int(default.max_brown))
+                self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
+            step_size = 1e-3 * (self.state.averageRij_pure() / 2) ** 2
             for i in range(50):
                 self.state.sgd(step_size * step_size_ratio, 1000)
                 step_size *= 0.99
-            step_size = 1e-4 * (self.state.averageRij_pure() / 2) ** 4
+            step_size = 1e-4 * (self.state.averageRij_pure() / 2) ** 2
             for i in range(50):
                 self.state.lbfgs(step_size * step_size_ratio, 1000, default.descent_curve_stride)
                 step_size *= 0.99
             # final check
             if not self.state.legal_pure():
                 raise ut.FinalIllegalException
-            self.current_relaxations = 16000 + 16000
+            self.current_relaxations = int(1e5)
         return self.current_relaxations / timer.elapse_t
 
 

@@ -8,7 +8,7 @@ from simulation.simulator import createSimulator
 
 
 def testSingleThread(profile=True):
-    N = 200
+    N = 1024
     n = 6
     d = 0.05
     phi0 = 0.5

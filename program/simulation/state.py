@@ -118,7 +118,7 @@ class State(ut.HasMeta):
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = gradient.norm(self.N)
-        s = np.float32(step_size)
+        s = np.float32(step_size) / g
         if np.isnan(g) or np.isinf(g):
             raise NaNInGradientException()
         # this condition is to avoid division by zero
@@ -145,6 +145,14 @@ class State(ut.HasMeta):
             if gradient_amp <= min_grad_init: break
         energy = self.CalEnergy_pure()
         return gradient_amp, energy
+
+    def initAsDisksWithPhi(self, packing_fraction: float):
+        current_packing_fraction = self.phi
+        length_scale = np.sqrt(current_packing_fraction / packing_fraction)
+        state = State.random(self.N, self.n, self.d, length_scale * self.A, length_scale * self.B)
+        state.setPotential(self.gradient.potential)
+        state.initAsDisks()
+        self.xyt.set_data(state.xyt.data / length_scale)
 
     def brown(self, step_size: float, n_steps: int):
         stride = 10

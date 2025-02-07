@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "myrand.h"
 
-const int gaussian_pool_capacity = 1 << 20;
+const int gaussian_pool_capacity = 1 << DIGIT_RAND;
 
 MyRand<gaussian_pool_capacity> gaussian_pool;
 
