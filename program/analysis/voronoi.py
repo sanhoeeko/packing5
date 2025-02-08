@@ -77,12 +77,16 @@ class DelaunayBase:
         ker.dll.sumOverWeights(self.num_edges, self.num_rods, self.indices.ptr,
                                self.edges.ptr, self.weights.ptr, self.weight_sums.ptr)
 
+    @property
+    def params(self):
+        return self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr
+
     def z_number(self, arg=None) -> np.ndarray:
         if self.weighted:
             result = ut.CArrayFZeros((self.num_rods,))
             one_weights = ut.CArray(np.ones((self.num_edges,), dtype=np.float32))
             ker.dll.sumOverWeights(
-                self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, one_weights.ptr, result.ptr
+                *self.params, one_weights.ptr, result.ptr
             )
             return result.data.copy()
         else:
@@ -94,24 +98,42 @@ class DelaunayBase:
         """
         z_p = ut.CArray(np.zeros((self.num_edges,), dtype=np.complex64))
         Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
-        ker.dll.z_ij_power_p(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr,
-                             xyt.ptr, z_p.ptr, np.float32(p))
+        ker.dll.z_ij_power_p(*self.params, xyt.ptr, z_p.ptr, np.float32(p))
         z_p.data *= self.weights.data
-        ker.dll.sumComplex(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, z_p.ptr, Phi.ptr)
+        ker.dll.sumComplex(*self.params, z_p.ptr, Phi.ptr)
         return Phi.data / self.weight_sums.data
 
-    def phi_p_ellipse(self, p: int, gamma: float, xyt: ut.CArray) -> np.ndarray[np.complex64]:
-        pass
+    def phi_p_ellipse_template(self, function_providing_angles):
+        """
+        :param function_providing_angles: (xyt) -> np.ndarray: determines the method to calculate phi angle.
+        """
+
+        def inner(p: int, gamma: float, xyt: ut.CArray) -> np.ndarray[np.complex64]:
+            angle = ut.CArray(function_providing_angles(xyt))
+            z_p = ut.CArray(np.zeros((self.num_edges * 2,), dtype=np.complex64))
+            Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
+            ker.dll.anisotropic_z_ij_power_p(*self.params, xyt.ptr, angle.ptr, z_p.ptr,
+                                             np.float32(gamma), np.float32(p))
+            z_p.data *= np.repeat(self.weights.data, 2)
+            ker.dll.sumAnisotropicComplex(*self.params, z_p.ptr, Phi.ptr)
+            return Phi.data / self.weight_sums.data
+
+        return inner
+
+    def pure_rotation_phi(self, xyt: ut.CArray) -> np.ndarray:
+        phi_angle = ut.CArrayFZeros((self.num_rods,))
+        ker.dll.pure_rotation_direction_phi(*self.params, xyt.ptr, phi_angle.ptr)
+        return phi_angle.data % np.pi
 
     def S_center(self, xyt: ut.CArray) -> np.ndarray:
         """
         Use the orientation of the centering particle, θ_i, as director.
         """
         ti_tj = ut.CArrayFZeros((self.num_edges,))
-        ker.dll.orientation_diff_ij(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, xyt.ptr, ti_tj.ptr)
+        ker.dll.orientation_diff_ij(*self.params, xyt.ptr, ti_tj.ptr)
         c = ut.CArray(np.cos(2 * ti_tj.data))
         S = ut.CArrayFZeros((self.num_rods,))
-        ker.dll.sumOverWeights(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, c.ptr, S.ptr)
+        ker.dll.sumOverWeights(*self.params, c.ptr, S.ptr)
         return S.data / self.weight_sums.data
 
     def Q_tensor(self, xyt: ut.CArray) -> (ut.CArray, ut.CArray):
@@ -127,8 +149,8 @@ class DelaunayBase:
         uy = ut.CArray(np.sin(t_mul_2))
         sum_ux = ux.copy()
         sum_uy = uy.copy()
-        ker.dll.sumOverNeighbors(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, ux.ptr, sum_ux.ptr)
-        ker.dll.sumOverNeighbors(self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr, uy.ptr, sum_uy.ptr)
+        ker.dll.sumOverNeighbors(*self.params, ux.ptr, sum_ux.ptr)
+        ker.dll.sumOverNeighbors(*self.params, uy.ptr, sum_uy.ptr)
         if self.weighted:
             # TODO: bug
             sum_ux.data *= self.weights.data

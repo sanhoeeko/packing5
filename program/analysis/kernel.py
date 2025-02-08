@@ -11,8 +11,11 @@ class Kernel:
             ('sumOverWeights', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumOverNeighbors', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('sumAnisotropicComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('z_ij_power_p', [ct.c_int] * 2 + [ct.c_void_p] * 4 + [ct.c_float], None),
             ('orientation_diff_ij', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('pure_rotation_direction_phi', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('anisotropic_z_ij_power_p', [ct.c_int] * 2 + [ct.c_void_p] * 5 + [ct.c_float] * 2, None),
             ('RijRatio', [ct.c_void_p, ct.c_int], ct.c_float),
         )
 

@@ -1,4 +1,5 @@
 import tracemalloc
+
 tracemalloc.start()
 import numpy as np
 
@@ -7,8 +8,18 @@ from .voronoi import Voronoi, DelaunayBase
 
 
 def S_global(xyt: np.ndarray):
+    # calculate the eigenvector of total Q-tensor
     t = xyt[:, 2]
-    return np.cos(2 * t)
+    c = np.mean(np.cos(2 * t))
+    s = np.mean(np.sin(2 * t))
+    S_g = np.sqrt(c ** 2 + s ** 2)
+    director_angle = np.arctan2(s, c + S_g)
+    # calculate 2*cos(θ-α)^2-1
+    return np.cos(2 * (t - director_angle))
+
+
+def Angle(xyt: np.ndarray):
+    return xyt[:, 2] % np.pi
 
 
 def OrderParameterList(order_parameter_names: list[str]):
@@ -25,8 +36,11 @@ def OrderParameterList(order_parameter_names: list[str]):
         result = np.full((n,), np.nan, dtype=dtype)
         if voro is not None:
             for name in order_parameter_names:
+                # result[name] should return a numpy array of shape (N,)
                 if name == 'S_global':
                     result[name] = S_global(xyt)
+                elif name == 'Angle':
+                    result[name] = Angle(xyt)
                 elif name.startswith('Elliptic'):
                     result[name] = getattr(voro, name)(xyt_c, abg[2])
                 else:
@@ -60,7 +74,10 @@ class Delaunay(DelaunayBase):
         return np.abs(self.phi_p(4, xyt))
 
     def EllipticPhi6(self, xyt: ut.CArray, gamma: float) -> np.ndarray:
-        pass
+        return np.abs(self.phi_p_ellipse_template(Angle)(6, gamma, xyt))
+
+    def PureRotationAngle(self, xyt: ut.CArray) -> np.ndarray:
+        return super().pure_rotation_phi(xyt)
 
     def S_center(self, xyt: ut.CArray) -> np.ndarray:
         return super().S_center(xyt)
@@ -73,10 +90,15 @@ class Delaunay(DelaunayBase):
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
         return S.data / (self.weight_sums.data + 1)
 
-    def director_angle(self, xyt: ut.CArray) -> np.ndarray:
+    def DirectorAngle(self, xyt: ut.CArray) -> np.ndarray:
         """
         Calculate the director as the eigenvector of Q-tensor.
         """
         sum_ux, sum_uy = self.Q_tensor(xyt)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return np.atan2(sum_uy, sum_ux + S)
+        return np.atan2(sum_uy.data, sum_ux.data + S)
+
+    def CrystalNematicAngle(self, xyt: ut.CArray) -> np.ndarray:
+        phi = self.PureRotationAngle(xyt)
+        theta = self.DirectorAngle(xyt)
+        return np.cos(2 * (theta - phi))

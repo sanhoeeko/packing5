@@ -177,6 +177,8 @@ class State(ut.HasMeta):
         self.xyt.set_data(min_state.data)
 
     def sgd(self, step_size: float, n_steps: int):
+        min_grad = 0.01
+
         stride = default.descent_curve_stride
         self.setOptimizer(0.01, 0.1, 1, False)
         self.descent_curve.reserve(n_steps // stride)
@@ -197,7 +199,7 @@ class State(ut.HasMeta):
             self.xyt.set_data(min_state.data)
             gradient_amp = np.min(self.state_pool.energies.data)
             self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
-            if gradient_amp < 0.1: break
+            if gradient_amp < min_grad: break
 
         self.descent_curve.join()
 
@@ -209,7 +211,7 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
-        min_grad = 0.1
+        min_grad = 0.01
         gradient_amp = 0
 
         self.lbfgs_agent.init(step_size)

@@ -11,8 +11,8 @@ if __name__ == '__main__':
     checkGradient(db)
     checkEnergy(db)
     checkGradientCurveAt(db, 0, 0)
-    InteractiveViewer(db[0].simulation_at(0), RenderSetup('z_number', False, 'voronoi', True)).show()
-    # calAllOrderParameters(db, 'rho', num_threads=4)
+    InteractiveViewer(db[0].simulation_at(0), RenderSetup('CrystalNematicAngle')).show()
+    calAllOrderParameters(db, 'rho', num_threads=4)
 
     # db = AnalysisData('analysis.h5')
     # db.plot('Phi6')

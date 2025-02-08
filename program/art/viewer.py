@@ -9,10 +9,23 @@ from analysis.database import PickledSimulation
 from art.art import Figure
 from . import art
 
+style_dict = {
+    'angle': ['Angle', 'DirectorAngle', 'PureRotationAngle'],
+    'voronoi': ['z_number'],
+    'pm1': ['S_local', 'S_global', 'S_center', 'CrystalNematicAngle']
+}
+
+
+def get_style(order_parameter_name: str) -> str:
+    for k, v_list in style_dict.items():
+        if order_parameter_name in v_list:
+            return k
+    return 'default'
+
 
 class RenderSetup:
-    def __init__(self, order_parameter_name: str = None, weighted=False, style: str = 'default', real_size=False):
-        self.style = style
+    def __init__(self, order_parameter_name: str = None, weighted=False, real_size=True):
+        self.style = get_style(order_parameter_name)
         self.real_size = real_size
 
         def func(x):
@@ -30,6 +43,7 @@ def selectCmapAndNorm(style: str):
         return {
             'default': ('viridis', None),
             'angle': ('hsv', mcolors.Normalize(vmin=0, vmax=np.pi)),
+            'pm1': ('bwr', mcolors.Normalize(vmin=-1, vmax=1)),
             'voronoi': (mcolors.ListedColormap(art.my_colors), mcolors.Normalize(vmin=0, vmax=len(art.my_colors)))
         }[style]
     except KeyError:

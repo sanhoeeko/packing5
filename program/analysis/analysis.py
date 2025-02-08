@@ -108,7 +108,7 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
 
 
 def calAllOrderParameters(database: Database, x_axis_name: str, weighted=False, num_threads=4):
-    order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global']
+    order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6']
     try:
         orderParameterAnalysis(
             database, order_parameters, x_axis_name, weighted, num_threads
