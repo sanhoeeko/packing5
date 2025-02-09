@@ -1,40 +1,53 @@
 import numpy as np
 
+from h5tools.cubic import CubicMinimumX
 from . import utils as ut
 from .kernel import ker
-from .state import State
 
-alpha = np.float32(1.1)
+alpha = np.float32(0.96)
+beta = np.float32(0.6)
 
 
-def energyScan(s: State, g: ut.CArray, max_stepsize: float, n_samples: int):
+def energyScan(s, g: ut.CArray, step_sizes: np.ndarray):
+    """
+    :param s: State
+    """
     state = s.copy(train=True)
-    ratios = alpha ** np.arange(0, n_samples, 1)
-    xs = max_stepsize / ratios
-    ys = np.zeros_like(xs)
-    for i in range(n_samples):
-        ker.dll.AddVector4(s.xyt.ptr, g.ptr, state.xyt.ptr, state.N, xs[i])
+    ys = np.zeros_like(step_sizes)
+    for i in range(len(step_sizes)):
+        ker.dll.AddVector4(s.xyt.ptr, g.ptr, state.xyt.ptr, state.N, step_sizes[i])
         if state.isOutOfBoundary():
             ys[i] = np.inf
         else:
             ys[i] = state.CalEnergy_pure()
-    return xs, ys
+    return ys
 
 
-def findBestStepsize(s: State, max_stepsize: float, n_samples: int) -> np.float32:
-    normalized_gradient = s.CalGradientNormalized_pure(0)
-    xs, ys = energyScan(s, normalized_gradient, max_stepsize, n_samples)
+def findBestStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
+    """
+    :param s: State
+    """
+    normalized_gradient = s.CalGradientNormalized_pure(1)
+    if normalized_gradient is None:
+        return max_stepsize
+    xs = max_stepsize * alpha ** np.arange(n_samples)
+    ys = energyScan(s, normalized_gradient, xs)
     index = np.argmin(ys)
     return np.float32(xs[index])
 
 
-def findGoodStepsize(s: State, max_stepsize: float, n_samples: int) -> np.float32:
-    normalized_gradient = s.CalGradientNormalized_pure(0)
+def findGoodStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
+    """
+    :param s: State
+    """
+    normalized_gradient = s.CalGradientNormalized_pure(1)
+    if normalized_gradient is None:
+        return max_stepsize
     state = s.copy(train=True)
     stepsize = np.float32(max_stepsize)
     energy = state.CalEnergy_pure()
     for i in range(n_samples):
-        current_stepsize = stepsize / alpha
+        current_stepsize = stepsize * alpha
         ker.dll.AddVector4(s.xyt.ptr, normalized_gradient.ptr, state.xyt.ptr, state.N, current_stepsize)
         if state.isOutOfBoundary():
             continue
@@ -44,3 +57,15 @@ def findGoodStepsize(s: State, max_stepsize: float, n_samples: int) -> np.float3
         stepsize = current_stepsize
         energy = current_energy
     return stepsize
+
+
+def findCubicStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
+    """
+    :param s: State
+    """
+    normalized_gradient = s.CalGradientNormalized_pure(1)
+    if normalized_gradient is None:
+        return max_stepsize
+    xs = max_stepsize * beta ** np.arange(n_samples)
+    ys = energyScan(s, normalized_gradient, xs)
+    return CubicMinimumX(xs, ys, 0, max_stepsize)

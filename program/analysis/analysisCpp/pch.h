@@ -33,5 +33,6 @@ DLLEXPORT void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indic
 DLLEXPORT void sumAnisotropicComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
     void* complex_ptr, void* output_ptr);
 DLLEXPORT float RijRatio(void* p_xyt, int N);
+DLLEXPORT float CubicMinimum(float a, float b, float c, float d);
 
 #endif //PCH_H

@@ -9,6 +9,7 @@ from .kernel import ker
 from .lbfgs import LBFGS
 from .mc import StatePool
 from .potential import Potential
+from .stepsize import findCubicStepsize
 from .utils import NaNInGradientException, OutOfBoundaryException
 
 
@@ -186,6 +187,9 @@ class State(ut.HasMeta):
         for t in range(int(n_steps) // stride):
             self.state_pool.clear()
             for i in range(stride):
+
+                step_size = findCubicStepsize(self, 1e-3, 10)
+
                 gradient = self.optimizer.calGradient()
                 if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
                     self.state_pool.add(self, 1e5)
@@ -222,6 +226,9 @@ class State(ut.HasMeta):
         for t in range(int(n_steps) // stride):
             self.state_pool.clear()
             for i in range(stride):
+
+                step_size = findCubicStepsize(self, 1e-3, 10)
+
                 gradient_amp = self.lbfgs_agent.gradientAmp()
                 self.state_pool.add(self, gradient_amp)
                 self.descent(self.lbfgs_agent.CalDirection(), step_size)
@@ -251,9 +258,14 @@ class State(ut.HasMeta):
         self.clear_dependency()
         return gradient
 
-    def CalGradientNormalized_pure(self, power=1) -> ut.CArray:
+    def CalGradientNormalized_pure(self, power: float = 1) -> ut.CArray:
+        """
+        :param power: 0 for not normalized. 1 for proper normalized.
+        """
         gradient = self.CalGradient_pure()
         g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
+        if g < 1e-6:
+            return None
         s = np.float32(1) / (g ** power)
         ker.dll.CwiseMulVector4(gradient.ptr, self.N, s)
         return gradient
@@ -264,6 +276,9 @@ class State(ut.HasMeta):
         The method is pure and returns an energy value.
         """
         self.grid.gridLocate()
+        # is_too_close = self.gradient.isTooClose()
+        # if is_too_close or self.isOutOfBoundary():
+        #     return np.float32(np.inf)
         self.gradient.calGradientAndEnergy()
         energy = self.gradient.sum.E()
         self.clear_dependency()

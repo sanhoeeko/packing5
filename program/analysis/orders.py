@@ -81,7 +81,7 @@ class Delaunay(DelaunayBase):
         return np.abs(self.phi_p(4, xyt))
 
     def EllipticPhi6(self, xyt: ut.CArray, gamma: float) -> np.ndarray:
-        return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
+        return np.abs(self.phi_p_ellipse_template(Angle)(6, gamma, xyt))
 
     def PureRotationAngle(self, xyt: ut.CArray) -> np.ndarray:
         return super().pure_rotation_phi(xyt)
