@@ -14,6 +14,10 @@ class Voronoi:
         self.disks_per_rod = 3
         self.disk_map = ut.CArray(self.getDiskMap(configuration), dtype=np.float32)
 
+    @classmethod
+    def fromStateDict(cls, dic: dict):
+        return cls(dic['metadata']['gamma'], dic['metadata']['A'], dic['metadata']['B'], dic['xyt'])
+
     def getDiskMap(self, xytu: np.ndarray):
         xy = xytu[:, :2]
         t = xytu[:, 2]

@@ -7,6 +7,8 @@ import numpy as np
 from simulation.state import State
 from . import utils as ut
 from .h5tools import extract_metadata, struct_array_to_dataframe
+from .orders import general_order_parameter
+from .voronoi import Voronoi
 
 
 class Database:
@@ -51,6 +53,12 @@ class PickledEnsemble:
 
     def __len__(self):
         return self.state_table.shape[0]
+
+    def __iter__(self):
+        for i in range(self.configuration.shape[0]):
+            obj = self.simulation_at(i)
+            yield obj
+            del obj  # Explicitly delete the PickledEnsemble object to release memory
 
     def simulation_at(self, nth_replica: int):
         return PickledSimulation(self.metadata, self.state_table[nth_replica], self.gradient_curve[nth_replica],
@@ -109,6 +117,31 @@ class PickledSimulation:
             'energy_curve': self.energy_curve[idx, :],
             'xyt': self.xyt[idx, :, :]
         }
+
+    def __iter__(self):
+        for i in range(self.n):
+            yield self[i]
+
+    def voronoi(self, idx):
+        return Voronoi.fromStateDict(self[idx])
+
+    def op(self, order_parameter_name: str) -> np.ndarray:
+        """
+        :return: numpy array of order parameter
+        """
+        return np.vectorize(self.op_at(order_parameter_name))(range(len(self)))
+
+    def op_at(self, order_parameter_name: str):
+        def inner(index: int):
+            state = self[index]
+            voro = Voronoi.fromStateDict(state).delaunay(False)
+            if voro is None: return np.float32(np.nan)
+            return np.mean(general_order_parameter(
+                order_parameter_name, state['xyt'], voro,
+                (state['metadata']['A'], state['metadata']['B'], state['metadata']['gamma'])
+            ))
+
+        return inner
 
     def state_at(self, idx: int) -> State:
         """

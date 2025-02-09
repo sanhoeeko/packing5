@@ -22,6 +22,21 @@ def Angle(xyt: np.ndarray):
     return xyt[:, 2] % np.pi
 
 
+def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, abg: tuple = None):
+    """
+    :return: a numpy array of shape (N,), N = particle number.
+    parameter `name` and `xyt` are necessary.
+    """
+    if name == 'S_global':
+        return S_global(xyt)
+    elif name == 'Angle':
+        return Angle(xyt)
+    elif name.startswith('Elliptic'):
+        return getattr(voro, name)(ut.CArray(xyt), abg[2])
+    else:
+        return getattr(voro, name)(ut.CArray(xyt))
+
+
 def OrderParameterList(order_parameter_names: list[str]):
     """
     Common order parameter interface. For both voronoi and non-voronoi order parameters.
@@ -36,15 +51,7 @@ def OrderParameterList(order_parameter_names: list[str]):
         result = np.full((n,), np.nan, dtype=dtype)
         if voro is not None:
             for name in order_parameter_names:
-                # result[name] should return a numpy array of shape (N,)
-                if name == 'S_global':
-                    result[name] = S_global(xyt)
-                elif name == 'Angle':
-                    result[name] = Angle(xyt)
-                elif name.startswith('Elliptic'):
-                    result[name] = getattr(voro, name)(xyt_c, abg[2])
-                else:
-                    result[name] = getattr(voro, name)(xyt_c)
+                result[name] = general_order_parameter(name, xyt, voro, abg)
         return result
 
     return inner
@@ -74,7 +81,7 @@ class Delaunay(DelaunayBase):
         return np.abs(self.phi_p(4, xyt))
 
     def EllipticPhi6(self, xyt: ut.CArray, gamma: float) -> np.ndarray:
-        return np.abs(self.phi_p_ellipse_template(Angle)(6, gamma, xyt))
+        return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
 
     def PureRotationAngle(self, xyt: ut.CArray) -> np.ndarray:
         return super().pure_rotation_phi(xyt)

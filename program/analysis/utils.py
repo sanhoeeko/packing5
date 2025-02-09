@@ -5,6 +5,16 @@ import numpy as np
 from analysis.h5tools import invalid_value_of
 
 
+def setWorkingDirectory():
+    import os, sys
+    if not sys.platform.startswith('linux'):
+        working_dir = "D:/py/packing5/program"
+        os.chdir(working_dir)
+
+
+setWorkingDirectory()
+
+
 # C++ data management
 
 class CArray:
