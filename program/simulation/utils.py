@@ -67,12 +67,16 @@ class InitFailException(Exception):
 
 class CArray:
     def __init__(self, arr: np.ndarray, dtype=None):
-        if dtype is None:
-            dtype = arr.dtype
         if arr.flags['C_CONTIGUOUS']:
-            self.data: np.ndarray = arr.astype(dtype)
+            if dtype is None:
+                self.data = arr
+            else:
+                self.data = arr.astype(dtype)
         else:
-            self.data: np.ndarray = np.ascontiguousarray(arr, dtype=dtype)
+            if dtype is None:
+                self.data = np.ascontiguousarray(arr, dtype=np.float32)
+            else:
+                self.data = np.ascontiguousarray(arr, dtype=dtype)
         self.ptr = self.data.ctypes.data
 
     def __repr__(self):
@@ -99,6 +103,8 @@ class CArray:
 
 
 def CArrayF(arr: np.ndarray):
+    if arr.dtype is np.float32:
+        return CArray(arr, None)
     return CArray(arr, np.float32)
 
 

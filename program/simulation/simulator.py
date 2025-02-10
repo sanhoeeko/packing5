@@ -122,11 +122,15 @@ class Simulator(ut.HasMeta):
                 if self.state.phi > default.terminal_phi: break
                 self.state.descent_curve.clear()
 
-                # self.state.boundary.compress(i)
-                b0 = self.state.boundary.B
-                self.state.boundary.compress(i)
-                b1 = self.state.boundary.B
-                self.state.xyt.data[:, 1] *= b1 / b0  # affine transformation
+                if default.if_affine_when_compress:
+                    a0, b0 = self.state.boundary.A, self.state.boundary.B
+                    self.state.boundary.compress(i)
+                    a1, b1 = self.state.boundary.A, self.state.boundary.B
+                    # affine transformation
+                    self.state.xyt.data[:, 0] *= a1 / a0
+                    self.state.xyt.data[:, 1] *= b1 / b0
+                else:
+                    self.state.boundary.compress(i)
 
                 state_cache = self.state.xyt.copy()
                 step_size_ratio = 1
@@ -155,16 +159,16 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            # if self.state.CalEnergy_pure() < 10:
-            #     self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
-            step_size = 5e-3 * (self.state.averageRij_pure() / 2) ** 2
-            for i in range(50):
+            if self.state.CalEnergy_pure() < 10:
+                self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
+            step_size = 1 * (self.state.averageRij_pure() / 2) ** 2
+            for i in range(20):
                 self.state.sgd(step_size * step_size_ratio, 1000)
                 step_size *= 0.96
-            step_size = 5e-4 * (self.state.averageRij_pure() / 2) ** 2
-            for i in range(50):
-                self.state.lbfgs(step_size * step_size_ratio, 1000, default.descent_curve_stride)
-                step_size *= 0.96
+            # step_size = 0.01 * (self.state.averageRij_pure() / 2) ** 2
+            # for i in range(10):
+            #     self.state.lbfgs(step_size * step_size_ratio, 100, default.descent_curve_stride)
+            #     step_size *= 0.96
             # final check
             if not self.state.legal_pure():
                 raise ut.FinalIllegalException

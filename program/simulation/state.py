@@ -1,7 +1,7 @@
 import numpy as np
 
 import default
-from . import utils as ut
+from . import utils as ut, stepsize as ss
 from .boundary import EllipticBoundary
 from .gradient import Optimizer, GradientMatrix
 from .grid import Grid
@@ -9,7 +9,6 @@ from .kernel import ker
 from .lbfgs import LBFGS
 from .mc import StatePool
 from .potential import Potential
-from .stepsize import findCubicStepsize
 from .utils import NaNInGradientException, OutOfBoundaryException
 
 
@@ -17,7 +16,7 @@ class State(ut.HasMeta):
     meta_hint = "N: i4, A: f4, B: f4, gamma: f4, rho: f4, phi: f4, energy: f4, gradient_amp: f4"
     min_grad = 1e-3  # Used in `Simulator` class, `equilibrium` method
 
-    def __init__(self, N: int, n: int, d: float, A: float, B: float, configuration: np.ndarray):
+    def __init__(self, N: int, n: int, d: float, A: float, B: float, configuration: np.ndarray, train=True):
         super().__init__()
         self.N = np.int32(N)
         self.n = np.int32(n)
@@ -27,13 +26,15 @@ class State(ut.HasMeta):
         # data
         self.xyt = ut.CArrayF(configuration)
         self.boundary = EllipticBoundary(A, B)
-        # optional objects
+        # necessary objects
         self.optimizer: Optimizer = None
         self.grid = Grid(self)
         self.gradient = GradientMatrix(self, self.grid)
-        self.descent_curve = ut.DescentCurve()
-        self.state_pool = StatePool(self.N, default.descent_curve_stride)
-        self.lbfgs_agent = LBFGS(self)
+        # optional objects
+        if train:
+            self.descent_curve = ut.DescentCurve()
+            self.state_pool = StatePool(self.N, default.descent_curve_stride)
+            self.lbfgs_agent = LBFGS(self)
 
     @property
     def A(self):
@@ -82,11 +83,8 @@ class State(ut.HasMeta):
         return self
 
     def copy(self, train=False) -> 'State':
-        s = State(self.N, self.n, self.d, self.boundary.A, self.boundary.B, self.xyt.data.copy())
-        if train:
-            return s.setPotential(self.gradient.potential)
-        else:
-            return s
+        s = State(self.N, self.n, self.d, self.boundary.A, self.boundary.B, self.xyt.data.copy(), train)
+        return s.setPotential(self.gradient.potential)
 
     def clear_dependency(self):
         ker.dll.HollowClear(self.grid.grid.ptr, self.grid.size, ut.max_neighbors)
@@ -178,32 +176,28 @@ class State(ut.HasMeta):
         self.xyt.set_data(min_state.data)
 
     def sgd(self, step_size: float, n_steps: int):
-        min_grad = 0.01
-
         stride = default.descent_curve_stride
         self.setOptimizer(0.01, 0.1, 1, False)
         self.descent_curve.reserve(n_steps // stride)
 
         for t in range(int(n_steps) // stride):
             self.state_pool.clear()
+            sz = step_size * ss.findCubicStepsize(self, 1e-2, 7)
             for i in range(stride):
-
-                step_size = findCubicStepsize(self, 1e-3, 10)
-
                 gradient = self.optimizer.calGradient()
                 if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
                     self.state_pool.add(self, 1e5)
-                    self.descent(gradient, step_size)
+                    self.descent(gradient, sz)
                 else:
                     g = self.optimizer.gradientAmp()
                     self.state_pool.add(self, g)
-                    self.descent(gradient, step_size)
+                    self.descent(gradient, sz)
 
             energy, min_state = self.state_pool.average_zero_temperature()
             self.xyt.set_data(min_state.data)
             gradient_amp = np.min(self.state_pool.energies.data)
             self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
-            if gradient_amp < min_grad: break
+            if gradient_amp < default.min_grad: break
 
         self.descent_curve.join()
 
@@ -215,9 +209,7 @@ class State(ut.HasMeta):
         else:
             (relaxations_steps, final gradient amplitude, gradient amplitudes)
         """
-        min_grad = 0.01
         gradient_amp = 0
-
         self.lbfgs_agent.init(step_size)
         self.descent_curve.reserve(n_steps // stride)
         state_cache = self.xyt.copy()
@@ -225,15 +217,14 @@ class State(ut.HasMeta):
 
         for t in range(int(n_steps) // stride):
             self.state_pool.clear()
+            # sz = step_size * ss.findCubicStepsizeNG(self, self.lbfgs_agent.CalDirection(), 1e-2, 7)
+            sz = step_size * 1e-3
             for i in range(stride):
-
-                step_size = findCubicStepsize(self, 1e-3, 10)
-
                 gradient_amp = self.lbfgs_agent.gradientAmp()
                 self.state_pool.add(self, gradient_amp)
-                self.descent(self.lbfgs_agent.CalDirection(), step_size)
+                self.descent(self.lbfgs_agent.CalDirection(), sz)
                 self.lbfgs_agent.update()
-                if gradient_amp <= min_grad:
+                if gradient_amp <= default.min_grad:
                     self.descent_curve.join()
                     return t, gradient_amp
 

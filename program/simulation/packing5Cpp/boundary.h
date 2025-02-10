@@ -22,15 +22,8 @@ struct EllipticBoundary {
 template<HowToCalGradient how, bool need_energy>
 ge EllipticBoundary::collide(Rod* shape, const xyt& q)
 {
+	const float h_min = -0.01;
 	float x0, y0, absx0, absy0;
-
-	// check if the particle is outside the boundary. if so, return a penalty
-	// a penalty is marked by {id2 = -114514, theta1 = h}
-	float h = distOutOfBoundary(q);
-	if (h > 0) {
-		float fr = -10 * (expf(h) - 1);
-		return { fr * q.x, fr * q.y, 0, 0 };
-	}
 
 	// q.x,	q.y cannot be both zero because of the `maybeCollide` guard. 
 	float absx1 = abs(q.x), absy1 = abs(q.y);
@@ -60,6 +53,15 @@ ge EllipticBoundary::collide(Rod* shape, const xyt& q)
 		alpha = atan2f(a2 * y0, b2 * x0),	// the angle of the tangent line
 		beta = q.t,
 		thetap = 2 * alpha - beta;
+
 	// calculate the gradient
-	return singleGE<how, need_energy>(shape, 2 * dx, 2 * dy, q.t, thetap).first * 10;
+	ge g = singleGE<how, need_energy>(shape, 2 * dx, 2 * dy, q.t, thetap).first * 10;
+
+	// check if the particle is outside the boundary. if so, add a penalty
+	float h = distOutOfBoundary(q);
+	if (h > h_min) {
+		float fr = -10 * (expf(h - h_min) - 1);
+		g += { fr* q.x, fr* q.y, 0, 0 };
+	}
+	return g;
 }
