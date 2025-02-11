@@ -65,9 +65,7 @@ def findCubicStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
     if normalized_gradient is None: return max_stepsize
     xs = max_stepsize * beta ** np.arange(n_samples)
     ys = energyScan(s, normalized_gradient, xs)
-    res = CubicMinimumX(xs, ys, 0, max_stepsize)
-    print(res)
-    return res
+    return CubicMinimumX(xs, ys, 0, max_stepsize)
 
 
 def findCubicStepsizeNG(s, g: ut.CArray, max_stepsize: float, n_samples: int) -> np.float32:

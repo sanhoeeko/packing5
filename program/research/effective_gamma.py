@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 
-from analysis.analysis import *
-from analysis.database import PickledSimulation
-from analysis.voronoi import Voronoi
+from single_analysis.analysis import *
+from single_analysis.database import PickledSimulation
+from single_analysis.voronoi import Voronoi
 from h5tools.cubic import CubicMinimumXNan
 from h5tools.dataset import *
 

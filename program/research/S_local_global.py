@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
-from analysis.analysis import *
-from analysis.database import PickledSimulation
+from single_analysis.analysis import *
+from single_analysis.database import PickledSimulation
 from h5tools.dataset import *
 
 

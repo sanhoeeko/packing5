@@ -3,9 +3,14 @@ analysis.database: Data Access Layer
 """
 import h5py
 import numpy as np
+import pandas as pd
+
+from . import utils as ut
+
+ut.setWorkingDirectory()
 
 from simulation.state import State
-from . import utils as ut
+
 from .h5tools import extract_metadata, struct_array_to_dataframe
 from .orders import general_order_parameter
 from .voronoi import Voronoi
@@ -16,11 +21,11 @@ class Database:
         self.file_name = file_name
         self.file = h5py.File(self.file_name, 'r')
         self.summary_table_array = extract_metadata(self.file_name)
-        self.summary = struct_array_to_dataframe(self.summary_table_array)
-        self.ids = self.summary['id'].tolist()
+        self.ids = self.summary_table_array['id'].tolist()
+        self.summary = self.process_summary(struct_array_to_dataframe(self.summary_table_array))
 
     def __repr__(self):
-        return str(self.summary)
+        return self.summary.to_string()
 
     def __getitem__(self, index: int):
         return self.id(self.ids[index])
@@ -42,6 +47,12 @@ class Database:
         result = list(map(func, self))
         return tuple(zip(*result))
 
+    def process_summary(self, df: pd.DataFrame) -> pd.DataFrame:
+        lens = [x.state_table.shape[1] for x in self]
+        df.insert(1, 'n_states', np.array(lens))
+        df = df.sort_values(by=['gamma'])
+        df.reset_index(drop=True, inplace=True)
+        return df
 
 class PickledEnsemble:
     def __init__(self, h5_group):

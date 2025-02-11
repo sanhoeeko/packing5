@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <math.h>
 
 struct xyt3f { float x, y, t; };
 
