@@ -47,6 +47,36 @@ class ScreenedCoulomb(RadialFunc):
         return f"screened coulomb({'%.1f' % self.r0})"
 
 
+class ModifiedPower(RadialFunc):
+    def __init__(self, alpha: float, x0: float):
+        """
+        :param alpha: f(r)=(2-r)^α for x0<r<2; f(r)=a/r^k+b for 0<r<x0.
+        :param x0: f(r) is C-2 continuous at x0.
+        """
+        self.alpha = alpha
+        self.x0 = x0
+        a = ((2 - x0) ** alpha * x0 ** ((x0 - x0 * alpha) / (-2 + x0)) * alpha) / (-2 + x0 * alpha)
+        b = (2 * (2 - x0) ** alpha) / (2 - x0 * alpha)
+        k = (2 - x0 * alpha) / (-2 + x0)
+
+        def radial_func(r):
+            if r == 0: return 1e12
+            return a / r ** k + b if r < x0 else (2 - r) ** alpha
+
+        def d_radial_func(r):
+            if r == 0: return 0
+            return -a * k * r ** (-1 - k) if r < x0 else -(2 - r) ** (-1 + alpha) * alpha
+
+        x = np.sqrt(np.linspace(0, 4, num=ut.sz1d, endpoint=True, dtype=np.float32))
+        vr = ut.CArray(np.vectorize(radial_func)(x), np.float32)
+        dvr = ut.CArray(np.vectorize(d_radial_func)(x), np.float32)
+        super().__init__(vr, dvr)
+
+    @property
+    def name(self):
+        return f"modified power({'%.1f' % self.alpha}, {'%.2f' % self.x0})"
+
+
 class Potential:
     def __init__(self, n: int, d: float, vr: RadialFunc):
         self.radial_func = vr

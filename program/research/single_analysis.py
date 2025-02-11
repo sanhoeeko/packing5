@@ -7,7 +7,7 @@ from analysis.analysis import *
 
 if __name__ == '__main__':
     auto_pack()
-    db = Database('../data.h5')
+    db = Database('data.h5')
     checkGradient(db)
     checkEnergy(db)
     checkGradientCurveAt(db, 0, 0)

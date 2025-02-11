@@ -11,7 +11,7 @@ ut.setWorkingDirectory()
 
 from simulation.state import State
 
-from .h5tools import extract_metadata, struct_array_to_dataframe
+from .h5tools import extract_metadata, struct_array_to_dataframe, filter_dataframe
 from .orders import general_order_parameter
 from .voronoi import Voronoi
 
@@ -54,6 +54,28 @@ class Database:
         df.reset_index(drop=True, inplace=True)
         return df
 
+    def subSummary(self, **kwargs) -> pd.DataFrame:
+        """
+        :param kwargs: key=value
+        :return: ensembles whose key is value
+        """
+        df = self.summary
+        for k, v in kwargs.items():
+            df = filter_dataframe(df, k, v)
+        return df
+
+    def find(self, **kwargs) -> list['PickledEnsemble']:
+        df = self.subSummary(**kwargs)
+        print(df)
+        ensemble_names = df['id']
+        return [self.id(name) for name in ensemble_names]
+
+    def search_max_gradient(self):
+        gs = [e.max_gradient() for e in self]
+        idx = np.argmax(gs)
+        print(f"Maximum gradient: {gs[idx]}, at ensemble {self.ids[idx]}")
+
+
 class PickledEnsemble:
     def __init__(self, h5_group):
         self.configuration = h5_group['configuration']  # shape: (replica, rho, N, 3)
@@ -71,6 +93,9 @@ class PickledEnsemble:
             yield obj
             del obj  # Explicitly delete the PickledEnsemble object to release memory
 
+    def __getitem__(self, index: int):
+        return self.simulation_at(index)
+
     def simulation_at(self, nth_replica: int):
         return PickledSimulation(self.metadata, self.state_table[nth_replica], self.gradient_curve[nth_replica],
                                  self.energy_curve[nth_replica], self.configuration[nth_replica])
@@ -78,9 +103,13 @@ class PickledEnsemble:
     def property(self, prop: str) -> np.ndarray:
         """
         :param prop: name of recorded property
-        :return: 3 dim tensor
+        :return: 2 dim tensor
         """
         return self.state_table[prop]
+
+    def max_gradient(self):
+        if self.state_table.shape[1] == 0: return 0
+        return np.max(self.property('gradient_amp'))
 
     def apply(self, func_act_on_configuration, num_threads=1, from_to_nth_data=None):
         """

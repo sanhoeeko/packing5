@@ -75,14 +75,15 @@ def pack_simulations_cwd(file_name='data.h5', truncate=False):
         raise FileExistsError('Target file already exists!')
 
     # pack into ensembles
-    files = [file for file in os.listdir() if pattern.match(file)]
+    files = [file for file in os.listdir() if pattern.match(file) and not file.startswith('data')]
     ensemble_ids = get_ensemble_names(files)
     for eid in ensemble_ids:
         stack_h5_datasets(eid, truncate)
     # for file in files: os.remove(file)
 
     # pack into single file
-    sum_files = [file for file in os.listdir() if file.endswith('.h5') and file not in files]
+    sum_files = [file for file in os.listdir() if
+                 file.endswith('.h5') and file not in files and not file.startswith('data')]
     pack_h5_files(sum_files, file_name)
     for file in sum_files: os.remove(file)
     compress_file(file_name)

@@ -107,7 +107,7 @@ class Simulator(ut.HasMeta):
         try:
             while True:
                 try:
-                    self.state.initAsDisksWithPhi(0.84)
+                    self.state.initAsDisksWithPhi(0.8)
                     if self.state.legal_pure():
                         print(f"[{self.id}] Successfully initialized.")
                         break
@@ -159,10 +159,10 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            if self.state.CalEnergy_pure() < 10:
-                self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
+            # if self.state.CalEnergy_pure() < 10:
+            #     self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
             step_size = 1 * (self.state.averageRij_pure() / 2) ** 2
-            for i in range(20):
+            for i in range(64):
                 self.state.sgd(step_size * step_size_ratio, 1000)
                 step_size *= 0.96
             # step_size = 0.01 * (self.state.averageRij_pure() / 2) ** 2

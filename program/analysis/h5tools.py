@@ -79,3 +79,20 @@ def extract_metadata(file_path: str) -> np.ndarray:
     # Combine all metadata into a single structured ndarray
     metadata_array = np.concatenate(metadata_list)
     return metadata_array
+
+
+def filter_dataframe(df: pd.DataFrame, column_name, target_value):
+    if pd.api.types.is_numeric_dtype(df[column_name]):
+        # for float
+        if np.issubdtype(df[column_name].dtype, np.floating):
+            filtered_df = df[np.abs(df[column_name] - target_value) < 1e-6]
+        # for int
+        else:
+            filtered_df = df[df[column_name] == target_value]
+    elif pd.api.types.is_string_dtype(df[column_name]):
+        # for string
+        filtered_df = df[df[column_name] == target_value]
+    else:
+        raise ValueError(f"Unsupported data type for column '{column_name}'")
+
+    return filtered_df

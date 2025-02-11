@@ -5,7 +5,7 @@ from . import utils as ut
 from .kernel import ker
 
 alpha = np.float32(0.96)
-beta = np.float32(0.5)
+beta = np.float32(0.4)
 
 
 def energyScan(s, g: ut.CArray, step_sizes: np.ndarray, need_energy=False):

@@ -46,8 +46,8 @@ void GridLocate(void* p_state, void* p_indices, int x_shift, int y_shift, int co
     xyt* q = (xyt*)p_state;
     int* indices = (int*)p_indices;
     for (int k = 0; k < N; k++) {
-        int i = (int)round(q[k].x / 2.0f) + x_shift;
-        int j = (int)round(q[k].y / 2.0f) + y_shift;
+        int i = (int)round(q[k].x / 2) + x_shift;
+        int j = (int)round(q[k].y / 2) + y_shift;
         indices[k] = j * cols + i;
     }
 }

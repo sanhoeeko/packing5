@@ -25,8 +25,8 @@ class Grid:
         """
         self.m = np.int32(np.ceil(A / 2))
         self.n = np.int32(np.ceil(B / 2))
-        self.x_shift = self.m + 1
-        self.y_shift = self.n + 1
+        self.x_shift = self.m + 2
+        self.y_shift = self.n + 2
         self.lines = 2 * self.y_shift
         self.cols = 2 * self.x_shift
         self.size = self.lines * self.cols

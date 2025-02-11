@@ -182,7 +182,7 @@ class State(ut.HasMeta):
 
         for t in range(int(n_steps) // stride):
             self.state_pool.clear()
-            sz = step_size * ss.findCubicStepsize(self, 1e-2, 7)
+            sz = step_size * ss.findCubicStepsize(self, 1e-2, 6)
             for i in range(stride):
                 gradient = self.optimizer.calGradient()
                 if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
@@ -217,7 +217,7 @@ class State(ut.HasMeta):
 
         for t in range(int(n_steps) // stride):
             self.state_pool.clear()
-            # sz = step_size * ss.findCubicStepsizeNG(self, self.lbfgs_agent.CalDirection(), 1e-2, 7)
+            # sz = step_size * ss.findCubicStepsizeNG(self, self.lbfgs_agent.CalDirection(), 1e-2, 6)
             sz = step_size * 1e-3
             for i in range(stride):
                 gradient_amp = self.lbfgs_agent.gradientAmp()

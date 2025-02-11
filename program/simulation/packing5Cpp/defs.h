@@ -1,6 +1,6 @@
 #pragma once
 
-#define max_neighbors 64
+#define max_neighbors 16
 #define LBFGS_MEMORY_SIZE 20
 
 #define DIGIT_X 9
