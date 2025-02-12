@@ -25,8 +25,9 @@ def cubic_minimum(coefficients: np.ndarray) -> np.float32:
 
 def CubicMinimumX(x: np.ndarray, y: np.ndarray, x_min: np.float32, x_max: np.float32) -> np.float32:
     coefficients, mse = cubic_fit(x, y)
-    if mse > 1:
-        print(f"Warning from CubicMinimumX: MSE too large: MSE={mse}")
+    # Warning: this log may cause a significant disk occupation
+    # if mse > 1:
+    #     print(f"Warning from CubicMinimumX: MSE too large: MSE={mse}")
     x0 = cubic_minimum(coefficients)
     if np.isnan(x0) or not x_min < x0 < x_max:
         poly = np.poly1d(coefficients)

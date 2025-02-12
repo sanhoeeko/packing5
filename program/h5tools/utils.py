@@ -66,3 +66,28 @@ def FuncCartesian(func, **attribute_lists):
 
     cartesian_product = product(*attribute_lists.values())
     return [func(**dict(zip(attribute_lists.keys(), attributes))) for attributes in cartesian_product]
+
+
+class SimpleLogger:
+    def __init__(self):
+        self.last_message = None
+        self.count = 0
+
+    def flush(self):
+        self._output_last_message()
+
+    def log(self, message=None):
+        if message == self.last_message:
+            self.count += 1
+        else:
+            self._output_last_message()
+            self.last_message = message
+            self.count = 1
+
+    def _output_last_message(self):
+        if self.count > 1:
+            print(f"{self.last_message} x{self.count}")
+        elif self.count == 1:
+            print(self.last_message)
+        self.last_message = None
+        self.count = 0
