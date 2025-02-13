@@ -9,9 +9,9 @@ from simulation.simulator import createSimulator
 
 def testSingleThread(profile=True):
     N = 1024
-    n = 11
+    n = 6
     d = 0.1
-    phi0 = 0.5
+    phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
     compress_func_B = boundary.RatioCompress(0.004)

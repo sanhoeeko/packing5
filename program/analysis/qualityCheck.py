@@ -26,7 +26,7 @@ def plotCurves(db: Database, x_name: str, y_name: str):
 
 
 def checkGradient(db: Database):
-    plotCurves(db, 'phi', 'gradient_amp')
+    plotCurves(db, 'phi', 'normalized_gradient_amp')
 
 
 def checkStateDistance(db: Database):

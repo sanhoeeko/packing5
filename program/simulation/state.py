@@ -201,14 +201,7 @@ class State(ut.HasMeta):
 
         self.descent_curve.join()
 
-    def lbfgs(self, step_size: float, n_steps: int, stride: int) -> (int, np.ndarray, np.float32):
-        """
-        :return:
-        if cal_energy:
-            (relaxations_steps, final gradient amplitude, energy curve)
-        else:
-            (relaxations_steps, final gradient amplitude, gradient amplitudes)
-        """
+    def lbfgs(self, step_size: float, n_steps: int, stride: int):
         gradient_amp = 0
         self.lbfgs_agent.init(step_size)
         self.descent_curve.reserve(n_steps // stride)
@@ -236,6 +229,33 @@ class State(ut.HasMeta):
         if gradient_amp > g_cache:
             self.xyt.set_data(state_cache.data)
             self.descent_curve.rewrite(g=g_cache)
+        self.descent_curve.join()
+
+    def fineRelax(self, step_size: float, n_steps: int, stride: int):
+        min_grad = 0.01
+        stride = 200
+        self.setOptimizer(0, 0, 1, False)
+        self.descent_curve.reserve(n_steps // stride)
+        state_pool = StatePool(self.N, stride)
+
+        for t in range(int(n_steps) // stride):
+            state_pool.clear()
+            for i in range(stride):
+                gradient = self.optimizer.calGradient()
+                if self.optimizer.particles_too_close_cache or self.isOutOfBoundary():
+                    state_pool.add(self, 1e5)
+                    self.descent(gradient, step_size)
+                else:
+                    g = self.optimizer.gradientAmp()
+                    state_pool.add(self, g)
+                    self.descent(gradient, step_size)
+
+            energy, min_state = state_pool.average_zero_temperature()
+            self.xyt.set_data(min_state.data)
+            gradient_amp = np.min(state_pool.energies.data)
+            self.record(t * stride, stride, gradient_amp, default.if_cal_energy)
+            if gradient_amp < min_grad: break
+
         self.descent_curve.join()
 
     def CalGradient_pure(self) -> ut.CArray:

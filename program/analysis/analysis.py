@@ -89,6 +89,8 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
     out_file = 'analysis.h5'
     dic = {}
     for ensemble in database:
+        # if ensemble.data_length() == 0: continue
+        if ensemble.data_length() < 100: continue
         sub_dic = {}
         x, y_mean, y_ci = averageByReplica(
             *orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)

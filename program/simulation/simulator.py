@@ -162,13 +162,10 @@ class Simulator(ut.HasMeta):
             # if self.state.CalEnergy_pure() < 10:
             #     self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
             step_size = 1 * (self.state.averageRij_pure() / 2) ** 2
-            for i in range(64):
+            for i in range(50):
                 self.state.sgd(step_size * step_size_ratio, 1000)
                 step_size *= 0.96
-            # step_size = 0.01 * (self.state.averageRij_pure() / 2) ** 2
-            # for i in range(10):
-            #     self.state.lbfgs(step_size * step_size_ratio, 100, default.descent_curve_stride)
-            #     step_size *= 0.96
+            self.state.fineRelax(1e-5, 20000, default.descent_curve_stride)
             # final check
             if not self.state.legal_pure():
                 raise ut.FinalIllegalException

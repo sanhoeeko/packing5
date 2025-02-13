@@ -87,8 +87,11 @@ class PickledEnsemble:
     def __len__(self):
         return self.state_table.shape[0]
 
+    def data_length(self):
+        return self.state_table.shape[1]
+
     def __iter__(self):
-        for i in range(self.configuration.shape[0]):
+        for i in range(len(self)):
             obj = self.simulation_at(i)
             yield obj
             del obj  # Explicitly delete the PickledEnsemble object to release memory
@@ -100,12 +103,22 @@ class PickledEnsemble:
         return PickledSimulation(self.metadata, self.state_table[nth_replica], self.gradient_curve[nth_replica],
                                  self.energy_curve[nth_replica], self.configuration[nth_replica])
 
+    @property
+    def normalized_gradient_amp(self):
+        """
+        :return: g / n^2, where n is the number of disks. g is approximately proportional to n^2.
+        """
+        return self.state_table['gradient_amp'] / self.metadata['n'] ** 2
+
     def property(self, prop: str) -> np.ndarray:
         """
         :param prop: name of recorded property
         :return: 2 dim tensor
         """
-        return self.state_table[prop]
+        try:
+            return self.state_table[prop]
+        except ValueError:
+            return getattr(self, prop)
 
     def max_gradient(self):
         if self.state_table.shape[1] == 0: return 0
@@ -198,8 +211,7 @@ class PickledSimulation:
         :return: 2d array, a set of normalized descent curves of one simulation.
         """
         assert self.metadata['if_cal_energy']
-        # return self.energy_curve / self.energy_curve[:, 0:1]
-        return self.energy_curve / self.energy_curve[:, 25:26]
+        return self.energy_curve / self.energy_curve[:, 0:1]
 
     def gradientCurve(self) -> np.ndarray:
         return self.gradient_curve
