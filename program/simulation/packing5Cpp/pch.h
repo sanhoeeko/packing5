@@ -27,19 +27,19 @@ DLLEXPORT void GridLocate(void* p_state, void* p_indices, int x_shift, int y_shi
 DLLEXPORT void GridTransform(void* p_indices, void* p_grid, int N);
 
 DLLEXPORT void CalGradient(void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
-    void* p_Gij, void* p_z, int lines, int cols, int N);
+    void* p_Gij, int lines, int cols, int N);
 
 DLLEXPORT void CalGradientAsDisks(void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
-    void* p_Gij, void* p_z, int lines, int cols, int N);
+    void* p_Gij, int lines, int cols, int N);
 
 DLLEXPORT void StochasticCalGradient(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
-    void* p_Gij, void* p_z, int lines, int cols, int N);
+    void* p_Gij, int lines, int cols, int N);
 
 DLLEXPORT void StochasticCalGradientAsDisks(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
-    void* p_Gij, void* p_z, int lines, int cols, int N);
+    void* p_Gij, int lines, int cols, int N);
 
 DLLEXPORT void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
-    void* p_Gij, void* p_z, int lines, int cols, int N);
+    void* p_Gij, int lines, int cols, int N);
 
 DLLEXPORT float MinDistanceRij(void* p_state, void* p_grid, int lines, int cols, int N);
 
@@ -63,7 +63,7 @@ DLLEXPORT void LbfgsUpdate(void* ptr);
 
 DLLEXPORT void LbfgsDirection(void* ptr, void* dst);
 
-DLLEXPORT void SumTensor4(void* p_z, void* p_Gij, void* p_gi, int N);
+DLLEXPORT void SumTensor4(void* p_Gij, void* p_gi, int N);
 
 DLLEXPORT void AddVector4(void* p_x, void* p_g, void* p_dst, int N, float s);
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #define max_neighbors 32
+#define cores 1
 #define LBFGS_MEMORY_SIZE 20
 
 #define DIGIT_X 9

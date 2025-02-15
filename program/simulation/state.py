@@ -88,7 +88,7 @@ class State(ut.HasMeta):
 
     def clear_dependency(self):
         ker.dll.HollowClear(self.grid.grid.ptr, self.grid.size, ut.max_neighbors)
-        ker.dll.FastClear(self.gradient.z.ptr, self.N)
+        self.gradient.zero_grad()
 
     def record(self, t: int, stride: int, gradient_amp: np.float32, cal_energy: bool):
         if t % stride == 0:

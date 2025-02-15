@@ -6,7 +6,7 @@
 #include <random>
 
 template<HowToCalGradient how, bool need_energy>
-void collisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij, int* z, int lines, int cols, int N) {
+void collisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij, int lines, int cols, int N) {
 	/*
 		Given that a particle is in a certain grid,
 		it is only possible to collide with particles in that grid or surrounding grids.
@@ -43,9 +43,9 @@ void collisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij, int* z, i
 								r2 = dx * dx + dy * dy;
 							if (r2 < 4) {
 								XytPair g = singleGE<how, need_energy>(shape, dx, dy, P->t, Q->t);
-								int pm = p * max_neighbors, qm = q * max_neighbors;
-								Gij[pm + z[p]++] = g.first;
-								Gij[qm + z[q]++] = g.second;
+								int pm = p * cores, qm = q * cores;
+								Gij[pm] += g.first;
+								Gij[qm] += g.second;
 							}
 						}
 					}
@@ -65,9 +65,9 @@ void collisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij, int* z, i
 						r2 = dx * dx + dy * dy;
 					if (r2 < 4) {
 						XytPair g = singleGE<how, need_energy>(shape, dx, dy, P->t, Q->t);
-						int pm = p * max_neighbors, qm = q * max_neighbors;
-						Gij[pm + z[p]++] = g.first;
-						Gij[qm + z[q]++] = g.second;
+						int pm = p * cores, qm = q * cores;
+						Gij[pm] += g.first;
+						Gij[qm] += g.second;
 					}
 				}
 			}
@@ -79,13 +79,14 @@ template<HowToCalGradient how, bool need_energy>
 void collisionDetectPW(Rod* shape, xyt* particles, EllipticBoundary* b, ge* Gij, int lines, int cols, int N) {
 	for (int p = 0; p < N; p++) {
 		if (b->maybeCollide(particles[p])) {
-			Gij[(p + 1) * max_neighbors - 1] = b->collide<how, need_energy>(shape, particles[p]);
+			int pm = p * cores;
+			Gij[pm] += b->collide<how, need_energy>(shape, particles[p]);
 		}
 	}
 }
 
 template<HowToCalGradient how>
-void stochasticCollisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij, int* z, int lines, int cols, int N, float p) {
+void stochasticCollisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij, int lines, int cols, int N, float p) {
 	int global_start = cols;
 	int global_end = (lines - 1) * cols;
 	int threshold = (int)round(p * RAND_MAX);
@@ -119,9 +120,9 @@ void stochasticCollisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij,
 								r2 = dx * dx + dy * dy;
 							if (r2 < 4) {
 								XytPair g = singleGE<how, false>(shape, dx, dy, P->t, Q->t);
-								int pm = p * max_neighbors, qm = q * max_neighbors;
-								Gij[pm + z[p]++] = g.first;
-								Gij[qm + z[q]++] = g.second;
+								int pm = p * cores, qm = q * cores;
+								Gij[pm] += g.first;
+								Gij[qm] += g.second;
 							}
 						}
 					}
@@ -141,9 +142,9 @@ void stochasticCollisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij,
 						r2 = dx * dx + dy * dy;
 					if (r2 < 4) {
 						XytPair g = singleGE<how, false>(shape, dx, dy, P->t, Q->t);
-						int pm = p * max_neighbors, qm = q * max_neighbors;
-						Gij[pm + z[p]++] = g.first;
-						Gij[qm + z[q]++] = g.second;
+						int pm = p * cores, qm = q * cores;
+						Gij[pm] += g.first;
+						Gij[qm] += g.second;
 					}
 				}
 			}

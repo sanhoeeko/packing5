@@ -63,34 +63,34 @@ void GridTransform(void* p_indices, void* p_grid, int N)
     }
 }
 
-void CalGradient(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, void* p_z, 
+void CalGradient(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, 
     int lines, int cols, int N)
 {
-    return calGradient_general<Normal, false>(p_shape, p_state, p_boundary, p_grid, p_Gij, p_z, lines, cols, N);
+    return calGradient_general<Normal, false>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N);
 }
 
-void CalGradientAsDisks(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, void* p_z, 
+void CalGradientAsDisks(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, 
     int lines, int cols, int N)
 {
-    return calGradient_general<AsDisks, false>(p_shape, p_state, p_boundary, p_grid, p_Gij, p_z, lines, cols, N);
+    return calGradient_general<AsDisks, false>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N);
 }
 
-void StochasticCalGradient(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, void* p_z, 
+void StochasticCalGradient(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, 
     int lines, int cols, int N)
 {
-    return stochastic_calGradient_general<Normal>(p_shape, p_state, p_boundary, p_grid, p_Gij, p_z, lines, cols, N, p);
+    return stochastic_calGradient_general<Normal>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N, p);
 }
 
-void StochasticCalGradientAsDisks(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, void* p_z,
+void StochasticCalGradientAsDisks(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij,
     int lines, int cols, int N)
 {
-    return stochastic_calGradient_general<AsDisks>(p_shape, p_state, p_boundary, p_grid, p_Gij, p_z, lines, cols, N, p);
+    return stochastic_calGradient_general<AsDisks>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N, p);
 }
 
-void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, void* p_z, 
+void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, 
     int lines, int cols, int N)
 {
-    return calGradient_general<Normal, true>(p_shape, p_state, p_boundary, p_grid, p_Gij, p_z, lines, cols, N);
+    return calGradient_general<Normal, true>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N);
 }
 
 typedef L_bfgs<LBFGS_MEMORY_SIZE> LBFGS;

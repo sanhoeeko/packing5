@@ -6,21 +6,15 @@
 #include "lbfgs.h"
 #include "myrand.h"
 
-void SumTensor4(void* p_z, void* p_Gij, void* p_gi, int N)
+void SumTensor4(void* p_Gij, void* p_gi, int N)
 {
-    int* z = (int*)p_z;
-    float* Gij = (float*)p_Gij;
-    float* gi = (float*)p_gi;
+    ge* Gij = (ge*)p_Gij;
+    ge* gi = (ge*)p_gi;
 
-    for (int i = 0; i < N; ++i) {
-        __m128 sum = _mm_loadu_ps(Gij + 4 * ((i + 1) * max_neighbors - 1));
-        float* ptr_start = Gij + 4 * i * max_neighbors;
-        int j_max = 4 * z[i];
-        for (int j = 0; j < j_max; j += 4) {
-            __m128 element = _mm_loadu_ps(ptr_start + j);
-            sum = _mm_add_ps(sum, element);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < cores; j++) {
+            gi[i] += Gij[i * cores + j];
         }
-        _mm_storeu_ps(gi + i * 4, sum);
     }
 }
 

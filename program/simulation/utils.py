@@ -25,9 +25,7 @@ def find_definition(macro: str):
     return int(re.search(rf"#define\s+{macro}\s+(\d+)", defs_content).group(1))
 
 
-# cores = find_definition('cores')
-cores = 1
-
+cores = find_definition('cores')
 max_neighbors = find_definition('max_neighbors')
 digit_x = find_definition('DIGIT_X')
 digit_y = find_definition('DIGIT_Y')
@@ -100,6 +98,9 @@ class CArray:
     def norm(self, N: int) -> np.float32:
         from .kernel import ker
         return np.float32(ker.dll.FastNorm(self.ptr, N * 4) / np.sqrt(N))
+
+    def reshape(self, *shape):
+        return CArray(self.data.reshape(*shape), None)
 
 
 def CArrayF(arr: np.ndarray):

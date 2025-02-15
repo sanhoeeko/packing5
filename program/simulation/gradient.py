@@ -10,36 +10,33 @@ class GradientMatrix:
         self.state = state
         self.grid = grid
         self.potential = None
-        self.capacity = ut.cores * ut.max_neighbors
-        self.z = ut.CArray(np.zeros((self.N,), dtype=np.int32))
+        self.capacity = ut.cores
         self.data = ut.CArrayFZeros((self.N, self.capacity, 4))
         self.sum = GradientSum(self)
 
     @property
     def params(self):
         return (
-            self.potential.shape_ptr, self.state.xyt.ptr, self.state.boundary.ptr, self.grid.grid.ptr,
-            self.data.ptr, self.z.ptr,
+            self.potential.shape_ptr, self.state.xyt.ptr, self.state.boundary.ptr, self.grid.grid.ptr, self.data.ptr,
             self.grid.lines, self.grid.cols, self.N
         )
 
     @property
     def params_zero(self):
         return (
-            0, self.state.xyt.ptr, self.state.boundary.ptr, self.grid.grid.ptr,
-            self.data.ptr, self.z.ptr,
+            0, self.state.xyt.ptr, self.state.boundary.ptr, self.grid.grid.ptr, self.data.ptr,
             self.grid.lines, self.grid.cols, self.N
         )
+
+    def zero_grad(self):
+        ker.dll.FastClear(self.data.ptr, self.N * self.capacity * 4)
+        if self.capacity > 1:
+            ker.dll.FastClear(self.sum.data.ptr, self.N * 4)
 
     def calGradientAndEnergy(self):
         ker.dll.CalGradientAndEnergy(*self.params)
 
     def calGradient(self):
-        """
-        status_code = ker.dll.CalGradient(*self.params)
-        if status_code:
-            raise ut.CalGradientException
-        """
         ker.dll.CalGradient(*self.params)
 
     def calGradientAsDisks(self):
@@ -84,25 +81,26 @@ class GradientSum:
     def __init__(self, Gij):
         self.N = Gij.N
         self.capacity = Gij.capacity
-        self.z = Gij.z
         self.src = Gij.data
-        self.data = ut.CArrayFZeros((self.N, 4))
+        if self.capacity == 1:
+            self.data = Gij.data.reshape(self.N, 4)  # self.data.ptr == Gij.data.ptr
+        else:
+            self.data = ut.CArrayFZeros((self.N, 4))
 
     def g(self) -> ut.CArray:
-        ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
-        # gradient is clipped only in "gradient only" mode
-        # ker.dll.ClipGradient(self.data.ptr, self.N)
+        if self.capacity > 1:
+            ker.dll.SumTensor4(self.src.ptr, self.data.ptr, self.N)
         return self.data
 
     def e(self) -> np.float32:
         return np.sum(self.data[:, 3])
 
     def E(self) -> np.float32:
-        ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
+        self.g()
         return self.e()
 
     def gE(self) -> (ut.CArray, np.float32):
-        ker.dll.SumTensor4(self.z.ptr, self.src.ptr, self.data.ptr, self.N, self.capacity)
+        self.g()
         return self.data, self.e()
 
 
