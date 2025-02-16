@@ -19,7 +19,7 @@ from .orders import general_order_parameter, Delaunay
 from .voronoi import Voronoi
 
 
-class Database:
+class DatabaseBase:
     def __init__(self, file_name: str):
         self.file_name = file_name
         self.file = h5py.File(self.file_name, 'r')
@@ -50,6 +50,21 @@ class Database:
                 del obj  # Explicitly delete the PickledEnsemble object to release memory
 
     def id(self, ensemble_id: str):
+        raise NotImplementedError  # to be inherited
+
+    def process_summary(self, df: pd.DataFrame) -> pd.DataFrame:
+        lens = [x.n_density for x in self]
+        df.insert(1, 'n_states', np.array(lens))
+        df = df.sort_values(by=['gamma'])
+        df.reset_index(drop=True, inplace=True)
+        return df
+
+
+class Database(DatabaseBase):
+    def __init__(self, file_name: str):
+        super().__init__(file_name)
+
+    def id(self, ensemble_id: str):
         return PickledEnsemble(self.file[ensemble_id])
 
     def apply(self, func):
@@ -59,13 +74,6 @@ class Database:
         """
         result = list(map(func, self))
         return tuple(zip(*result))
-
-    def process_summary(self, df: pd.DataFrame) -> pd.DataFrame:
-        lens = [x.state_table.shape[1] for x in self]
-        df.insert(1, 'n_states', np.array(lens))
-        df = df.sort_values(by=['gamma'])
-        df.reset_index(drop=True, inplace=True)
-        return df
 
     def subSummary(self, **kwargs) -> pd.DataFrame:
         """
@@ -161,6 +169,7 @@ class PickledEnsemble:
 
     def illegalMap(self) -> np.ndarray[np.int32]:
         print('here')
+
         def inner(i, j):
             xyt = ut.CArray(self.configuration[i, j])
             meta = self.state_table[i, j]
@@ -168,7 +177,7 @@ class PickledEnsemble:
 
         mask = np.zeros((self.n_replica, self.n_density), np.int32)
 
-        with ThreadPoolExecutor(max_workers=4) as executor:  # 可以调整max_workers的数量
+        with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(inner, i, j) for i in range(self.n_replica) for j in
                        range(self.n_density)]
             for future in futures:

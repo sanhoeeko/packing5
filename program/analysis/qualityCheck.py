@@ -4,6 +4,7 @@ import numpy as np
 from art.art import Figure
 from art.curves import plotMeanCurvesWithCI, plotListOfArray
 from h5tools.utils import flatten
+from . import mymath as mm
 from .analysis import averageEnergy
 from .database import Database, PickledEnsemble
 
@@ -54,7 +55,8 @@ def checkLegal(db: Database) -> np.ndarray:
     imshow the number of illegal configurations for each ensemble, each rho/phi
     """
     lst = [ensemble.illegalMap() for ensemble in db]
-    illegal_tensor = np.stack(lst, axis=0)
-    illegal_map = np.sum(illegal_tensor, axis=1)  # sum over replica
+    illegal_tensor = mm.nanstack(lst, axis=0)
+    lines = illegal_tensor.shape[0] * illegal_tensor.shape[1]
+    illegal_map = illegal_tensor.reshape(lines, illegal_tensor.shape[2])
     plt.imshow(illegal_map)
     plt.show()

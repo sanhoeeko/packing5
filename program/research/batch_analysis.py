@@ -10,10 +10,10 @@ def batch_analyze(filename: str):
     # db.search_max_gradient()
     # checkGradient(db)
     # checkEnergy(db)
-    # e = db.find(gamma=1.5)[0]
-    # plotListOfArray(e[0].gradientCurve())
-    # InteractiveViewer(e[0], RenderSetup('EllipticPhi6')).show()
-    calAllOrderParameters(db, 'phi', num_threads=4)
+    e = db.find(gamma=1.9)[0]
+    plotListOfArray(e[0].gradientCurve())
+    InteractiveViewer(e[0], RenderSetup('EllipticPhi6')).show()
+    # calAllOrderParameters(db, 'phi', num_threads=4)
 
 
 if __name__ == '__main__':
