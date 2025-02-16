@@ -7,6 +7,7 @@ import h5py
 import numpy as np
 import pandas as pd
 
+import default
 from . import utils as ut, mymath as mm
 
 ut.setWorkingDirectory()
@@ -14,7 +15,7 @@ ut.setWorkingDirectory()
 from simulation.state import State
 
 from .h5tools import extract_metadata, struct_array_to_dataframe, filter_dataframe
-from .orders import general_order_parameter
+from .orders import general_order_parameter, Delaunay
 from .voronoi import Voronoi
 
 
@@ -216,8 +217,11 @@ class PickledSimulation:
     def op_at(self, order_parameter_name: str):
         def inner(index: int):
             state = self[index]
-            voro = Voronoi.fromStateDict(state).delaunay(False)
-            if voro is None: return np.float32(np.nan)
+            if default.if_using_legacy_delaunay:
+                voro = Delaunay.legacy(state['metadata']['N'], state['metadata']['gamma'], ut.CArray(state['xyt']))
+            else:
+                voro = Voronoi.fromStateDict(state).delaunay(False)
+                if voro is None: return np.float32(np.nan)
             return np.mean(general_order_parameter(
                 order_parameter_name, state['xyt'], voro,
                 (state['metadata']['A'], state['metadata']['B'], state['metadata']['gamma'])

@@ -5,7 +5,7 @@ from art.viewer import RenderSetup, InteractiveViewer
 
 def batch_analyze(filename: str):
     db = Database(filename)
-    checkLegal(db)
+    # checkLegal(db)
     # print(db)
     # db.search_max_gradient()
     # checkGradient(db)
@@ -13,7 +13,7 @@ def batch_analyze(filename: str):
     # e = db.find(gamma=1.5)[0]
     # plotListOfArray(e[0].gradientCurve())
     # InteractiveViewer(e[0], RenderSetup('EllipticPhi6')).show()
-    # calAllOrderParameters(db, 'phi', num_threads=4)
+    calAllOrderParameters(db, 'phi', num_threads=4)
 
 
 if __name__ == '__main__':

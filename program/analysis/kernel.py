@@ -12,6 +12,7 @@ class Kernel:
             ('disksToVoronoiEdges', [ct.c_int] * 2 + [ct.c_void_p] * 2 + [ct.c_float] * 2, ct.c_int),
             ('trueDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
             ('weightedDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
+            ('legacyDelaunay', [ct.c_int] * 2 + [ct.c_float] + [ct.c_void_p] * 3, ct.c_int),
             ('sumOverWeights', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumOverNeighbors', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
