@@ -2,7 +2,6 @@ import numpy as np
 
 from . import utils as ut
 from .kernel import ker
-from .mymath import isParticleTooClose
 
 
 class Voronoi:
@@ -48,14 +47,14 @@ class Voronoi:
 
     def true_delaunay(self):
         from .orders import Delaunay
-        if isParticleTooClose(ut.CArrayF(self.configuration)):
-            return None
+        # if isParticleTooClose(ut.CArrayF(self.configuration)):
+        #     return None
         return Delaunay(False, *self.delaunay_template(ker.dll.trueDelaunay))
 
     def weighted_delaunay(self):
         from .orders import Delaunay
-        if isParticleTooClose(ut.CArrayF(self.configuration)):
-            return None
+        # if isParticleTooClose(ut.CArrayF(self.configuration)):
+        #     return None
         return Delaunay(True, *self.delaunay_template(ker.dll.weightedDelaunay))
 
     def delaunay(self, weighted: bool):

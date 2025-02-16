@@ -85,3 +85,7 @@ def interpolate_tensor(x: np.ndarray, y: np.ndarray, eps: float, num_threads=1):
 def isParticleTooClose(xyt: ut.CArray) -> bool:
     ratio = ker.dll.RijRatio(xyt.ptr, xyt.data.shape[0])
     return ratio < 0.01
+
+
+def isParticleOutOfBoundary(xyt: ut.CArray, A: float, B: float) -> bool:
+    return bool(ker.dll.isOutOfBoundary(xyt.ptr, xyt.data.shape[0], A, B))

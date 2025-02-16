@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 from art.art import Figure
@@ -46,3 +47,14 @@ def checkEnergyCurveAt(db: Database, i: int, j: int):
 
 def checkGradientCurveAt(db: Database, i: int, j: int):
     plotListOfArray(db[i].simulation_at(j).gradientCurve())
+
+
+def checkLegal(db: Database) -> np.ndarray:
+    """
+    imshow the number of illegal configurations for each ensemble, each rho/phi
+    """
+    lst = [ensemble.illegalMap() for ensemble in db]
+    illegal_tensor = np.stack(lst, axis=0)
+    illegal_map = np.sum(illegal_tensor, axis=1)  # sum over replica
+    plt.imshow(illegal_map)
+    plt.show()

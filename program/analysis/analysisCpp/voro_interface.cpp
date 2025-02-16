@@ -2,10 +2,12 @@
 #include "voro_interface.h"
 #include <string.h>
 #include <immintrin.h>
-
+#include <unordered_map>
 
 #define JC_VORONOI_IMPLEMENTATION
 #include"jc_voronoi.h"
+
+struct Point { float x, y; };
 
 float length(const VoronoiEdge& edge)
 {
@@ -14,11 +16,45 @@ float length(const VoronoiEdge& edge)
     return sqrtf(dx * dx + dy * dy);
 }
 
+template<int ratio>
+float precisionUpto(float x)
+{
+    return round(x * ratio) / ratio;
+}
+
 /*
-    input_points fomat: x, y, x, y, ...
+    Not very useful for large datasets.
+*/
+void perturb_equal_values(int n_points, Point* pts, float epsilon = 1e-3) 
+{
+    const int prec = 100;      // precision
+    std::unordered_map<float, int> value_counts_x;
+    std::unordered_map<float, int> value_counts_y;
+
+    // count values
+    for (int i = 0; i < n_points; i++) {
+        value_counts_x[precisionUpto<prec>(pts[i].x)]++;
+        value_counts_y[precisionUpto<prec>(pts[i].y)]++;
+    }
+
+    for (int i = 0; i < n_points; i++) {
+        float approx_x = precisionUpto<prec>(pts[i].x);
+        float approx_y = precisionUpto<prec>(pts[i].y);
+        pts[i].x += (value_counts_x[approx_x] - 1) * epsilon;
+        value_counts_x[approx_x]--;
+        pts[i].y += (value_counts_y[approx_y] - 1) * epsilon;
+        value_counts_y[approx_y]--;
+    }
+}
+
+/*
+    Interface of jc_voronoi
+    Input_points fomat: x, y, x, y, ...
 */
 vector<VoronoiEdge> PointsToVoronoiEdges(int num_points, float* input_points, float A, float B)
 {
+    // perturb_equal_values(num_points, (Point*)input_points);     // pre-process
+
     jcv_point* points = (jcv_point*)input_points;
     jcv_rect bounding_box = { { -A, -B }, { A, B } };
     jcv_diagram diagram;

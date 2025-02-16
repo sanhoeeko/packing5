@@ -1,10 +1,10 @@
 ﻿#include "pch.h"
+#include "defs.h"
 #include <cmath>
 #include <cstring>
 #include <utility>
 #include <vector>
-
-struct xyt3f { float x, y, t; };
+#include "graph_4.h"
 
 /*
     return: number of Voronoi ridges
@@ -53,6 +53,7 @@ int weightedDelaunay(int num_rods, int disks_per_rod, void* input_points_ptr, vo
     float* input_points = (float*)input_points_ptr;
     int* output_indices = (int*)output_indices_ptr;
     pair<int, float>* output = (pair<int, float>*)output_ptr;
+
     vector<DelaunayUnit> links = WeightedDelaunayModulo(
         PointsToVoronoiEdges(num_rods * disks_per_rod, input_points, A, B),
         num_rods
@@ -62,6 +63,29 @@ int weightedDelaunay(int num_rods, int disks_per_rod, void* input_points_ptr, vo
         int d_size = d_unit.size();
         *output_indices++ = total_size;
         memcpy(output + total_size, d_unit.data(), sizeof(pair<int, float>) * d_size);
+        total_size += d_size;
+    }
+    return total_size;
+}
+
+/*
+    return: number of Delaunay links
+*/
+int legacyDelaunay(int num_rods, int disks_per_rod, float gamma, void* input_points_ptr, void* output_ptr,
+    void* output_indices_ptr)
+{
+    xyt3f* input_points = (xyt3f*)input_points_ptr;
+    int* output_indices = (int*)output_indices_ptr;
+    pair<int, float>* output = (pair<int, float>*)output_ptr;
+    Graph<neighbors> graph(num_rods);
+    delaunayTriangulate(num_rods, disks_per_rod, gamma, input_points, graph);
+    int total_size = 0;
+    for (int i = 0; i < num_rods; i++) {
+        int d_size = graph.z[i];
+        *output_indices++ = total_size;
+        for (int j = 0; j < d_size; j++) {
+            output[total_size + j] = { graph.data[i][j], 1 };
+        }
         total_size += d_size;
     }
     return total_size;
@@ -154,6 +178,16 @@ float RijRatio(void* p_xyt, int N)
         }
     }
     return current_min_rij / (current_total_rij / current_rij_cnt);
+}
+
+int isOutOfBoundary(void* p_xyt, int N, float A, float B)
+{
+    xyt3f* q = (xyt3f*)p_xyt;
+    float A2 = A * A, B2 = B * B;
+    for (int i = 0; i < N; i++) {
+        if (q[i].x * q[i].x / A2 + q[i].y * q[i].y / B2 >= 1) return 1;
+    }
+    return 0;
 }
 
 float CubicMinimum(float a, float b, float c, float d) {

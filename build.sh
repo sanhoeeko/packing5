@@ -42,7 +42,7 @@ optimization_flags() {
 cd program
 
 if [ ! -d "x64/Release" ]; then mkdir -p x64/Release; fi
-rm -f x64/Release
+rm x64/Release/*
 
 # optimize packing5Cpp simulation/packing5Cpp
 compile packing5Cpp simulation/packing5Cpp
