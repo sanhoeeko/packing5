@@ -5,7 +5,7 @@ setWorkingDirectory()
 import matplotlib.pyplot as plt
 import numpy as np
 
-from simulation.potential import Potential, PowerFunc
+from simulation.potential import RodPotential, PowerFunc
 
 
 def Vhh(a, b):
@@ -39,7 +39,7 @@ n = 6
 d = 0.05
 a = 1
 b = 1 / (1 + (n - 1) * d / 2)
-potential = TestPotential(Potential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
+potential = TestPotential(RodPotential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
 
 if __name__ == '__main__':
     rs = np.arange(0.01, 2, 0.001)

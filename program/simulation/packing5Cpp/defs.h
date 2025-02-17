@@ -23,6 +23,7 @@ const float max_gradient_amp = 100;
 
 enum HowToCalGradient { Normal, AsDisks, HowToCalGradient_Count };
 enum HashFunc { _h2pi, _h4 };
+enum ParticleShapeType { RodType, SegmentType };
 
 struct xyt {
     float x, y, t, unused;

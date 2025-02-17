@@ -22,6 +22,7 @@ float modpi(float x);
     Base class. It is ndependent of the shape of anisotropic particles
 */
 struct ParticleShape {
+    float (*data)[szy][szt];
     float
         a, b, c,
         a_padded, b_padded;
@@ -30,6 +31,18 @@ struct ParticleShape {
     xyt transform_signed(const xyt& q);
     xyt inverse(const xyt& q);
     bool isSegmentCrossing(const xyt& q);
+
+    // virtual functions
+    virtual float StandardPotential(const xyt& q, float* scalar_potential) = 0;
+
+    // auxiliary functions 
+    xyt interpolateGradientSimplex(const xyt& q);
+    xyt interpolatePotentialSimplex(const xyt& q);
+
+    // interfaces
+    void initPotential(int threads, float* scalar_potential);
+    xyt gradient(const xyt& q);
+    xyt potential(const xyt& q);
 };
 
 struct Rod : ParticleShape {
@@ -38,23 +51,24 @@ struct Rod : ParticleShape {
         n_shift,
         inv_disk_R2;
     int n;
-    float (*data)[szy][szt];
 
     // initialization
     Rod(int n, float d, float (*data_ptr)[szy][szt]);
-    void initPotential(int threads, float* scalar_potential);
 
     // original definitions
-    float StandardPotential(const xyt& q, float* scalar_potential);
+    virtual float StandardPotential(const xyt& q, float* scalar_potential) override;
     XytPair StandardGradient(float x, float y, float t1, float t2, float* scalar_potential_dr);
+};
 
-    // auxiliary functions 
-    xyt interpolateGradientSimplex(const xyt& q);
-    xyt interpolatePotentialSimplex(const xyt& q);
+struct Segment : ParticleShape {
+    float r;
 
-    // interfaces
-    xyt gradient(const xyt& q);
-    xyt potential(const xyt& q);
+    // initialization
+    Segment(float gamma);
+
+    // original definitions
+    virtual float StandardPotential(const xyt& q, float* scalar_potential) override;
+    XytPair StandardGradient(float x, float y, float t1, float t2, float* scalar_potential_dr);
 };
 
 template<HowToCalGradient how>

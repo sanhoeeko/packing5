@@ -8,7 +8,7 @@ from .grid import Grid
 from .kernel import ker
 from .lbfgs import LBFGS
 from .mc import StatePool
-from .potential import Potential
+from .potential import PotentialBase
 from .utils import NaNInGradientException, OutOfBoundaryException
 
 
@@ -72,7 +72,7 @@ class State(ut.HasMeta):
     def random(cls, N, n, d, A, B):
         return cls(N, n, d, A, B, randomConfiguration(N, A, B))
 
-    def setPotential(self, potential: Potential):
+    def setPotential(self, potential: PotentialBase):
         self.gradient.potential = potential
         return self
 

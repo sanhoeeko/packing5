@@ -26,7 +26,7 @@ void setEllipticBoundary(void* boundary, float a, float b) {
     _boundary->setBoundary(a, b);
 }
 
-void* addParticleShape(int threads, int n, float d, void* p_table, void* p_Vr)
+void* addRodShape(int threads, int n, float d, void* p_table, void* p_Vr)
 {
     float (*table)[szy][szt] = static_cast<float(*)[szy][szt]>(p_table);
     float* Vr = (float*)p_Vr;
@@ -35,10 +35,23 @@ void* addParticleShape(int threads, int n, float d, void* p_table, void* p_Vr)
     return rod;
 }
 
-void delParticleShape(void* particle_shape)
+void* addSegmentShape(int threads, float gamma, void* p_table, void* p_Vr)
 {
-    Rod* rod = (Rod*)particle_shape;
-    delete rod;
+    float (*table)[szy][szt] = static_cast<float(*)[szy][szt]>(p_table);
+    float* Vr = (float*)p_Vr;
+    Segment* seg = new Segment(gamma);
+    seg->initPotential(threads, Vr);
+    return seg;
+}
+
+void delParticleShape(void* particle_shape, int particle_shape_type)
+{
+    switch (particle_shape_type)
+    {
+    case RodType: { Rod* rod = (Rod*)particle_shape; delete rod; } break;
+    case SegmentType: { Segment* seg = (Segment*)particle_shape; delete seg; } break;
+    default:break;
+    }
 }
 
 void GridLocate(void* p_state, void* p_indices, int x_shift, int y_shift, int cols, int N)

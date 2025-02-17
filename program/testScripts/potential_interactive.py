@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from art.art import Capsule
-from simulation.potential import Potential, PowerFunc
+from simulation.potential import RodPotential, PowerFunc
 
 
 class XytPair:
@@ -192,7 +192,7 @@ def on_scroll(event):
 
 mode = 'ref'
 n, d = 2, 1
-potential = TestPotential(Potential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
+potential = TestPotential(RodPotential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
 
 if __name__ == '__main__':
     objs = []

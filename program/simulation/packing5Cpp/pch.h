@@ -18,9 +18,11 @@ DLLEXPORT void delEllipticBoundary(void* boundary);
 
 DLLEXPORT void setEllipticBoundary(void* boundary, float a, float b);
 
-DLLEXPORT void* addParticleShape(int threads, int n, float d, void* p_table, void* p_Vr);
+DLLEXPORT void* addRodShape(int threads, int n, float d, void* p_table, void* p_Vr);
 
-DLLEXPORT void delParticleShape(void* particle_shape);
+DLLEXPORT void* addSegmentShape(int threads, float gamma, void* p_table, void* p_Vr);
+
+DLLEXPORT void delParticleShape(void* particle_shape, int particle_shape_type);
 
 DLLEXPORT void GridLocate(void* p_state, void* p_indices, int x_shift, int y_shift, int cols, int N);
 
