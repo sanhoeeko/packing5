@@ -64,7 +64,7 @@ struct Segment : ParticleShape {
     float r;
 
     // initialization
-    Segment(float gamma);
+    Segment(float gamma, float (*data_ptr)[szy][szt]);
 
     // original definitions
     virtual float StandardPotential(const xyt& q, float* scalar_potential) override;

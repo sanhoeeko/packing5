@@ -82,12 +82,12 @@ class PotentialBase:
         self.radial_func = vr
         self.shape_ptr = 0
         self.particle_shape_type = type_id
+        self.table = ut.CArrayFZeros(ut.potential_table_shape)
 
     def __del__(self):
         ker.dll.delParticleShape(self.shape_ptr, self.particle_shape_type)
 
     def cal_potential(self, threads: int):
-        self.table = ut.CArrayFZeros(ut.potential_table_shape)
         self.shape_ptr = self._get_shape_ptr(threads)
         print(f"Successfully load potential, {self.tag}")
         return self

@@ -61,6 +61,10 @@ class SimulationData(Dataset):
         ht.append_dict_to_hdf5_head(self.file_name, data)
 
 
+def isFilenameRegular(file_name: str) -> bool:
+    return not (file_name.startswith('data') or file_name.startswith('analysis'))
+
+
 def pack_simulations_cwd(file_name='data.h5', truncate=False):
     pattern = re.compile(r'^(.*?)_\d+\.h5$')
 
@@ -75,7 +79,7 @@ def pack_simulations_cwd(file_name='data.h5', truncate=False):
         raise FileExistsError('Target file already exists!')
 
     # pack into ensembles
-    files = [file for file in os.listdir() if pattern.match(file) and not file.startswith('data')]
+    files = [file for file in os.listdir() if pattern.match(file) and isFilenameRegular(file)]
     ensemble_ids = get_ensemble_names(files)
     for eid in ensemble_ids:
         stack_h5_datasets(eid, truncate)
@@ -83,7 +87,7 @@ def pack_simulations_cwd(file_name='data.h5', truncate=False):
 
     # pack into single file
     sum_files = [file for file in os.listdir() if
-                 file.endswith('.h5') and file not in files and not file.startswith('data')]
+                 file.endswith('.h5') and file not in files and isFilenameRegular(file)]
     pack_h5_files(sum_files, file_name)
     for file in sum_files: os.remove(file)
     compress_file(file_name)

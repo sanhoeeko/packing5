@@ -342,6 +342,7 @@ GePair singleGradientAndEnergy<Normal>(Rod* shape, float x, float y, float t1, f
 }
 
 Rod::Rod(int n, float d, float (*data_ptr)[szy][szt]) {
+    this->data = data_ptr;
     a = 1;
     b = 1 / (1 + (n - 1) * d / 2.0f);
     c = a - b;
@@ -351,7 +352,6 @@ Rod::Rod(int n, float d, float (*data_ptr)[szy][szt]) {
     b_padded = b + 0.01f;
     this->n_shift = -(n - 1) / 2.0f;
     this->inv_disk_R2 = 1 / (b * b);
-    this->data = data_ptr;
 }
 
 /*
@@ -398,7 +398,8 @@ XytPair Rod::StandardGradient(float x, float y, float t1, float t2, float* scala
     return g;
 }
 
-Segment::Segment(float gamma) {
+Segment::Segment(float gamma, float (*data_ptr)[szy][szt]) {
+    this->data = data_ptr;
     this->r = 1 - 1 / gamma;
     a = 1;
     b = 1 / gamma;

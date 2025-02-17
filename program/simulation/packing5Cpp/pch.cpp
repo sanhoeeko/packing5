@@ -39,7 +39,7 @@ void* addSegmentShape(int threads, float gamma, void* p_table, void* p_Vr)
 {
     float (*table)[szy][szt] = static_cast<float(*)[szy][szt]>(p_table);
     float* Vr = (float*)p_Vr;
-    Segment* seg = new Segment(gamma);
+    Segment* seg = new Segment(gamma, table);
     seg->initPotential(threads, Vr);
     return seg;
 }
