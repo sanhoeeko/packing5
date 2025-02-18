@@ -3,6 +3,7 @@
 #include "functional.h"
 #include "array.h"
 #include <math.h>
+#include <immintrin.h>
 #include "segdist.h"
 
 float modpi(float x)
@@ -134,50 +135,99 @@ bool ParticleShape::isSegmentCrossing(const xyt& q)
         q.y * fcos(q.t) >(q.x - c) * fsin(q.t);
 }
 
+__m128 _mm_round(__m128 x) {
+    return _mm_cvtepi32_ps(_mm_cvtps_epi32(x));
+}
+
+__m128i _mm_ge_to_01(__m128 x, __m128 y) {
+    // if x <= y, return 1, else -1
+    __m128i mask = _mm_castps_si128(_mm_cmpge_ps(x, y));
+    return _mm_blendv_epi8(_mm_set1_epi32(-1), _mm_set1_epi32(1), mask);
+}
+
 xyt ParticleShape::interpolateGradientSimplex(const xyt& q)
 {
     if (q.y >= 1)return { 0,0,0,0 };
-    const float 
-        a1 = szx - 1,
-        a2 = szy - 1,
-        a3 = szt - 1;
+    const float a1 = szx - 1, a2 = szy - 1, a3 = szt - 1;
+    const __m128 a = _mm_set_ps(0, a3, a2, a1);
     /*
         fetch potential values of 4 points:
         (i,j,k), (i ¡À 1,j,k), (i,j ¡À 1,k), (i,j,k ¡À 1)
     */
-    float
-        X = q.x * a1,
-        Y = q.y * a2,
-        T = q.t * a3;
-    int 
-        i = round(X),
-        j = round(Y),
-        k = round(T);
-    int
-        hi = i <= X ? 1 : -1,   // do not use '<', because X and i can be both 0.0f and hi = -1 causes an illegal access
-        hj = j <= Y ? 1 : -1,
-        hk = k <= T ? 1 : -1;
-    float
-        v000 = data[i][j][k],
-        v100 = data[i + hi][j][k],
-        v010 = data[i][j + hj][k],
-        v001 = data[i][j][k + hk];
+    int _ijk[4], _hijk[4];
+    float v0421[4], _DABC[4];
+    __m128 q_v = _mm_loadu_ps((float*)&q);
+    __m128 XYT = _mm_mul_ps(q_v, a);
+    __m128 ijk = _mm_round(XYT);
+    __m128 dxyt = _mm_div_ps(_mm_sub_ps(XYT, ijk), a);
+    __m128i ijk_i = _mm_cvtps_epi32(ijk);
+    __m128i hijk = _mm_ge_to_01(dxyt, _mm_setzero_ps());
+    _mm_storeu_epi32(_ijk, ijk_i);
+    _mm_storeu_epi32(_hijk, hijk);
+    v0421[0] = data[_ijk[0]][_ijk[1]][_ijk[2]];
+    v0421[1] = data[_ijk[0] + _hijk[0]][_ijk[1]][_ijk[2]];
+    v0421[2] = data[_ijk[0]][_ijk[1] + _hijk[1]][_ijk[2]];
+    v0421[3] = data[_ijk[0]][_ijk[1]][_ijk[2] + _hijk[2]];
     /*
         solve the linear equation for (A,B,C,D):
         V(x,y,t) = A(x-x0) + B(y-y0) + C(t-t0) + D
     */
-    float
-        A = (-v000 + v100) * a1 * hi,
-        B = (-v000 + v010) * a2 * hj,
-        C = (-v000 + v001) * a3 * hk;
-        // D = v000;
+    v0421[1] -= v0421[0];  // A
+    v0421[2] -= v0421[0];  // B
+    v0421[3] -= v0421[0];  // C
+    __m128 _a = _mm_set_ps(a3 * _hijk[2], a2 * _hijk[1], a1 * _hijk[0], 1);
+    __m128 DABC = _mm_mul_ps(_mm_loadu_ps(v0421), _a);
+    _mm_storeu_ps(_DABC, DABC);
     /*
-        the gradient: (A,B,C) is already obtained. (if only cauculate gradient, directly return)
-        the value: A(x-x0) + B(y-y0) + C(t-t0) + D
+        the energy: A(x-x0) + B(y-y0) + C(t-t0) + D
+        since x0 <- floor'(x), there must be x > x0, y > y0, t > t0
     */
-    return { A,B,C,0 };
+    return { _DABC[1], _DABC[2], _DABC[3], 0 };
 }
 
+xyt ParticleShape::interpolatePotentialSimplex(const xyt& q)
+{
+    if (q.y >= 1)return { 0,0,0,0 };
+    const float a1 = szx - 1, a2 = szy - 1, a3 = szt - 1;
+    const __m128 a = _mm_set_ps(0, a3, a2, a1);
+    /*
+        fetch potential values of 4 points:
+        (i,j,k), (i ¡À 1,j,k), (i,j ¡À 1,k), (i,j,k ¡À 1)
+    */
+    int _ijk[4], _hijk[4];
+    float v0421[4], _dxyt[4], _DABC[4];
+    __m128 q_v = _mm_loadu_ps((float*)&q);
+    __m128 XYT = _mm_mul_ps(q_v, a);
+    __m128 ijk = _mm_round(XYT);
+    __m128 dxyt = _mm_div_ps(_mm_sub_ps(XYT, ijk), a);
+    __m128i ijk_i = _mm_cvtps_epi32(ijk);
+    __m128i hijk = _mm_ge_to_01(dxyt, _mm_setzero_ps());
+    _mm_storeu_epi32(_ijk, ijk_i);
+    _mm_storeu_epi32(_hijk, hijk);
+    v0421[0] = data[_ijk[0]][_ijk[1]][_ijk[2]];
+    v0421[1] = data[_ijk[0] + _hijk[0]][_ijk[1]][_ijk[2]];
+    v0421[2] = data[_ijk[0]][_ijk[1] + _hijk[1]][_ijk[2]];
+    v0421[3] = data[_ijk[0]][_ijk[1]][_ijk[2] + _hijk[2]];
+    /*
+        solve the linear equation for (A,B,C,D):
+        V(x,y,t) = A(x-x0) + B(y-y0) + C(t-t0) + D
+    */
+    v0421[1] -= v0421[0];  // A
+    v0421[2] -= v0421[0];  // B
+    v0421[3] -= v0421[0];  // C
+    __m128 _a = _mm_set_ps(a3 * _hijk[2], a2 * _hijk[1], a1 * _hijk[0], 1);
+    __m128 DABC = _mm_mul_ps(_mm_loadu_ps(v0421), _a);
+    _mm_storeu_ps(_DABC, DABC);
+    _mm_storeu_ps(_dxyt, dxyt);
+    /*
+        the energy: A(x-x0) + B(y-y0) + C(t-t0) + D
+        since x0 <- floor'(x), there must be x > x0, y > y0, t > t0
+    */
+    float energy = _DABC[0] + _DABC[1] * _dxyt[0] + _DABC[2] * _dxyt[1] + _DABC[3] * _dxyt[2];
+    return { _DABC[1], _DABC[2], _DABC[3], energy};
+}
+
+/*  No SIMD code :
 xyt ParticleShape::interpolatePotentialSimplex(const xyt& q)
 {
     if (q.y >= 1)return { 0,0,0,0 };
@@ -185,10 +235,10 @@ xyt ParticleShape::interpolatePotentialSimplex(const xyt& q)
         a1 = szx - 1,
         a2 = szy - 1,
         a3 = szt - 1;
-    /*
-        fetch potential values of 4 points:
-        (i,j,k), (i ¡À 1,j,k), (i,j ¡À 1,k), (i,j,k ¡À 1)
-    */
+
+        // fetch potential values of 4 points:
+        // (i,j,k), (i ¡À 1,j,k), (i,j ¡À 1,k), (i,j,k ¡À 1)
+
     float
         X = q.x * a1,
         Y = q.y * a2,
@@ -210,22 +260,23 @@ xyt ParticleShape::interpolatePotentialSimplex(const xyt& q)
         v100 = data[i + hi][j][k],
         v010 = data[i][j + hj][k],
         v001 = data[i][j][k + hk];
-    /*
-        solve the linear equation for (A,B,C,D):
-        V(x,y,t) = A(x-x0) + B(y-y0) + C(t-t0) + D
-    */
+
+        // solve the linear equation for (A,B,C,D):
+        // V(x,y,t) = A(x-x0) + B(y-y0) + C(t-t0) + D
+
     float
         A = (-v000 + v100) * a1 * hi,
         B = (-v000 + v010) * a2 * hj,
         C = (-v000 + v001) * a3 * hk,
         D = v000;
-    /*
-        the energy: A(x-x0) + B(y-y0) + C(t-t0) + D
-        since x0 <- floor'(x), there must be x > x0, y > y0, t > t0
-    */
+
+        // the energy: A(x-x0) + B(y-y0) + C(t-t0) + D
+        // since x0 <- floor'(x), there must be x > x0, y > y0, t > t0
+
     float energy = A * dx + B * dy + C * dt + D;
     return { A, B, C, energy };
 }
+*/
 
 inline static XytPair ZeroXytPair() {
     return { 0,0,0,0,0,0 };

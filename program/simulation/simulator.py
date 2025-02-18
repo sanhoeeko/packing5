@@ -159,8 +159,8 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            if self.state.CalEnergy_pure() < 1000:
-                self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
+            # if self.state.CalEnergy_pure() < 1000:
+            #     self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
             step_size = 1 * (self.state.averageRij_pure() / 2) ** 2
             for i in range(50):
                 self.state.sgd(step_size * step_size_ratio, 1000)

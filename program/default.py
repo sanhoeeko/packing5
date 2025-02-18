@@ -9,5 +9,5 @@ max_compress_turns = 8000
 terminal_phi = 2.0
 if_cal_energy = False
 if_affine_when_compress = False
-if_using_legacy_delaunay = True
+if_using_legacy_delaunay = False
 S_local_background = 0.338
