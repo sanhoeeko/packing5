@@ -5,7 +5,7 @@ import numpy as np
 
 from h5tools.h5tools import stack_h5_datasets
 from h5tools.utils import dict_to_numpy_struct, randomString
-from .potential import RadialFunc, Potential
+from .potential import RadialFunc, RodPotential
 from .simulator import createSimulator
 
 
@@ -14,7 +14,7 @@ class Ensemble:
         self.n, self.d = n, d
         self.id = randomString()
         self.simulators = []
-        self.potential = Potential(n, d, scalar_func)
+        self.potential = RodPotential(n, d, scalar_func)
         self.dataset = None
 
     def setSimulationProperties(self, N, phi0, Gamma0, compress_func_A, compress_func_B):

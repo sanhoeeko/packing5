@@ -16,6 +16,8 @@ DLLEXPORT int trueDelaunay(int num_rods, int disks_per_rod, void* input_points_p
     void* output_indices_ptr, float A, float B);
 DLLEXPORT int weightedDelaunay(int num_rods, int disks_per_rod, void* input_points_ptr, void* output_ptr,
     void* output_indices_ptr, float A, float B);
+DLLEXPORT int legacyDelaunay(int num_rods, int disks_per_rod, float gamma, void* input_points_ptr, void* output_ptr,
+    void* output_indices_ptr);
 DLLEXPORT void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* weights_ptr, void* output_ptr);
 DLLEXPORT void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
@@ -33,6 +35,7 @@ DLLEXPORT void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indic
 DLLEXPORT void sumAnisotropicComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
     void* complex_ptr, void* output_ptr);
 DLLEXPORT float RijRatio(void* p_xyt, int N);
+DLLEXPORT int isOutOfBoundary(void* p_xyt, int N, float A, float B);
 DLLEXPORT float CubicMinimum(float a, float b, float c, float d);
 
 #endif //PCH_H

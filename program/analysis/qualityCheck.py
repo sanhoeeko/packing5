@@ -1,8 +1,10 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 from art.art import Figure
 from art.curves import plotMeanCurvesWithCI, plotListOfArray
 from h5tools.utils import flatten
+from . import mymath as mm
 from .analysis import averageEnergy
 from .database import Database, PickledEnsemble
 
@@ -46,3 +48,15 @@ def checkEnergyCurveAt(db: Database, i: int, j: int):
 
 def checkGradientCurveAt(db: Database, i: int, j: int):
     plotListOfArray(db[i].simulation_at(j).gradientCurve())
+
+
+def checkLegal(db: Database) -> np.ndarray:
+    """
+    imshow the number of illegal configurations for each ensemble, each rho/phi
+    """
+    lst = [ensemble.illegalMap() for ensemble in db]
+    illegal_tensor = mm.nanstack(lst, axis=0)
+    lines = illegal_tensor.shape[0] * illegal_tensor.shape[1]
+    illegal_map = illegal_tensor.reshape(lines, illegal_tensor.shape[2])
+    plt.imshow(illegal_map)
+    plt.show()

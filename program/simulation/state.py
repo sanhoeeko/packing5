@@ -8,7 +8,7 @@ from .grid import Grid
 from .kernel import ker
 from .lbfgs import LBFGS
 from .mc import StatePool
-from .potential import Potential
+from .potential import PotentialBase
 from .utils import NaNInGradientException, OutOfBoundaryException
 
 
@@ -72,7 +72,7 @@ class State(ut.HasMeta):
     def random(cls, N, n, d, A, B):
         return cls(N, n, d, A, B, randomConfiguration(N, A, B))
 
-    def setPotential(self, potential: Potential):
+    def setPotential(self, potential: PotentialBase):
         self.gradient.potential = potential
         return self
 
@@ -88,7 +88,7 @@ class State(ut.HasMeta):
 
     def clear_dependency(self):
         ker.dll.HollowClear(self.grid.grid.ptr, self.grid.size, ut.max_neighbors)
-        ker.dll.FastClear(self.gradient.z.ptr, self.N)
+        self.gradient.zero_grad()
 
     def record(self, t: int, stride: int, gradient_amp: np.float32, cal_energy: bool):
         if t % stride == 0:

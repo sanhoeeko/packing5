@@ -5,7 +5,7 @@ import numpy as np
 import default
 import simulation.utils as ut
 from h5tools.dataset import SimulationData
-from .potential import Potential
+from .potential import PotentialBase
 from .state import State, randomConfiguration
 
 
@@ -59,7 +59,7 @@ class Simulator(ut.HasMeta):
         return self.state.gradient.potential.tag['scalar']
 
     @classmethod
-    def loadState(cls, s: State, potential: Potential, state_id: str = None):
+    def loadState(cls, s: State, potential: PotentialBase, state_id: str = None):
         obj = cls(None, s.N, s.n, s.d, s.A, s.B)
         obj.state = s.copy()
         if state_id is not None:
@@ -73,7 +73,7 @@ class Simulator(ut.HasMeta):
         A = Gamma0 * B
         return cls(Id, N, n, d, A, B)
 
-    def setPotential(self, potential: Potential):
+    def setPotential(self, potential: PotentialBase):
         self.state.setPotential(potential)
         self.has_settings['has_potential'] = True
         return self
@@ -159,8 +159,8 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            # if self.state.CalEnergy_pure() < 10:
-            #     self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
+            if self.state.CalEnergy_pure() < 1000:
+                self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
             step_size = 1 * (self.state.averageRij_pure() / 2) ** 2
             for i in range(50):
                 self.state.sgd(step_size * step_size_ratio, 1000)

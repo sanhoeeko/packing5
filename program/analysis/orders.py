@@ -1,5 +1,7 @@
 import tracemalloc
 
+import default
+
 tracemalloc.start()
 import numpy as np
 
@@ -47,7 +49,10 @@ def OrderParameterList(order_parameter_names: list[str]):
     def inner(xyt, abg, weighted) -> np.ndarray:
         xyt_c = ut.CArray(xyt)
         n = xyt.shape[-2]
-        voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay(weighted)
+        if default.if_using_legacy_delaunay:
+            voro = Delaunay.legacy(xyt.shape[0], abg[2], xyt_c)
+        else:
+            voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay(weighted)
         result = np.full((n,), np.nan, dtype=dtype)
         if voro is not None:
             for name in order_parameter_names:

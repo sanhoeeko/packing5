@@ -12,7 +12,13 @@ def plotListOfArray(lst: np.ndarray):
 
 def plotMeanCurvesWithCI(x_lst: list[np.ndarray], y_mean_lst: list[np.ndarray], y_ci_lst: list[np.ndarray],
                          x_label='', y_label=''):
+    """
+    x_lst can be None
+    """
+    if x_lst is None:
+        x_lst = [np.arange(len(y)) for y in y_mean_lst]
     assert len(x_lst) == len(y_mean_lst) == len(y_ci_lst)
+
     colors = ListColor01('cool', len(y_mean_lst))
     with Figure() as f:
         for i, (x, y_mean, y_ci) in enumerate(zip(x_lst, y_mean_lst, y_ci_lst)):

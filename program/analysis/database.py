@@ -1,22 +1,25 @@
 """
 analysis.database: Data Access Layer
 """
+from concurrent.futures import ThreadPoolExecutor
+
 import h5py
 import numpy as np
 import pandas as pd
 
-from . import utils as ut
+import default
+from . import utils as ut, mymath as mm
 
 ut.setWorkingDirectory()
 
 from simulation.state import State
 
 from .h5tools import extract_metadata, struct_array_to_dataframe, filter_dataframe
-from .orders import general_order_parameter
+from .orders import general_order_parameter, Delaunay
 from .voronoi import Voronoi
 
 
-class Database:
+class DatabaseBase:
     def __init__(self, file_name: str):
         self.file_name = file_name
         self.file = h5py.File(self.file_name, 'r')
@@ -31,10 +34,35 @@ class Database:
         return self.id(self.ids[index])
 
     def __iter__(self):
-        for ensemble_id in self.ids:
-            obj = self.id(ensemble_id)
-            yield obj
-            del obj  # Explicitly delete the PickledEnsemble object to release memory
+        """
+        We don't load all data into memory. Here we use some transformation to "sort" data by [gamma]
+        """
+        if hasattr(self, 'summary'):
+            for index, row in self.summary.iterrows():
+                ensemble_id = row['id']
+                obj = self.id(ensemble_id)
+                yield obj
+                del obj  # Explicitly delete the PickledEnsemble object to release memory
+        else:
+            for ensemble_id in self.ids:
+                obj = self.id(ensemble_id)
+                yield obj
+                del obj  # Explicitly delete the PickledEnsemble object to release memory
+
+    def id(self, ensemble_id: str):
+        raise NotImplementedError  # to be inherited
+
+    def process_summary(self, df: pd.DataFrame) -> pd.DataFrame:
+        lens = [x.n_density for x in self]
+        df.insert(1, 'n_states', np.array(lens))
+        df = df.sort_values(by=['gamma'])
+        df.reset_index(drop=True, inplace=True)
+        return df
+
+
+class Database(DatabaseBase):
+    def __init__(self, file_name: str):
+        super().__init__(file_name)
 
     def id(self, ensemble_id: str):
         return PickledEnsemble(self.file[ensemble_id])
@@ -46,13 +74,6 @@ class Database:
         """
         result = list(map(func, self))
         return tuple(zip(*result))
-
-    def process_summary(self, df: pd.DataFrame) -> pd.DataFrame:
-        lens = [x.state_table.shape[1] for x in self]
-        df.insert(1, 'n_states', np.array(lens))
-        df = df.sort_values(by=['gamma'])
-        df.reset_index(drop=True, inplace=True)
-        return df
 
     def subSummary(self, **kwargs) -> pd.DataFrame:
         """
@@ -83,12 +104,11 @@ class PickledEnsemble:
         self.energy_curve = h5_group['energy_curve']  # shape: (replica, rho, m)
         self.state_table = h5_group['state_table']  # struct array, shape: (replica, rho)
         self.metadata = h5_group.attrs['metadata']
+        self.n_replica = self.state_table.shape[0]
+        self.n_density = self.state_table.shape[1]
 
     def __len__(self):
-        return self.state_table.shape[0]
-
-    def data_length(self):
-        return self.state_table.shape[1]
+        return self.n_replica
 
     def __iter__(self):
         for i in range(len(self)):
@@ -147,6 +167,25 @@ class PickledEnsemble:
             result_array = np.array(results).reshape(shape_3d)
         return result_array
 
+    def illegalMap(self) -> np.ndarray[np.int32]:
+        print('here')
+
+        def inner(i, j):
+            xyt = ut.CArray(self.configuration[i, j])
+            meta = self.state_table[i, j]
+            return i, j, mm.isParticleTooClose(xyt) or mm.isParticleOutOfBoundary(xyt, meta['A'], meta['B'])
+
+        mask = np.zeros((self.n_replica, self.n_density), np.int32)
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(inner, i, j) for i in range(self.n_replica) for j in
+                       range(self.n_density)]
+            for future in futures:
+                i, j, result = future.result()
+                mask[i, j] = result
+
+        return mask
+
 
 class PickledSimulation:
     def __init__(self, metadata: np.ndarray, state_info: np.ndarray, gradient_curve: np.ndarray,
@@ -187,8 +226,11 @@ class PickledSimulation:
     def op_at(self, order_parameter_name: str):
         def inner(index: int):
             state = self[index]
-            voro = Voronoi.fromStateDict(state).delaunay(False)
-            if voro is None: return np.float32(np.nan)
+            if default.if_using_legacy_delaunay:
+                voro = Delaunay.legacy(state['metadata']['N'], state['metadata']['gamma'], ut.CArray(state['xyt']))
+            else:
+                voro = Voronoi.fromStateDict(state).delaunay(False)
+                if voro is None: return np.float32(np.nan)
             return np.mean(general_order_parameter(
                 order_parameter_name, state['xyt'], voro,
                 (state['metadata']['A'], state['metadata']['B'], state['metadata']['gamma'])

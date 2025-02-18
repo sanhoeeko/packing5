@@ -7,7 +7,7 @@ from math import pi
 import matplotlib.pyplot as plt
 import numpy as np
 
-from simulation.potential import Potential, PowerFunc
+from simulation.potential import RodPotential, PowerFunc
 
 
 class TestResult:
@@ -44,7 +44,7 @@ def potentialTest(n: int, d: float, m: int):
     y = np.random.uniform(-a - b, a + b, (m,))
     t1 = np.random.uniform(0, 2 * pi, (m,))
     t2 = np.random.uniform(0, 2 * pi, (m,))
-    potential = TestPotential(Potential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
+    potential = TestPotential(RodPotential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
 
     v = np.vectorize(potential.interpolatePotential)(x, y, t1, t2)
     v_ref = np.vectorize(potential.precisePotential)(x, y, t1, t2)
@@ -63,7 +63,7 @@ def gradientTest(n: int, d: float, m: int):
     y = np.random.uniform(-a - b, a + b, (m,))
     t1 = np.random.uniform(0, 2 * pi, (m,))
     t2 = np.random.uniform(0, 2 * pi, (m,))
-    potential = TestPotential(Potential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
+    potential = TestPotential(RodPotential(n, d, PowerFunc(2.5)).cal_potential(threads=4))
 
     g = np.zeros((m, 6))
     g_ref = np.zeros((m, 6))

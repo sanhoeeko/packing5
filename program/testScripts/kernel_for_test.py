@@ -12,7 +12,7 @@ import numpy as np
 
 import simulation.utils as ut
 from simulation.kernel import Kernel
-from simulation.potential import Potential
+from simulation.potential import RodPotential
 
 
 class TestKernel(Kernel):
@@ -30,7 +30,7 @@ ker = TestKernel()
 
 
 class TestPotential:
-    def __init__(self, potential: Potential):
+    def __init__(self, potential: RodPotential):
         self.potential = potential
         self.cache = ut.CArrayFZeros((8,))
 

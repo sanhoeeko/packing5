@@ -11,7 +11,7 @@ class RadialFunc:
 
     def name(self):
         # @property
-        pass  # to be inherited
+        raise NotImplementedError  # to be inherited
 
 
 class PowerFunc(RadialFunc):
@@ -77,17 +77,37 @@ class ModifiedPower(RadialFunc):
         return f"modified power({'%.1f' % self.alpha}, {'%.2f' % self.x0})"
 
 
-class Potential:
-    def __init__(self, n: int, d: float, vr: RadialFunc):
+class PotentialBase:
+    def __init__(self, type_id: int, vr: RadialFunc):
         self.radial_func = vr
+        self.shape_ptr = 0
+        self.particle_shape_type = type_id
+        self.table = ut.CArrayFZeros(ut.potential_table_shape)
+
+    def __del__(self):
+        ker.dll.delParticleShape(self.shape_ptr, self.particle_shape_type)
+
+    def cal_potential(self, threads: int):
+        self.shape_ptr = self._get_shape_ptr(threads)
+        print(f"Successfully load potential, {self.tag}")
+        return self
+
+    def _get_shape_ptr(self, threads: int) -> int:
+        raise NotImplementedError  # to be inherited
+
+    def tag(self) -> dict:
+        # @property
+        raise NotImplementedError  # to be inherited
+
+
+class RodPotential(PotentialBase):
+    def __init__(self, n: int, d: float, vr: RadialFunc):
+        super().__init__(0, vr)
         self.n = np.int32(n)
         self.d = np.float32(d)
 
-    def cal_potential(self, threads: int):
-        self.table = ut.CArrayFZeros(ut.potential_table_shape)
-        self.shape_ptr = ker.dll.addParticleShape(threads, self.n, self.d, self.table.ptr, self.radial_func.Vr_data.ptr)
-        print(f"Successfully load potential, {self.tag}")
-        return self
+    def _get_shape_ptr(self, threads: int) -> int:
+        return ker.dll.addRodShape(threads, self.n, self.d, self.table.ptr, self.radial_func.Vr_data.ptr)
 
     @property
     def tag(self) -> dict:
@@ -96,4 +116,21 @@ class Potential:
             'd': self.d,
             'scalar': self.radial_func.name,
             'shape': 'rod'
+        }
+
+
+class SegmentPotential(PotentialBase):
+    def __init__(self, gamma: float, vr: RadialFunc):
+        super().__init__(1, vr)
+        self.gamma = gamma
+
+    def _get_shape_ptr(self, threads: int) -> int:
+        return ker.dll.addSegmentShape(threads, self.gamma, self.table.ptr, self.radial_func.Vr_data.ptr)
+
+    @property
+    def tag(self) -> dict:
+        return {
+            'gamma': self.gamma,
+            'scalar': self.radial_func.name,
+            'shape': 'segment'
         }

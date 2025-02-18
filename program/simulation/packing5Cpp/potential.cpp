@@ -3,6 +3,7 @@
 #include "functional.h"
 #include "array.h"
 #include <math.h>
+#include "segdist.h"
 
 float modpi(float x)
 {
@@ -133,7 +134,7 @@ bool ParticleShape::isSegmentCrossing(const xyt& q)
         q.y * fcos(q.t) >(q.x - c) * fsin(q.t);
 }
 
-xyt Rod::interpolateGradientSimplex(const xyt& q) 
+xyt ParticleShape::interpolateGradientSimplex(const xyt& q)
 {
     if (q.y >= 1)return { 0,0,0,0 };
     const float 
@@ -177,7 +178,7 @@ xyt Rod::interpolateGradientSimplex(const xyt& q)
     return { A,B,C,0 };
 }
 
-xyt Rod::interpolatePotentialSimplex(const xyt& q)
+xyt ParticleShape::interpolatePotentialSimplex(const xyt& q)
 {
     if (q.y >= 1)return { 0,0,0,0 };
     const float
@@ -230,64 +231,7 @@ inline static XytPair ZeroXytPair() {
     return { 0,0,0,0,0,0 };
 }
 
-Rod::Rod(int n, float d, float (*data_ptr)[szy][szt]) {
-    a = 1;
-    b = 1 / (1 + (n - 1) * d / 2.0f);
-    c = a - b;
-    this->n = n;
-    this->rod_d = d * b;
-    a_padded = a + 0.01f;    // zero padding, for memory safety
-    b_padded = b + 0.01f;
-    this->n_shift = -(n - 1) / 2.0f;
-    this->inv_disk_R2 = 1 / (b * b);
-    this->data = data_ptr;
-}
-
-/*
-    The origin definition of the potential
-*/
-float Rod::StandardPotential(const xyt& q, float* scalar_potential) {
-    float v = 0;
-    for (int k = 0; k < n; k++) {
-        float z1 = (n_shift + k) * rod_d;
-        for (int l = 0; l < n; l++) {
-            float z2 = (n_shift + l) * rod_d;
-            float
-                xij = q.x - z1 + z2 * fcos(q.t),
-                yij = q.y + z2 * fsin(q.t),
-                r2 = (xij * xij + yij * yij) * inv_disk_R2;
-            v += scalar_f(scalar_potential, r2);
-        }
-    }
-    return v;
-}
-
-XytPair Rod::StandardGradient(float x, float y, float t1, float t2, float* scalar_potential_dr) {
-    XytPair g = ZeroXytPair();
-    for (int k = 0; k < n; k++) {
-        float z1 = (n_shift + k) * rod_d;
-        for (int l = 0; l < n; l++) {
-            float z2 = (n_shift + l) * rod_d;
-            float
-                xij = x - z1 * fcos(t1) + z2 * fcos(t2),
-                yij = y - z1 * fsin(t1) + z2 * fsin(t2),
-                r2 = (xij * xij + yij * yij) * inv_disk_R2,
-                fr = scalar_f(scalar_potential_dr, r2);
-            if (fr != 0.0f) {
-                float
-                    fx = fr * xij,
-                    fy = fr * yij,
-                    torque1 = z1 * (fx * fsin(t1) - fy * fcos(t1)),
-                    torque2 = -z2 * (fx * fsin(t2) - fy * fcos(t2));
-                g.first += {fx, fy, torque1};
-                g.second += {-fx, -fy, torque2};
-            }
-        }
-    }
-    return g;
-}
-
-void Rod::initPotential(int threads, float* scalar_potential) {
+void ParticleShape::initPotential(int threads, float* scalar_potential) {
     vector<float> xs = linspace_including_endpoint(0, 1, szx);
     vector<float> ys = linspace_including_endpoint(0, 1, szy);
     vector<float> ts = linspace_including_endpoint(0, 1, szt);
@@ -311,7 +255,7 @@ void Rod::initPotential(int threads, float* scalar_potential) {
     }
 }
 
-xyt Rod::potential(const xyt& q) {
+xyt ParticleShape::potential(const xyt& q) {
     /*
         q: real x y theta
     */
@@ -325,7 +269,7 @@ xyt Rod::potential(const xyt& q) {
     return g;
 }
 
-xyt Rod::gradient(const xyt& q) {
+xyt ParticleShape::gradient(const xyt& q) {
     /*
         q: real x y theta
     */
@@ -395,4 +339,77 @@ GePair singleGradientAndEnergy<Normal>(Rod* shape, float x, float y, float t1, f
     rv.rot((float*)&gradient, (float*)&gradient);
     float moment2 = -crossProduct(&input.x, (float*)&gradient) - gradient.t;   // parallel axis theorem !!
     return { gradient, {-gradient.x, -gradient.y, moment2} };
+}
+
+Rod::Rod(int n, float d, float (*data_ptr)[szy][szt]) {
+    this->data = data_ptr;
+    a = 1;
+    b = 1 / (1 + (n - 1) * d / 2.0f);
+    c = a - b;
+    this->n = n;
+    this->rod_d = d * b;
+    a_padded = a + 0.01f;    // zero padding, for memory safety
+    b_padded = b + 0.01f;
+    this->n_shift = -(n - 1) / 2.0f;
+    this->inv_disk_R2 = 1 / (b * b);
+}
+
+/*
+    The origin definition of the potential
+*/
+float Rod::StandardPotential(const xyt& q, float* scalar_potential) {
+    float v = 0;
+    for (int k = 0; k < n; k++) {
+        float z1 = (n_shift + k) * rod_d;
+        for (int l = 0; l < n; l++) {
+            float z2 = (n_shift + l) * rod_d;
+            float
+                xij = q.x - z1 + z2 * fcos(q.t),
+                yij = q.y + z2 * fsin(q.t),
+                r2 = (xij * xij + yij * yij) * inv_disk_R2;
+            v += scalar_f(scalar_potential, r2);
+        }
+    }
+    return v;
+}
+
+XytPair Rod::StandardGradient(float x, float y, float t1, float t2, float* scalar_potential_dr) {
+    XytPair g = ZeroXytPair();
+    for (int k = 0; k < n; k++) {
+        float z1 = (n_shift + k) * rod_d;
+        for (int l = 0; l < n; l++) {
+            float z2 = (n_shift + l) * rod_d;
+            float
+                xij = x - z1 * fcos(t1) + z2 * fcos(t2),
+                yij = y - z1 * fsin(t1) + z2 * fsin(t2),
+                r2 = (xij * xij + yij * yij) * inv_disk_R2,
+                fr = scalar_f(scalar_potential_dr, r2);
+            if (fr != 0.0f) {
+                float
+                    fx = fr * xij,
+                    fy = fr * yij,
+                    torque1 = z1 * (fx * fsin(t1) - fy * fcos(t1)),
+                    torque2 = -z2 * (fx * fsin(t2) - fy * fcos(t2));
+                g.first += {fx, fy, torque1};
+                g.second += {-fx, -fy, torque2};
+            }
+        }
+    }
+    return g;
+}
+
+Segment::Segment(float gamma, float (*data_ptr)[szy][szt]) {
+    this->data = data_ptr;
+    this->r = 1 - 1 / gamma;
+    a = 1;
+    b = 1 / gamma;
+    c = a - b;
+    a_padded = a + 0.01f;
+    b_padded = b + 0.01f;
+}
+
+float Segment::StandardPotential(const xyt& q, float* scalar_potential)
+{
+    float h = SegDist(r, q.x, q.y, q.t, 0, 0, 0) / b;       // (h / b) is in [0, 2]
+    return scalar_f(scalar_potential, h * h);
 }

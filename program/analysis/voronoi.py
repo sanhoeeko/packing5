@@ -2,7 +2,6 @@ import numpy as np
 
 from . import utils as ut
 from .kernel import ker
-from .mymath import isParticleTooClose
 
 
 class Voronoi:
@@ -39,8 +38,7 @@ class Voronoi:
         """
         :param kernel_function: ker.dll.trueDelaunay | ker.dll.weightedDelaunay
         """
-        output = ut.CArray(np.zeros(self.num_rods * 8, dtype=[
-            ('id2', np.int32), ('weight', np.float32)]))
+        output = ut.CArray(np.zeros(self.num_rods * 8, dtype=[('id2', np.int32), ('weight', np.float32)]))
         indices = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
         n_edges = kernel_function(self.num_rods, self.disks_per_rod,
                                   self.disk_map.ptr, output.ptr, indices.ptr, self.A, self.B)
@@ -48,14 +46,14 @@ class Voronoi:
 
     def true_delaunay(self):
         from .orders import Delaunay
-        if isParticleTooClose(ut.CArrayF(self.configuration)):
-            return None
+        # if isParticleTooClose(ut.CArrayF(self.configuration)):
+        #     return None
         return Delaunay(False, *self.delaunay_template(ker.dll.trueDelaunay))
 
     def weighted_delaunay(self):
         from .orders import Delaunay
-        if isParticleTooClose(ut.CArrayF(self.configuration)):
-            return None
+        # if isParticleTooClose(ut.CArrayF(self.configuration)):
+        #     return None
         return Delaunay(True, *self.delaunay_template(ker.dll.weightedDelaunay))
 
     def delaunay(self, weighted: bool):
@@ -68,6 +66,7 @@ class Voronoi:
 class DelaunayBase:
     """
     Inherited by orders.Delaunay. This class provides interaction with cpp.
+    weighted_edges: dtype=[('id2', np.int32), ('weight', np.float32)]
     """
 
     def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray):
@@ -80,6 +79,18 @@ class DelaunayBase:
         self.weights = ut.CArray(weighted_edges['weight'], dtype=np.float32)
         ker.dll.sumOverWeights(self.num_edges, self.num_rods, self.indices.ptr,
                                self.edges.ptr, self.weights.ptr, self.weight_sums.ptr)
+
+    @classmethod
+    def legacy(cls, num_rods: int, gamma: float, xyt: ut.CArray):
+        disks_per_rod = 3
+        output = ut.CArray(np.zeros(num_rods * 8, dtype=[('id2', np.int32), ('weight', np.float32)]))
+        indices = ut.CArray(np.zeros((num_rods,), dtype=np.int32))
+        try:
+            n_edges = ker.dll.legacyDelaunay(num_rods, disks_per_rod, gamma, xyt.ptr, output.ptr, indices.ptr)
+        except OSError:
+            return None
+        obj = cls(False, indices, output.data)
+        return obj
 
     @property
     def params(self):

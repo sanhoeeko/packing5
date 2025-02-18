@@ -82,6 +82,28 @@ def interpolate_tensor(x: np.ndarray, y: np.ndarray, eps: float, num_threads=1):
     return X, Y
 
 
+def nanstack(arrays, axis=0):
+    max_shape = [max(arr.shape[i] if i < len(arr.shape) else 0 for arr in arrays) for i in
+                 range(len(max(arrays, key=lambda x: x.ndim).shape))]
+
+    result_shape = max_shape.copy()
+    result_shape.insert(axis, len(arrays))
+    result = np.full(result_shape, np.nan)
+
+    for i, arr in enumerate(arrays):
+        slices = [slice(None)] * len(max_shape)
+        for j in range(len(arr.shape)):
+            slices[j] = slice(0, arr.shape[j])
+        slices.insert(axis, i)
+        result[tuple(slices)] = arr
+
+    return result
+
+
 def isParticleTooClose(xyt: ut.CArray) -> bool:
     ratio = ker.dll.RijRatio(xyt.ptr, xyt.data.shape[0])
     return ratio < 0.01
+
+
+def isParticleOutOfBoundary(xyt: ut.CArray, A: float, B: float) -> bool:
+    return bool(ker.dll.isOutOfBoundary(xyt.ptr, xyt.data.shape[0], A, B))
