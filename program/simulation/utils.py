@@ -99,6 +99,9 @@ class CArray:
         from .kernel import ker
         return np.float32(ker.dll.FastNorm(self.ptr, N * 4) / np.sqrt(N))
 
+    def max_abs(self, N: int) -> np.float32:
+        from .kernel import ker
+
     def reshape(self, *shape):
         return CArray(self.data.reshape(*shape), None)
 
@@ -111,58 +114,6 @@ def CArrayF(arr: np.ndarray):
 
 def CArrayFZeros(*args, **kwargs):
     return CArray(np.zeros(*args, **kwargs), np.float32)
-
-
-class DescentCurve:
-    def __init__(self):
-        self.gradient_curve = None
-        self.energy_curve = None
-        self.current_gradient_curve = None
-        self.current_energy_curve = None
-        self.clear()
-
-    def clear(self):
-        self.gradient_curve = np.zeros((0,), dtype=np.float32)
-        self.energy_curve = np.zeros((0,), dtype=np.float32)
-
-    def reserve(self, n: int):
-        n = int(n)
-        self.current_gradient_curve = np.full((n,), np.float32(np.nan))
-        self.current_energy_curve = np.full((n,), np.float32(np.nan))
-
-    def rewrite(self, g: np.float32 = None, e: np.float32 = None):
-        if g is not None:
-            self.current_gradient_curve[-1] = g
-        if e is not None:
-            self.current_energy_curve[-1] = e
-
-    def join(self):
-        self.g_append(self.current_gradient_curve)
-        self.e_append(self.current_energy_curve)
-        self.current_gradient_curve = None
-        self.current_energy_curve = None
-
-    def g_append(self, g_array: np.ndarray):
-        self.gradient_curve = np.hstack((self.gradient_curve, g_array))
-
-    def e_append(self, e_array: np.ndarray):
-        self.energy_curve = np.hstack((self.gradient_curve, e_array))
-
-    def get(self, length: int) -> (np.ndarray, np.ndarray):
-        def process_array(arr):
-            arr_len = len(arr)
-            if arr_len < length:
-                res = np.full((length,), np.float32(np.nan))
-                res[-arr_len:] = arr
-                return res
-            elif length <= arr_len < 2 * length:
-                return arr[-length:]
-            else:
-                step = arr_len // length
-                sampled_arr = arr[::step]
-                return process_array(sampled_arr)
-
-        return process_array(self.gradient_curve), process_array(self.energy_curve)
 
 
 # h5 metadata management
@@ -185,6 +136,22 @@ class HasMeta:
     def metadata(self) -> np.ndarray:
         values = [getattr(self, key) for key in self.key_list]
         return np.array([tuple(values)], dtype=self.dtype)
+
+
+class Cache:
+    def __init__(self, obj):
+        self.valid = False
+        self._obj = obj
+
+    def get(self):
+        if self.valid:
+            return self._obj
+        else:
+            raise ValueError("Cache is invalid!")
+
+    def set(self, value):
+        self._obj = value
+        self.valid = True
 
 
 class Timer:
@@ -213,3 +180,12 @@ class Profile:
         self.profiler.disable()
         self.profiler.dump_stats(self.file_name)
         print(f"Program finished in {t - self.t0} seconds.")
+
+
+def add_dynamic_methods(cls, methods, heading_name: str):
+    lst_name = heading_name + 's'
+    setattr(cls, lst_name, [])
+    for i, method in enumerate(methods):
+        method_name = f"{heading_name}_{i}"
+        setattr(cls, method_name, method)
+        getattr(cls, lst_name).append(getattr(cls, method_name))

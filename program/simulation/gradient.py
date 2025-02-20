@@ -86,6 +86,14 @@ class GradientSum:
             self.data = Gij.data.reshape(self.N, 4)  # self.data.ptr == Gij.data.ptr
         else:
             self.data = ut.CArrayFZeros((self.N, 4))
+        self.mean_gradient_amp_cache = ut.Cache(0)
+        self.max_gradient_amp_cache = ut.Cache(0)
+        self.energy_cache = ut.Cache(0)
+
+    def clear(self):
+        self.mean_gradient_amp_cache.valid = False
+        self.max_gradient_amp_cache.valid = False
+        self.energy_cache = False
 
     def g(self) -> ut.CArray:
         if self.capacity > 1:
@@ -96,12 +104,22 @@ class GradientSum:
         return np.sum(self.data[:, 3])
 
     def E(self) -> np.float32:
-        self.g()
-        return self.e()
+        if not self.energy_cache.valid:
+            self.g()
+            self.energy_cache.set(self.e())
+        return self.energy_cache._obj
 
-    def gE(self) -> (ut.CArray, np.float32):
-        self.g()
-        return self.data, self.e()
+    def G_mean(self):
+        if not self.mean_gradient_amp_cache.valid:
+            self.g()
+            self.mean_gradient_amp_cache.set(self.data.norm(self.N))
+        return self.mean_gradient_amp_cache._obj
+
+    def G_max(self):
+        if not self.max_gradient_amp_cache.valid:
+            self.g()
+            # ...
+        return self.max_gradient_amp_cache._obj
 
 
 class Optimizer:

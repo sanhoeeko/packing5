@@ -52,10 +52,12 @@ class Simulator(ut.HasMeta):
 
     @property
     def potential_shape(self) -> str:
+        # metadata
         return self.state.gradient.potential.tag['shape']
 
     @property
     def potential_scalar(self) -> str:
+        # metadata
         return self.state.gradient.potential.tag['scalar']
 
     @classmethod
@@ -91,10 +93,11 @@ class Simulator(ut.HasMeta):
         return self
 
     def fetchData(self):
-        g_array, e_array = self.state.descent_curve.get(self.dataset.descent_curve_size)
+        mean_g_array, max_g_array, e_array = self.state.descent_curve.get(self.dataset.descent_curve_size)
         return {
             'configuration': self.state.xyt3d(),
-            'gradient_curve': g_array,
+            'mean_gradient_curve': mean_g_array,
+            'max_gradient_curve': max_g_array,
             'energy_curve': e_array
         }
 
@@ -159,13 +162,7 @@ class Simulator(ut.HasMeta):
         All black magics for gradient descent should be here.
         """
         with ut.Timer() as timer:
-            if self.state.CalEnergy_pure() < 1000:
-                self.state.brown(1e-2 * step_size_ratio, int(default.max_brown))
-            step_size = 1 * (self.state.averageRij_pure() / 2) ** 2
-            for i in range(50):
-                self.state.sgd(step_size * step_size_ratio, 1000)
-                step_size *= 0.96
-            self.state.fineRelax(1e-5, 20000, default.descent_curve_stride)
+            self.state.relax()
             # final check
             if not self.state.legal_pure():
                 raise ut.FinalIllegalException

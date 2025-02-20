@@ -51,7 +51,9 @@ class SimulationData(Dataset):
         self.descent_curve_size = descent_curve_size
         with h5py.File(self.file_name, 'a') as f:
             f.create_dataset('configuration', shape=(0, self.N, 3), maxshape=(None, self.N, 3), chunks=True)
-            f.create_dataset('gradient_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
+            f.create_dataset('mean_gradient_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
+                             chunks=True)
+            f.create_dataset('max_gradient_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
                              chunks=True)
             f.create_dataset('energy_curve', shape=(0, descent_curve_size), maxshape=(None, descent_curve_size),
                              chunks=True)
