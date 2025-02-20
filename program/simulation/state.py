@@ -90,12 +90,7 @@ class State(ut.HasMeta):
     def clear_dependency(self):
         ker.dll.HollowClear(self.grid.grid.ptr, self.grid.size, ut.max_neighbors)
         self.gradient.zero_grad()
-
-    def record(self, t: int, stride: int, gradient_amp: np.float32, cal_energy: bool):
-        if t % stride == 0:
-            self.descent_curve.current_gradient_curve[t // stride] = gradient_amp
-            if cal_energy:
-                self.descent_curve.current_energy_curve[t // stride] = self.CalEnergy_pure()
+        self.gradient.sum.clear()
 
     def xyt3d(self) -> np.ndarray:
         return self.xyt[:, :3].copy()
@@ -118,15 +113,14 @@ class State(ut.HasMeta):
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = gradient.norm(self.N)
-        s = np.float32(step_size) / g
-        if np.isnan(g) or np.isinf(g):
-            raise NaNInGradientException()
         # this condition is to avoid division by zero
         if g > 1e-6:
+            if np.isnan(g) or np.isinf(g):
+                raise NaNInGradientException()
+            s = np.float32(step_size) / g
             ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
         if self.isOutOfBoundary():
             raise OutOfBoundaryException()
-        self.clear_dependency()
         return g
 
     def initAsDisks(self) -> (np.float32, np.float32):
@@ -143,6 +137,7 @@ class State(ut.HasMeta):
         for t in range(n_steps_init):
             gradient_amp = self.descent(self.optimizer.calGradient(), step_size_init)
             if gradient_amp <= min_grad_init: break
+            self.clear_dependency()
         energy = self.CalEnergy_pure()
         return gradient_amp, energy
 

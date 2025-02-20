@@ -8,9 +8,9 @@ from analysis.analysis import *
 if __name__ == '__main__':
     auto_pack()
     db = Database('data.h5')
-    # checkGradient(db)
+    checkGradient(db)
     checkEnergy(db)
-    # checkGradientCurveAt(db, 0, 0)
+    checkGradientCurveAt(db, 0, 0)
     checkEnergyCurveAt(db, 0, 0)
     InteractiveViewer(db[0].simulation_at(0), RenderSetup('EllipticPhi6')).show()
     # calAllOrderParameters(db, 'rho', num_threads=4)

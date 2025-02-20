@@ -47,7 +47,11 @@ def checkEnergyCurveAt(db: Database, i: int, j: int):
 
 
 def checkGradientCurveAt(db: Database, i: int, j: int):
-    plotListOfArray(db[i].simulation_at(j).gradientCurve())
+    plotListOfArray(db[i].simulation_at(j).meanGradientCurve())
+
+
+def checkMaxGradientCurveAt(db: Database, i: int, j: int):
+    plotListOfArray(db[i].simulation_at(j).maxGradientCurve())
 
 
 def checkLegal(db: Database) -> np.ndarray:

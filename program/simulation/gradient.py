@@ -93,7 +93,7 @@ class GradientSum:
     def clear(self):
         self.mean_gradient_amp_cache.valid = False
         self.max_gradient_amp_cache.valid = False
-        self.energy_cache = False
+        self.energy_cache.valid = False
 
     def g(self) -> ut.CArray:
         if self.capacity > 1:
@@ -136,7 +136,8 @@ class Optimizer:
         func_name = 'calGradient' if stochastic_p == 1 else 'stochasticCalGradient'
         if as_disks:
             func_name += 'AsDisks'
-        if need_energy:
+        if need_energy:  # in this case, stochastic_p will be shadowed
+            stochastic_p = 1
             func_name = 'calGradientAndEnergy'
         if stochastic_p == 1:
             self.void_gradient_func = getattr(state.gradient, func_name)

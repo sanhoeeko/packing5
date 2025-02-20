@@ -163,10 +163,8 @@ class Simulator(ut.HasMeta):
         """
         with ut.Timer() as timer:
             self.state.relax()
-            # final check
-            if not self.state.legal_pure():
-                raise ut.FinalIllegalException
-            self.current_relaxations = int(1e5)
+            # if not self.state.legal_pure(): raise ut.FinalIllegalException  # final check
+            self.current_relaxations = self.state.n_steps
         return self.current_relaxations / timer.elapse_t
 
 

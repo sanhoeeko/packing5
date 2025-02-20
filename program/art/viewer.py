@@ -104,7 +104,7 @@ class RenderState:
                 f"φ={'{:.3f}'.format(metadata['phi'])}, "
                 f"A={'{:.2f}'.format(metadata['A'])}, B={'{:.2f}'.format(metadata['B'])}, "
                 f"\n"
-                f"E={'{:.3f}'.format(metadata['energy'])}, g={'{:.3f}'.format(metadata['gradient_amp'])}"
+                f"E={'{:.3f}'.format(metadata['energy'])}, g={'{:.3f}'.format(metadata['mean_gradient_amp'])}"
             )
         )
         self.handle.colorbar(col, 'θ')

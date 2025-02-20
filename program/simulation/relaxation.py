@@ -23,9 +23,15 @@ class EnergyCounter:
         self.expected_occurrence = occurrence
         self.current_occurrence = 0
 
+    def clear(self):
+        self.energy_lst.clear()
+        self.current_occurrence = 0
+
     def _judge_single(self, energy: float):
+        if energy < default.energy_eps:
+            return True
         return len(self.energy_lst) >= self.stride and (
-                (self.energy_lst[-self.stride] - energy) < self.threshold_difference
+                (1 - energy / self.energy_lst[-self.stride]) < self.threshold_difference
         )
 
     def judge(self, energy: float):
@@ -56,17 +62,23 @@ class DescentCurve:
             raise IndexError("Too many energy records!")
 
     def get(self, length: int) -> (np.ndarray, np.ndarray, np.ndarray):
-        def process_array(arr):
-            if self.cnt < length:
-                res = np.full((length,), np.float32(np.nan))
-                res[:self.cnt] = arr[:self.cnt]
-                return res
-            elif length <= self.cnt < 2 * length:
-                return arr[-length:]
-            else:
-                step = self.cnt // length
-                sampled_arr = arr[::step]
-                return process_array(sampled_arr)
+        def process_array(arr_full):
+            arr = arr_full[:self.cnt]
+
+            def recurse(arr):
+                len_arr = len(arr)
+                if len_arr < length:
+                    res = np.full((length,), np.float32(np.nan))
+                    res[:len_arr] = arr
+                    return res
+                elif length <= len_arr < 2 * length:
+                    return arr[-length:]
+                else:
+                    step = len_arr // length
+                    sampled_arr = arr[::step]
+                    return recurse(sampled_arr)
+
+            return recurse(arr)
 
         return (process_array(self.mean_gradient_curve), process_array(self.max_gradient_curve),
                 process_array(self.energy_curve))
@@ -79,7 +91,6 @@ def Relaxation(
         stepsize: float,
         relaxation_steps: Union[int, float],
         state_pool_stride: Union[int, float],
-        record_stride: Union[int, float],
         auto_stepsize: bool,
         record_energy: bool,
         criterion: Criterion
@@ -105,8 +116,7 @@ def Relaxation(
                 default.terminal_energy_slope, default.energy_counter_stride, default.energy_counter_occurrence))
 
             def judgeTermination() -> bool:
-                energy = state.CalEnergy_pure()
-                return state.energy_counter.judge(energy)
+                return state.energy_counter.judge(state.energy)
         else:
             def judgeTermination() -> bool:
                 return False
@@ -114,27 +124,39 @@ def Relaxation(
         # Method to record descent curve
         if record_energy:
             def record(t):
-                if t % record_stride == 0:
+                if t % default.descent_curve_stride == 0:
                     state.descent_curve.append(state.mean_gradient_amp, state.max_gradient_amp, state.energy)
         else:
             def record(t):
-                if t % record_stride == 0:
+                if t % default.descent_curve_stride == 0:
                     state.descent_curve.append(state.mean_gradient_amp, state.max_gradient_amp, np.nan)
+
+        # Clear something to prepare for relaxation
+        if criterion == Criterion.EnergyFlat:
+            def prepare_relaxation():
+                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, record_energy)
+                state.descent_curve.clear()
+                state.energy_counter.clear()
+        else:
+            def prepare_relaxation():
+                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, record_energy)
+                state.descent_curve.clear()
 
         # If state pools are not applied
         if state_pool_stride == 1:
             def relax():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False)
+                prepare_relaxation()
                 sz = stepsize_provider()
                 for t in range(int(relaxation_steps)):
                     gradient = state.optimizer.calGradient()
                     state.descent(gradient, sz)
                     record(t)
                     if judgeTermination(): break
+                    state.clear_dependency()
         else:
             # If state pools are applied
             def relax():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False)
+                prepare_relaxation()
                 for t in range(int(relaxation_steps) // state_pool_stride):
                     state.state_pool.clear()
                     sz = stepsize_provider()
@@ -151,6 +173,7 @@ def Relaxation(
                     state.xyt.set_data(min_state.data)
                     record(t)
                     if judgeTermination(): break
+                    state.clear_dependency()
                 state.descent_curve.join()
 
             # Each state pool is managed by function but not State to avoid conflict
