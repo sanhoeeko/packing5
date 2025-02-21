@@ -25,6 +25,7 @@ def plotCurves(db: Database, x_name: str, y_name: str):
         xs_ys = flatten(db.apply(ScalarCurve(x_name, y_name)))
         for x, y in xs_ys:
             fig.ax.scatter(x, y, s=2)
+        fig.labels(x_name, y_name)
 
 
 def checkGradient(db: Database):
@@ -43,15 +44,15 @@ def checkEnergy(db: Database):
 
 
 def checkEnergyCurveAt(db: Database, i: int, j: int):
-    plotListOfArray(db[i].simulation_at(j).energyCurve())
+    plotListOfArray(db[i].simulation_at(j).energyCurve(), ('descent steps', 'E/E0'))
 
 
 def checkGradientCurveAt(db: Database, i: int, j: int):
-    plotListOfArray(db[i].simulation_at(j).meanGradientCurve())
+    plotListOfArray(db[i].simulation_at(j).meanGradientCurve(), ('descent steps', 'mean gradient'))
 
 
 def checkMaxGradientCurveAt(db: Database, i: int, j: int):
-    plotListOfArray(db[i].simulation_at(j).maxGradientCurve())
+    plotListOfArray(db[i].simulation_at(j).maxGradientCurve(), ('descent steps', 'max gradient'))
 
 
 def checkLegal(db: Database) -> np.ndarray:

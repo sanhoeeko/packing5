@@ -110,7 +110,10 @@ class Simulator(ut.HasMeta):
         try:
             while True:
                 try:
-                    self.state.initAsDisksWithPhi(0.8)
+                    if default.if_hyperuniform_initialize:
+                        self.state.initAsDisksWithPhi(0.8)
+                    else:
+                        self.state.initAsDisks()
                     if self.state.legal_pure():
                         print(f"[{self.id}] Successfully initialized.")
                         break

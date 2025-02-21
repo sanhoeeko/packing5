@@ -118,7 +118,7 @@ class GradientSum:
     def G_max(self):
         if not self.max_gradient_amp_cache.valid:
             self.g()
-            # ...
+            self.max_gradient_amp_cache.set(self.data.max_abs(self.N))
         return self.max_gradient_amp_cache._obj
 
 
@@ -137,8 +137,10 @@ class Optimizer:
         if as_disks:
             func_name += 'AsDisks'
         if need_energy:  # in this case, stochastic_p will be shadowed
-            stochastic_p = 1
             func_name = 'calGradientAndEnergy'
+            if stochastic_p != 1:
+                stochastic_p = 1
+                print("Warning: Because of the need of energy, `stochastic_p` parameter has been shadowed!")
         if stochastic_p == 1:
             self.void_gradient_func = getattr(state.gradient, func_name)
         else:

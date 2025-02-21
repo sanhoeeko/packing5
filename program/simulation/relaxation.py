@@ -148,7 +148,7 @@ def Relaxation(
                 prepare_relaxation()
                 sz = stepsize_provider()
                 for t in range(int(relaxation_steps)):
-                    gradient = state.optimizer.calGradient()
+                    gradient = state.calGradient()
                     state.descent(gradient, sz)
                     record(t)
                     if judgeTermination(): break
@@ -158,24 +158,23 @@ def Relaxation(
             def relax():
                 prepare_relaxation()
                 for t in range(int(relaxation_steps) // state_pool_stride):
-                    state.state_pool.clear()
+                    relax.state_pool.clear()
                     sz = stepsize_provider()
                     for i in range(state_pool_stride):
-                        gradient = state.optimizer.calGradient()
+                        gradient = state.calGradient()
                         if state.optimizer.particles_too_close_cache or state.isOutOfBoundary():
-                            state.state_pool.add(state, 1e5)
+                            relax.state_pool.add(state, 1e5)
                             state.descent(gradient, sz)
                         else:
                             g = state.optimizer.gradientAmp()
-                            state.state_pool.add(state, g)
+                            relax.state_pool.add(state, g)
                             state.descent(gradient, sz)
-                    energy, min_state = state.state_pool.average_zero_temperature()
+                            state.clear_dependency()
+                    energy, min_state = relax.state_pool.average_zero_temperature()
                     state.xyt.set_data(min_state.data)
                     record(t)
                     if judgeTermination(): break
-                    state.clear_dependency()
-                state.descent_curve.join()
-
+                
             # Each state pool is managed by function but not State to avoid conflict
             relax.state_pool = StatePool(state.N, state_pool_stride)
 

@@ -85,11 +85,11 @@ float MaxAbsVector4(void* p_x, int N)
     /* This is not an avx function. */
     float* x = (float*)p_x;
     float current_max = 0;
-    for (int i = 0; i < 4*N; i+=4) {
-        float absg = x[i] * x[i] + x[i + 1] * x[i + 1] + x[i + 1] * x[i + 2];
+    for (int i = 0; i < 4 * N; i += 4) {
+        float absg = x[i] * x[i] + x[i + 1] * x[i + 1] + x[i + 2] * x[i + 2];
         current_max = absg > current_max ? absg : current_max;
     }
-    return current_max;
+    return sqrtf(current_max);
 }
 
 void CwiseMulVector4(void* p_g, int N, float s) {

@@ -28,6 +28,7 @@ class State(ut.HasMeta):
         self.optimizer: Optimizer = None
         self.grid = Grid(self)
         self.gradient = GradientMatrix(self, self.grid)
+        self.ge_valid = False
         self.compile_relaxation_functions()
         # optional objects
         if train:
@@ -55,14 +56,17 @@ class State(ut.HasMeta):
 
     @property
     def mean_gradient_amp(self):
+        if not self.ge_valid: self.refreshGE()
         return self.gradient.sum.G_mean()
 
     @property
     def max_gradient_amp(self):
+        if not self.ge_valid: self.refreshGE()
         return self.gradient.sum.G_max()
 
     @property
     def energy(self):
+        if not self.ge_valid: self.refreshGE()
         return self.gradient.sum.E()
 
     @property
@@ -72,6 +76,16 @@ class State(ut.HasMeta):
     @classmethod
     def random(cls, N, n, d, A, B):
         return cls(N, n, d, A, B, randomConfiguration(N, A, B))
+
+    def calGradient(self):
+        g = self.optimizer.calGradient()
+        self.ge_valid = True
+        return g
+
+    def refreshGE(self):
+        self.grid.gridLocate()
+        self.gradient.calGradientAndEnergy()
+        self.ge_valid = True
 
     def setPotential(self, potential: PotentialBase):
         self.gradient.potential = potential
@@ -91,6 +105,7 @@ class State(ut.HasMeta):
         ker.dll.HollowClear(self.grid.grid.ptr, self.grid.size, ut.max_neighbors)
         self.gradient.zero_grad()
         self.gradient.sum.clear()
+        self.ge_valid = False
 
     def xyt3d(self) -> np.ndarray:
         return self.xyt[:, :3].copy()
@@ -135,7 +150,7 @@ class State(ut.HasMeta):
         self.setOptimizer(0, 0, 1, True)
         gradient_amp = 0
         for t in range(n_steps_init):
-            gradient_amp = self.descent(self.optimizer.calGradient(), step_size_init)
+            gradient_amp = self.descent(self.calGradient(), step_size_init)
             if gradient_amp <= min_grad_init: break
             self.clear_dependency()
         energy = self.CalEnergy_pure()

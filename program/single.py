@@ -12,8 +12,8 @@ InitRecipe()
 
 def testSingleThread(profile=True):
     N = 1024
-    n = 10
-    d = 0.1
+    n = 11
+    d = 0.02
     phi0 = 0.7
     Gamma0 = 1
     compress_func_A = boundary.NoCompress()
