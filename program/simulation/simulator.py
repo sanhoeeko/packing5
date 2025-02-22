@@ -138,6 +138,7 @@ class Simulator(ut.HasMeta):
                 else:
                     self.state.boundary.compress(i)
 
+                self.state.descent_curve.clear()
                 state_cache = self.state.xyt.copy()
                 step_size_ratio = 1
                 while True:

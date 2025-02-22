@@ -4,7 +4,7 @@ from typing import Union
 import numpy as np
 
 import default
-from . import stepsize as ss
+from . import stepsize as ss, utils as ut
 from .mc import StatePool
 
 
@@ -92,7 +92,7 @@ def Relaxation(
         relaxation_steps: Union[int, float],
         state_pool_stride: Union[int, float],
         auto_stepsize: bool,
-        record_energy: bool,
+        record_descent: bool,
         criterion: Criterion
 ):
     def inner(state):
@@ -116,31 +116,34 @@ def Relaxation(
                 default.terminal_energy_slope, default.energy_counter_stride, default.energy_counter_occurrence))
 
             def judgeTermination() -> bool:
-                return state.energy_counter.judge(state.energy)
+                return state.mean_gradient_amp < 1e-6 or state.energy_counter.judge(state.energy)
         else:
             def judgeTermination() -> bool:
                 return False
 
         # Method to record descent curve
-        if record_energy:
+        if not record_descent:
             def record(t):
-                if t % default.descent_curve_stride == 0:
-                    state.descent_curve.append(state.mean_gradient_amp, state.max_gradient_amp, state.energy)
+                pass
         else:
-            def record(t):
-                if t % default.descent_curve_stride == 0:
-                    state.descent_curve.append(state.mean_gradient_amp, state.max_gradient_amp, np.nan)
+            if default.if_cal_energy:
+                def record(t):
+                    if t % default.descent_curve_stride == 0:
+                        state.descent_curve.append(state.mean_gradient_amp, state.max_gradient_amp, state.energy)
+            else:
+                def record(t):
+                    if t % default.descent_curve_stride == 0:
+                        state.descent_curve.append(state.mean_gradient_amp, state.max_gradient_amp, np.nan)
 
         # Clear something to prepare for relaxation
+        optimizer_energy_option = default.if_cal_energy and record_descent
         if criterion == Criterion.EnergyFlat:
             def prepare_relaxation():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, record_energy)
-                state.descent_curve.clear()
+                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, optimizer_energy_option)
                 state.energy_counter.clear()
         else:
             def prepare_relaxation():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, record_energy)
-                state.descent_curve.clear()
+                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, optimizer_energy_option)
 
         # If state pools are not applied
         if state_pool_stride == 1:
@@ -151,6 +154,8 @@ def Relaxation(
                     gradient = state.calGradient()
                     state.descent(gradient, sz)
                     record(t)
+                    # test
+                    # if t > 20000: ut.dump('gradient', gradient.data)
                     if judgeTermination(): break
                     state.clear_dependency()
         else:
@@ -174,7 +179,7 @@ def Relaxation(
                     state.xyt.set_data(min_state.data)
                     record(t)
                     if judgeTermination(): break
-                
+
             # Each state pool is managed by function but not State to avoid conflict
             relax.state_pool = StatePool(state.N, state_pool_stride)
 

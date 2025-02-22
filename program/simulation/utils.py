@@ -3,6 +3,7 @@ import os.path
 import re
 import time
 
+import h5py
 import numpy as np
 
 
@@ -190,3 +191,24 @@ def add_dynamic_methods(cls, methods, heading_name: str):
         method_name = f"{heading_name}_{i}"
         setattr(cls, method_name, method)
         getattr(cls, lst_name).append(getattr(cls, method_name))
+
+
+def save_array(file_name: str):
+    def inner(variable_name: str, array: np.ndarray):
+        with h5py.File(file_name, 'a') as f:
+            if variable_name in f:
+                dataset = f[variable_name]
+                current_shape = dataset.shape
+                lines = current_shape[0] + 1
+                if lines > 10000: raise OSError  # test
+                dataset.resize((lines,) + current_shape[1:])
+                dataset[current_shape[0], :] = array
+            else:
+                maxshape = (None,) + array.shape
+                array = array.reshape((1,) + array.shape)
+                f.create_dataset(variable_name, data=array, maxshape=maxshape, chunks=True)
+
+    return inner
+
+
+dump = save_array('dump.h5')

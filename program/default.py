@@ -1,4 +1,4 @@
-max_energy_curve_capacity = 100000
+max_energy_curve_capacity = 1000000
 terminal_grad_for_mean_gradient_amp = 0.1
 terminal_grad_for_max_gradient_amp = 0.1
 terminal_energy_slope = 0.01
@@ -15,6 +15,6 @@ max_compress_turns = 8000
 terminal_phi = 3.0
 if_cal_energy = True
 if_affine_when_compress = False
-if_hyperuniform_initialize = False
+if_hyperuniform_initialize = True
 if_using_legacy_delaunay = True
 S_local_background = 0.338
