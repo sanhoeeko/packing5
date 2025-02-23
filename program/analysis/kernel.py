@@ -22,6 +22,7 @@ class Kernel:
             ('pure_rotation_direction_phi', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('anisotropic_z_ij_power_p', [ct.c_int] * 2 + [ct.c_void_p] * 5 + [ct.c_float] * 2, None),
             ('mean_r_ij', [ct.c_int] * 2 + [ct.c_void_p] * 3, ct.c_float),
+            ('mean_segment_dist', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float], ct.c_float),
             ('RijRatio', [ct.c_void_p, ct.c_int], ct.c_float),
             ('isOutOfBoundary', [ct.c_void_p, ct.c_int, ct.c_float, ct.c_float], ct.c_int),
             ('CubicMinimum', [ct.c_float] * 4, ct.c_float),
