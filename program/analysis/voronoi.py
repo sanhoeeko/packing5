@@ -171,3 +171,6 @@ class DelaunayBase:
             sum_ux.data *= self.weights.data
             sum_uy.data *= self.weights.data
         return sum_ux, sum_uy
+
+    def mean_rij(self, xyt: ut.CArray) -> np.float32:
+        return ker.dll.mean_r_ij(*self.params, xyt.ptr)

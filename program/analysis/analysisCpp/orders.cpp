@@ -138,3 +138,28 @@ void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, vo
         output[4 * j + 3] = sinf(p_theta_ji);
     }
 }
+
+float mean_r_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr)
+{
+    int* indices = (int*)indices_ptr + 1;
+    int* edges = (int*)edges_ptr;
+    xyt3f* q = (xyt3f*)configuration_ptr;
+    float total_rij = 0;
+    int rij_cnt = 0;
+
+    int id1 = 0;
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            indices++;
+            id1++;
+        }
+        int id2 = edges[j];
+        float dx = q[id2].x - q[id1].x;
+        float dy = q[id2].y - q[id1].y;
+        if (sqrtf(dx * dx + dy * dy) <= 2) {
+            total_rij += sqrtf(dx * dx + dy * dy);
+            rij_cnt++;
+        }
+    }
+    return total_rij / rij_cnt;
+}

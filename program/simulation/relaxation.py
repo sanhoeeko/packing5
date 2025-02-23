@@ -88,6 +88,7 @@ def Relaxation(
         noise_factor: float,
         momentum_beta: float,
         stochastic_p: float,
+        inertia: float,
         stepsize: float,
         relaxation_steps: Union[int, float],
         state_pool_stride: Union[int, float],
@@ -139,11 +140,11 @@ def Relaxation(
         optimizer_energy_option = default.if_cal_energy and record_descent
         if criterion == Criterion.EnergyFlat:
             def prepare_relaxation():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, optimizer_energy_option)
+                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, inertia, False, optimizer_energy_option)
                 state.energy_counter.clear()
         else:
             def prepare_relaxation():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, False, optimizer_energy_option)
+                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, inertia, False, optimizer_energy_option)
 
         # If state pools are not applied
         if state_pool_stride == 1:

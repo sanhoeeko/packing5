@@ -91,10 +91,11 @@ class State(ut.HasMeta):
         self.gradient.potential = potential
         return self
 
-    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float, as_disks: bool,
-                     need_energy=False):
+    def setOptimizer(self, noise_factor: float, momentum_beta: float, stochastic_p: float, inertia: float = 1,
+                     as_disks=False, need_energy=False):
         self.optimizer = Optimizer(self, noise_factor, momentum_beta, stochastic_p, as_disks, need_energy)
         self.optimizer.init()
+        self.setInertia(inertia)
         return self
 
     def copy(self, train=False) -> 'State':
@@ -126,6 +127,19 @@ class State(ut.HasMeta):
         self.clear_dependency()
         return not (is_too_close or self.isOutOfBoundary())
 
+    def _descent_inner(self, gradient: ut.CArray, s: float):
+        pass  # defined in `self.setInertia`
+
+    def setInertia(self, inertia: float):
+        if inertia == 1:
+            def _descent_inner(gradient: ut.CArray, s: float):
+                ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
+        else:
+            def _descent_inner(gradient: ut.CArray, s: float):
+                ker.dll.AddVector4FT(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s, s / inertia)
+        self._descent_inner = _descent_inner
+        return self
+
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
         g = gradient.norm(self.N)
         # this condition is to avoid division by zero
@@ -147,7 +161,7 @@ class State(ut.HasMeta):
         step_size_init = 1e-3
         n_steps_init = int(1e5)
 
-        self.setOptimizer(0, 0, 1, True)
+        self.setOptimizer(0, 0, 1, 1, True)
         gradient_amp = 0
         for t in range(n_steps_init):
             gradient_amp = self.descent(self.calGradient(), step_size_init)

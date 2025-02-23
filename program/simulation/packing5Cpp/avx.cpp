@@ -41,6 +41,23 @@ void AddVector4(void* p_x, void* p_g, void* p_dst, int N, float s) {
     }
 }
 
+void AddVector4FT(void* p_x, void* p_g, void* p_dst, int N, float s_force, float s_torque) {
+    /*
+        require: number of particles being a multiple of 4
+        FT stands for "force and torque"
+    */
+    float* x = (float*)p_x;
+    float* g = (float*)p_g;
+    float* dst = (float*)p_dst;
+    __m256 s_vec = _mm256_set_ps(s_force, s_force, s_torque, 0, s_force, s_force, s_torque, 0);
+    for (int i8 = 0; i8 < N * 4; i8 += 8) {
+        __m256 x_vec1 = _mm256_loadu_ps(x + i8);
+        __m256 g_vec1 = _mm256_loadu_ps(g + i8);
+        __m256 result_vec1 = _mm256_add_ps(x_vec1, _mm256_mul_ps(g_vec1, s_vec));
+        _mm256_storeu_ps(dst + i8, result_vec1);
+    }
+}
+
 void PerturbVector4(void* p_input, int N, float sigma) {
     std::random_device true_random;
     xorshift32 gen(true_random());
