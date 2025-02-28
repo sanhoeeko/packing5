@@ -69,6 +69,8 @@ DLLEXPORT void SumTensor4(void* p_Gij, void* p_gi, int N);
 
 DLLEXPORT void AddVector4(void* p_x, void* p_g, void* p_dst, int N, float s);
 
+DLLEXPORT void AddVector4FT(void* p_x, void* p_g, void* p_dst, int N, float s_force, float s_torque);
+
 DLLEXPORT void PerturbVector4(void* p_input, int N, float sigma);
 
 DLLEXPORT void FastClear(void* p_float, int size);

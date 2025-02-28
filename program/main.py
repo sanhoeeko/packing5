@@ -1,4 +1,7 @@
 from experiment import ExperimentMain
+from recipe import InitRecipe
+
+InitRecipe()
 
 if __name__ == '__main__':
     ex = ExperimentMain(

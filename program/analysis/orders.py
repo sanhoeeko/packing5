@@ -67,8 +67,8 @@ class Delaunay(DelaunayBase):
     All order parameters that requires Delaunay triangulation are here.
     """
 
-    def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray):
-        super().__init__(weighted, indices, weighted_edges)
+    def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray, gamma: float):
+        super().__init__(weighted, indices, weighted_edges, gamma)
 
     def z_number(self, arg=None) -> np.ndarray:
         return super().z_number(arg)
@@ -115,3 +115,18 @@ class Delaunay(DelaunayBase):
         phi = self.PureRotationAngle(xyt)
         theta = self.DirectorAngle(xyt)
         return np.cos(2 * (theta - phi))
+
+    def MeanSegmentDist(self, xyt: ut.CArray) -> float:
+        """
+        :return: mean segment distance normalized in [0, 2]
+        """
+        return super().segment_dist_moment(xyt, 1) * self.gamma
+
+    def StdSegmentDist(self, xyt: ut.CArray) -> float:
+        """
+        :return: standard deviation of segment distance, normalized in [0, 2]
+        """
+        m1 = super().segment_dist_moment(xyt, 1)
+        m2 = super().segment_dist_moment(xyt, 2)
+        std = np.sqrt(m2 - m1 * m1)
+        return std * self.gamma

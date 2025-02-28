@@ -1,10 +1,8 @@
 import os
 import sys
 
-import default
 from h5tools import dataset as dset, h5tools as ht
-from simulation import potential, boundary
-from simulation.ensemble import CreateEnsemble
+from simulation.ensemble import StartEnsemble
 
 
 ###################### functions start ################################################################
@@ -13,13 +11,7 @@ def start_ensemble(replica, N, n, d, phi0, Gamma0):
     """
     This function has type check. Parameters may be strings.
     """
-    radial_func = potential.PowerFunc(2.5)
-    compress_func_A = boundary.NoCompress()
-    compress_func_B = boundary.RatioCompress(default.compress_rate)
-    ensemble = CreateEnsemble(int(N), int(n), float(d), float(phi0), float(Gamma0),
-                              compress_func_A, compress_func_B, radial_func)
-    ensemble.setReplica(int(replica))
-    ensemble.execute()
+    StartEnsemble(replica, N, n, d, phi0, Gamma0)
 
 
 def pack_and_compress():

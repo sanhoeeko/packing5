@@ -100,7 +100,8 @@ class Database(DatabaseBase):
 class PickledEnsemble:
     def __init__(self, h5_group):
         self.configuration = h5_group['configuration']  # shape: (replica, rho, N, 3)
-        self.gradient_curve = h5_group['gradient_curve']  # shape: (replica, rho, m)
+        self.mean_gradient_curve = h5_group['mean_gradient_curve']  # shape: (replica, rho, m)
+        self.max_gradient_curve = h5_group['max_gradient_curve']  # shape: (replica, rho, m)
         self.energy_curve = h5_group['energy_curve']  # shape: (replica, rho, m)
         self.state_table = h5_group['state_table']  # struct array, shape: (replica, rho)
         self.metadata = h5_group.attrs['metadata']
@@ -120,15 +121,20 @@ class PickledEnsemble:
         return self.simulation_at(index)
 
     def simulation_at(self, nth_replica: int):
-        return PickledSimulation(self.metadata, self.state_table[nth_replica], self.gradient_curve[nth_replica],
-                                 self.energy_curve[nth_replica], self.configuration[nth_replica])
+        return PickledSimulation(
+            self.metadata, self.state_table[nth_replica],
+            self.mean_gradient_curve[nth_replica],
+            self.max_gradient_curve[nth_replica],
+            self.energy_curve[nth_replica],
+            self.configuration[nth_replica]
+        )
 
     @property
     def normalized_gradient_amp(self):
         """
         :return: g / n^2, where n is the number of disks. g is approximately proportional to n^2.
         """
-        return self.state_table['gradient_amp'] / self.metadata['n'] ** 2
+        return self.state_table['mean_gradient_amp'] / self.metadata['n'] ** 2
 
     def property(self, prop: str) -> np.ndarray:
         """
@@ -188,13 +194,14 @@ class PickledEnsemble:
 
 
 class PickledSimulation:
-    def __init__(self, metadata: np.ndarray, state_info: np.ndarray, gradient_curve: np.ndarray,
-                 energy_curve: np.ndarray, xyt: np.ndarray):
+    def __init__(self, metadata: np.ndarray, state_info: np.ndarray, mean_gradient_curve: np.ndarray,
+                 max_gradient_curve: np.ndarray, energy_curve: np.ndarray, xyt: np.ndarray):
         self.n = ut.actual_length_of_1d_array(state_info)
         self.metadata = ut.struct_to_dict(metadata)
         # clip nan data
         self.state_info = state_info[:self.n]
-        self.gradient_curve = gradient_curve[:self.n, :]
+        self.mean_gradient_curve = mean_gradient_curve[:self.n, :]
+        self.max_gradient_curve = max_gradient_curve[:self.n, :]
         self.energy_curve = energy_curve[:self.n, :]
         self.xyt = xyt[:self.n, :, :]
 
@@ -205,7 +212,8 @@ class PickledSimulation:
         state_info = ut.struct_to_dict(self.state_info[idx])
         return {
             'metadata': {**self.metadata, **state_info},
-            'gradient_curve': self.gradient_curve[idx, :],
+            'mean_gradient_curve': self.mean_gradient_curve[idx, :],
+            'max_gradient_curve': self.max_gradient_curve[idx, :],
             'energy_curve': self.energy_curve[idx, :],
             'xyt': self.xyt[idx, :, :]
         }
@@ -255,8 +263,11 @@ class PickledSimulation:
         assert self.metadata['if_cal_energy']
         return self.energy_curve / self.energy_curve[:, 0:1]
 
-    def gradientCurve(self) -> np.ndarray:
-        return self.gradient_curve
+    def meanGradientCurve(self) -> np.ndarray:
+        return self.mean_gradient_curve
+
+    def maxGradientCurve(self) -> np.ndarray:
+        return self.max_gradient_curve
 
     def stateDistance(self) -> np.ndarray:
         """

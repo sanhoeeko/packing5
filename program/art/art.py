@@ -67,11 +67,6 @@ class Figure:
         self.slider.on_changed(update_callback)
         return self
 
-    def label(self, x_label: str, y_label: str):
-        self.ax.set_xlabel(x_label)
-        self.ax.set_ylabel(y_label)
-        return self
-
 
 class Capsule(patches.Patch):
     def __init__(self, xy, width, height, angle=0, **kwargs):

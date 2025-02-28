@@ -19,7 +19,7 @@ def energyScan(s, g: ut.CArray, step_sizes: np.ndarray, need_energy=False):
         if state.isOutOfBoundary():
             ys[i] = np.inf
         else:
-            ys[i] = state.CalEnergy_pure() if need_energy else state.gradient_amp
+            ys[i] = state.CalEnergy_pure() if need_energy else state.mean_gradient_amp
     return ys
 
 

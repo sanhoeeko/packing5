@@ -11,8 +11,9 @@ if __name__ == '__main__':
     checkGradient(db)
     checkEnergy(db)
     checkGradientCurveAt(db, 0, 0)
-    InteractiveViewer(db[0].simulation_at(0), RenderSetup('EllipticPhi6')).show()
-    # calAllOrderParameters(db, 'rho', num_threads=4)
+    checkEnergyCurveAt(db, 0, 0)
+    InteractiveViewer(db[0].simulation_at(0), RenderSetup('S_local')).show()
+    calAllOrderParameters(db, 'rho', num_threads=4)
 
     # db = AnalysisData('analysis.h5')
     # db.plot('Phi6')

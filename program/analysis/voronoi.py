@@ -48,7 +48,7 @@ class Voronoi:
         from .orders import Delaunay
         # if isParticleTooClose(ut.CArrayF(self.configuration)):
         #     return None
-        return Delaunay(False, *self.delaunay_template(ker.dll.trueDelaunay))
+        return Delaunay(False, *self.delaunay_template(ker.dll.trueDelaunay), self.gamma)
 
     def weighted_delaunay(self):
         from .orders import Delaunay
@@ -69,7 +69,8 @@ class DelaunayBase:
     weighted_edges: dtype=[('id2', np.int32), ('weight', np.float32)]
     """
 
-    def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray):
+    def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray, gamma: float):
+        self.gamma = gamma
         self.weighted = weighted
         self.indices = indices
         self.num_rods = indices.data.shape[0]
@@ -89,7 +90,7 @@ class DelaunayBase:
             n_edges = ker.dll.legacyDelaunay(num_rods, disks_per_rod, gamma, xyt.ptr, output.ptr, indices.ptr)
         except OSError:
             return None
-        obj = cls(False, indices, output.data)
+        obj = cls(False, indices, output.data, gamma)
         return obj
 
     @property
@@ -171,3 +172,9 @@ class DelaunayBase:
             sum_ux.data *= self.weights.data
             sum_uy.data *= self.weights.data
         return sum_ux, sum_uy
+
+    def mean_rij(self, xyt: ut.CArray) -> np.float32:
+        return ker.dll.mean_r_ij(*self.params, xyt.ptr)
+
+    def segment_dist_moment(self, xyt: ut.CArray, moment: int) -> np.float32:
+        return ker.dll.segment_dist_moment(*self.params, xyt.ptr, self.gamma, moment)
