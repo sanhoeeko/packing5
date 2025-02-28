@@ -17,7 +17,7 @@ class Criterion(Enum):
 
 class EnergyCounter:
     def __init__(self, threshold_slope: float, stride: int, occurrence: int):
-        self.threshold_difference = threshold_slope / stride
+        self.threshold_difference = threshold_slope * stride
         self.stride = stride
         self.energy_lst = []
         self.expected_occurrence = occurrence

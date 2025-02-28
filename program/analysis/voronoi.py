@@ -176,5 +176,5 @@ class DelaunayBase:
     def mean_rij(self, xyt: ut.CArray) -> np.float32:
         return ker.dll.mean_r_ij(*self.params, xyt.ptr)
 
-    def mean_segment_dist(self, xyt: ut.CArray) -> np.float32:
-        return ker.dll.mean_segment_dist(*self.params, xyt.ptr, self.gamma)
+    def segment_dist_moment(self, xyt: ut.CArray, moment: int) -> np.float32:
+        return ker.dll.segment_dist_moment(*self.params, xyt.ptr, self.gamma, moment)

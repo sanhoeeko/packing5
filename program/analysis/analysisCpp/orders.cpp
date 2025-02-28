@@ -165,8 +165,9 @@ float mean_r_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     return total_rij / rij_cnt;
 }
 
-float mean_segment_dist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
-    float gamma)
+float segment_dist_moment(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+    float gamma, int moment)
+    // moment = 1 or 2
 {
     float R = 1 - 1 / gamma;
     int* indices = (int*)indices_ptr + 1;
@@ -181,7 +182,8 @@ float mean_segment_dist(int num_edges, int num_rods, void* indices_ptr, void* ed
             id1++;
         }
         int id2 = edges[j];
-        total_rij += SegDist(R, q[id1].x, q[id1].y, q[id1].t, q[id2].x, q[id2].y, q[id2].t);
+        float l = SegDist(R, q[id1].x, q[id1].y, q[id1].t, q[id2].x, q[id2].y, q[id2].t);
+        total_rij += powf(l, moment);
     }
     return total_rij / num_edges;
 }

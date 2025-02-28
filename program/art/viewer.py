@@ -12,7 +12,7 @@ from . import art
 style_dict = {
     'angle': ['Angle', 'DirectorAngle', 'PureRotationAngle'],
     'voronoi': ['z_number'],
-    'pm1': ['S_local', 'S_global', 'S_center', 'CrystalNematicAngle']
+    'pm1': ['S_global', 'CrystalNematicAngle']
 }
 
 

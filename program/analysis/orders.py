@@ -120,4 +120,13 @@ class Delaunay(DelaunayBase):
         """
         :return: mean segment distance normalized in [0, 2]
         """
-        return super().mean_segment_dist(xyt) * self.gamma
+        return super().segment_dist_moment(xyt, 1) * self.gamma
+
+    def StdSegmentDist(self, xyt: ut.CArray) -> float:
+        """
+        :return: standard deviation of segment distance, normalized in [0, 2]
+        """
+        m1 = super().segment_dist_moment(xyt, 1)
+        m2 = super().segment_dist_moment(xyt, 2)
+        std = np.sqrt(m2 - m1 * m1)
+        return std * self.gamma
