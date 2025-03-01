@@ -1,5 +1,6 @@
 import numpy as np
 
+import default
 from . import utils as ut
 from .kernel import ker
 
@@ -129,30 +130,39 @@ class Optimizer:
         self.grid = state.grid
         self.momentum = ut.CArrayFZeros((self.N, 4))
         self.raw_gradient_cache = ut.CArrayFZeros((self.N, 4))
+        self.mask = ut.CArray(np.zeros((self.N,), dtype=np.int32))
         self.particles_too_close_cache = False
         self.beta = np.float32(momentum_beta)
         self.noise_factor = np.float32(noise_factor)
         self.pure_gradient_func = state.CalGradient_pure
-        func_name = 'calGradient' if stochastic_p == 1 else 'stochasticCalGradient'
-        if as_disks:
-            func_name += 'AsDisks'
-        if need_energy:  # in this case, stochastic_p will be shadowed
-            func_name = 'calGradientAndEnergy'
-            if stochastic_p != 1:
-                stochastic_p = 1
-                print("Warning: Because of the need of energy, `stochastic_p` parameter has been shadowed!")
-        if stochastic_p == 1:
-            self.void_gradient_func = getattr(state.gradient, func_name)
-        else:
-            self.void_gradient_func = getattr(state.gradient, func_name)(stochastic_p)
+        func_name = 'calGradient' if not as_disks else 'calGradientAsDisks'
+        if need_energy:
+            func_name += "AndEnergy"
+            if as_disks: raise ValueError("Energy is not available in this mode!")
+        self.void_gradient_func = getattr(state.gradient, func_name)
 
-        def raw_gradient_func() -> ut.CArray:
+        def __raw_gradient_func() -> ut.CArray:
             self.grid.gridLocate()
             self.void_gradient_func()
-            self.particles_too_close_cache = state.gradient.isTooClose()
             gradient = state.gradient.sum.g()
             gradient.copyto(self.raw_gradient_cache)
             return gradient
+
+        if default.enable_legal_check:
+            def _raw_gradient_func() -> ut.CArray:
+                gradient = __raw_gradient_func()
+                self.particles_too_close_cache = state.gradient.isTooClose()
+                return gradient
+        else:
+            _raw_gradient_func = __raw_gradient_func
+
+        if stochastic_p != 1:
+            def raw_gradient_func() -> ut.CArray:
+                gradient = _raw_gradient_func()
+                ker.dll.FastMask(gradient.ptr, self.mask.ptr, self.N)
+                return gradient
+        else:
+            raw_gradient_func = _raw_gradient_func
 
         self.raw_gradient_func = raw_gradient_func
 
@@ -189,3 +199,6 @@ class Optimizer:
 
     def maxGradient(self) -> np.float32:
         return ker.dll.MaxAbsVector4(self.raw_gradient_cache.ptr, self.N)
+
+    def initMask(self, p: float):
+        ker.dll.GenerateMask(self.mask.ptr, self.N, p)

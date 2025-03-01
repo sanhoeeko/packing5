@@ -93,8 +93,20 @@ float FastNorm(void* p_x, int n) {
     }
     float result[8];
     _mm256_storeu_ps(result, sum);
-    return std::sqrt(result[0] + result[1] + result[2] /* + result[3]*/ +
-        result[4] + result[5] + result[6] /* + result[7]*/ );
+    return std::sqrt(result[0] + result[1] + result[2] + result[4] + result[5] + result[6]);
+}
+
+void FastMask(void* p_x, void* p_mask, int N)
+{
+    const float full = 0xFFFFFFFF;
+    __m128 patch[2] = { _mm_setr_ps(0,0,0,full), _mm_setr_ps(full, full, full, full) };
+    float* x = (float*)p_x;
+    int* mask = (int*)p_mask;
+    for (int i = 0; i < N; i++) {
+        __m128 vec = _mm_loadu_ps(x + i * 4);
+        __m128 result = _mm_and_ps(vec, patch[mask[i]]);
+        _mm_storeu_ps(x + i * 4, vec);
+    }
 }
 
 float MaxAbsVector4(void* p_x, int N)
@@ -107,6 +119,17 @@ float MaxAbsVector4(void* p_x, int N)
         current_max = absg > current_max ? absg : current_max;
     }
     return sqrtf(current_max);
+}
+
+void GenerateMask(void* p_mask, int size, float p) {
+    int* mask = (int*)p_mask;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::bernoulli_distribution d(p);
+
+    for (int i = 0; i < size; ++i) {
+        mask[i] = (int)(d(gen));
+    }
 }
 
 void CwiseMulVector4(void* p_g, int N, float s) {

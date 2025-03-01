@@ -4,7 +4,7 @@ from typing import Union
 import numpy as np
 
 import default
-from . import stepsize as ss, utils as ut
+from . import stepsize as ss
 from .mc import StatePool
 
 
@@ -105,6 +105,14 @@ def Relaxation(
             def stepsize_provider() -> float:
                 return stepsize
 
+        # Determine whether refresh optimizer
+        if stochastic_p != 1:
+            def refresh_optimizer():
+                state.optimizer.initMask(stochastic_p)
+        else:
+            def refresh_optimizer():
+                pass
+
         # Termination criteria
         if criterion == Criterion.MeanGradientAmp:
             def judgeTermination() -> bool:
@@ -152,6 +160,7 @@ def Relaxation(
                 prepare_relaxation()
                 sz = stepsize_provider()
                 for t in range(int(relaxation_steps)):
+                    refresh_optimizer()
                     gradient = state.calGradient()
                     state.descent(gradient, sz)
                     record(t)
@@ -165,6 +174,7 @@ def Relaxation(
                 prepare_relaxation()
                 for t in range(int(relaxation_steps) // state_pool_stride):
                     relax.state_pool.clear()
+                    refresh_optimizer()
                     sz = stepsize_provider()
                     for i in range(state_pool_stride):
                         gradient = state.calGradient()

@@ -19,16 +19,3 @@ void calGradient_general(void* p_shape, void* p_state, void* p_boundary, void* p
 	collisionDetectPP<how, need_energy>(shape, q, grid, Gij, lines, cols, N);
 	collisionDetectPW<how, need_energy>(shape, q, boundary, Gij, lines, cols, N);
 }
-
-template<HowToCalGradient how>
-void stochastic_calGradient_general(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, 
-	int lines, int cols, int N, float p)
-{
-	Rod* shape = (Rod*)p_shape;
-	xyt* q = (xyt*)p_state;
-	EllipticBoundary* boundary = (EllipticBoundary*)p_boundary;
-	int* grid = (int*)p_grid;
-	ge* Gij = (ge*)p_Gij;
-	stochasticCollisionDetectPP<how>(shape, q, grid, Gij, lines, cols, N, p);
-	collisionDetectPW<how, false>(shape, q, boundary, Gij, lines, cols, N);
-}

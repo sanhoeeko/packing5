@@ -88,18 +88,6 @@ void CalGradientAsDisks(void* p_shape, void* p_state, void* p_boundary, void* p_
     return calGradient_general<AsDisks, false>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N);
 }
 
-void StochasticCalGradient(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, 
-    int lines, int cols, int N)
-{
-    return stochastic_calGradient_general<Normal>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N, p);
-}
-
-void StochasticCalGradientAsDisks(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij,
-    int lines, int cols, int N)
-{
-    return stochastic_calGradient_general<AsDisks>(p_shape, p_state, p_boundary, p_grid, p_Gij, lines, cols, N, p);
-}
-
 void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* p_grid, void* p_Gij, 
     int lines, int cols, int N)
 {

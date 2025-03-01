@@ -34,12 +34,6 @@ DLLEXPORT void CalGradient(void* p_shape, void* p_state, void* p_boundary, void*
 DLLEXPORT void CalGradientAsDisks(void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
     void* p_Gij, int lines, int cols, int N);
 
-DLLEXPORT void StochasticCalGradient(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
-    void* p_Gij, int lines, int cols, int N);
-
-DLLEXPORT void StochasticCalGradientAsDisks(float p, void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
-    void* p_Gij, int lines, int cols, int N);
-
 DLLEXPORT void CalGradientAndEnergy(void* p_shape, void* p_state, void* p_boundary, void* p_grid, 
     void* p_Gij, int lines, int cols, int N);
 
@@ -78,6 +72,10 @@ DLLEXPORT void FastClear(void* p_float, int size);
 DLLEXPORT void HollowClear(void* p_float, int N, int stride);
 
 DLLEXPORT float FastNorm(void* p_x, int n);
+
+DLLEXPORT void FastMask(void* p_x, void* p_mask, int n);
+
+DLLEXPORT void GenerateMask(void* p_mask, int size, float p);
 
 DLLEXPORT float MaxAbsVector4(void* p_x, int n);
 
