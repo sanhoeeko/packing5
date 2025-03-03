@@ -4,7 +4,8 @@ from typing import Union
 import numpy as np
 
 import default
-from . import stepsize as ss
+from . import stepsize as ss, utils as ut
+from .lbfgs import LBFGS
 from .mc import StatePool
 
 
@@ -93,6 +94,7 @@ def Relaxation(
         relaxation_steps: Union[int, float],
         state_pool_stride: Union[int, float],
         auto_stepsize: bool,
+        enable_lbfgs: bool,
         record_descent: bool,
         criterion: Criterion
 ):
@@ -112,6 +114,24 @@ def Relaxation(
         else:
             def refresh_optimizer():
                 pass
+
+        # Simply calculate gradient or use LBFGS
+        if enable_lbfgs:
+            if not hasattr(state, 'lbfgs_agent'): setattr(state, 'lbfgs_agent', LBFGS(state))
+
+            def getGradient() -> ut.CArray:
+                d = state.lbfgs_agent.CalDirection()
+                state.lbfgs_agent.update()
+                return d
+
+            def getGradientAmp() -> np.float32:
+                return state.lbfgs_agent.gradientAmp()
+        else:
+            def getGradient() -> ut.CArray:
+                return state.calGradient()
+
+            def getGradientAmp() -> np.float32:
+                return state.optimizer.gradientAmp()
 
         # Termination criteria
         if criterion == Criterion.MeanGradientAmp:
@@ -146,13 +166,13 @@ def Relaxation(
 
         # Clear something to prepare for relaxation
         optimizer_energy_option = default.if_cal_energy and record_descent
-        if criterion == Criterion.EnergyFlat:
-            def prepare_relaxation():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, inertia, False, optimizer_energy_option)
+
+        def prepare_relaxation():
+            state.setOptimizer(noise_factor, momentum_beta, stochastic_p, inertia, False, optimizer_energy_option)
+            if criterion == Criterion.EnergyFlat:
                 state.energy_counter.clear()
-        else:
-            def prepare_relaxation():
-                state.setOptimizer(noise_factor, momentum_beta, stochastic_p, inertia, False, optimizer_energy_option)
+            if enable_lbfgs:
+                state.lbfgs_agent.init(stepsize)
 
         # If state pools are not applied
         if state_pool_stride == 1:
@@ -161,11 +181,9 @@ def Relaxation(
                 sz = stepsize_provider()
                 for t in range(int(relaxation_steps)):
                     refresh_optimizer()
-                    gradient = state.calGradient()
+                    gradient = getGradient()
                     state.descent(gradient, sz)
                     record(t)
-                    # test
-                    # if t > 20000: ut.dump('gradient', gradient.data)
                     if judgeTermination(): break
                     state.clear_dependency()
         else:
@@ -177,13 +195,12 @@ def Relaxation(
                     refresh_optimizer()
                     sz = stepsize_provider()
                     for i in range(state_pool_stride):
-                        gradient = state.calGradient()
+                        gradient = getGradient()
                         if state.optimizer.particles_too_close_cache or state.isOutOfBoundary():
                             relax.state_pool.add(state, 1e5)
                             state.descent(gradient, sz)
                         else:
-                            g = state.optimizer.gradientAmp()
-                            relax.state_pool.add(state, g)
+                            relax.state_pool.add(state, getGradientAmp())
                             state.descent(gradient, sz)
                             state.clear_dependency()
                     energy, min_state = relax.state_pool.average_zero_temperature()
