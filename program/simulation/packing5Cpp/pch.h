@@ -10,6 +10,8 @@
 
 #include "defs.h"
 
+struct ForceTorque { float force, torque; };
+
 DLLEXPORT void init();
 
 DLLEXPORT void* addEllipticBoundary(float a, float b);
@@ -72,6 +74,8 @@ DLLEXPORT void FastClear(void* p_float, int size);
 DLLEXPORT void HollowClear(void* p_float, int N, int stride);
 
 DLLEXPORT float FastNorm(void* p_x, int n);
+
+DLLEXPORT ForceTorque FastMaxFT(void* p_x, int n);
 
 DLLEXPORT void FastMask(void* p_x, void* p_mask, int n);
 

@@ -131,23 +131,32 @@ class State(ut.HasMeta):
         pass  # defined in `self.setInertia`
 
     def setInertia(self, inertia: float):
-        if inertia == 1:
-            def _descent_inner(gradient: ut.CArray, s: float):
-                ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
+        """
+        :param inertia: set `inertia` to None to use separated normalization
+        """
+        if inertia is None:
+            def _descent_inner(gradient: ut.CArray, s: float, g: np.float32):
+                ft = gradient.max_ft(self.N)
+                ker.dll.AddVector4FT(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s / ft.force, s / ft.torque)
+        elif inertia == 1:
+            def _descent_inner(gradient: ut.CArray, s: float, g: np.float32):
+                ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s / g)
         else:
-            def _descent_inner(gradient: ut.CArray, s: float):
-                ker.dll.AddVector4FT(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s, s / inertia)
+            def _descent_inner(gradient: ut.CArray, s: float, g: np.float32):
+                a = np.float32(s) / g
+                ker.dll.AddVector4FT(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, a, a / inertia)
         self._descent_inner = _descent_inner
         return self
 
     def descent(self, gradient: ut.CArray, step_size: float) -> np.float32:
+        # ft = gradient.max_ft(self.N)
+        # print(ft.force, ft.torque)
         g = gradient.norm(self.N)
         # this condition is to avoid division by zero
         if g > 1e-6:
             if np.isnan(g) or np.isinf(g):
                 raise NaNInGradientException()
-            s = np.float32(step_size) / g
-            ker.dll.AddVector4(self.xyt.ptr, gradient.ptr, self.xyt.ptr, self.N, s)
+            self._descent_inner(gradient, step_size, g)
         if self.isOutOfBoundary():
             raise OutOfBoundaryException()
         return g

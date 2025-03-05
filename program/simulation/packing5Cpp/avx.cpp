@@ -96,6 +96,20 @@ float FastNorm(void* p_x, int n) {
     return std::sqrt(result[0] + result[1] + result[2] + result[4] + result[5] + result[6]);
 }
 
+ForceTorque FastMaxFT(void* p_x, int N)
+{
+    xyt* q = (xyt*)p_x;
+    float current_max_force = 0;
+    float current_max_torque = 0;
+    for (int i = 0; i < N; i++) {
+        float force = sqrtf(q[i].x * q[i].x + q[i].y * q[i].y);
+        float torque = std::abs(q[i].t);
+        current_max_force = force > current_max_force ? force : current_max_force;
+        current_max_torque = torque > current_max_torque ? torque : current_max_torque;
+    }
+    return { current_max_force, current_max_torque };
+}
+
 void FastMask(void* p_x, void* p_mask, int N)
 {
     const float full = 0xFFFFFFFF;

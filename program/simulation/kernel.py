@@ -34,6 +34,7 @@ class Kernel:
             ('FastClear', [ct.c_void_p, ct.c_int], None),
             ('HollowClear', [ct.c_void_p, ct.c_int, ct.c_int], None),
             ('FastNorm', [ct.c_void_p, ct.c_int], ct.c_float),
+            ('FastMaxFT', [ct.c_void_p, ct.c_int], ut.ForceTorque),
             ('FastMask', [ct.c_void_p] * 2 + [ct.c_int], None),
             ('GenerateMask', [ct.c_void_p, ct.c_int, ct.c_float], None),
             ('MaxAbsVector4', [ct.c_void_p, ct.c_int], ct.c_float),

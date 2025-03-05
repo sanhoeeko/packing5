@@ -1,4 +1,5 @@
 import cProfile
+import ctypes as ct
 import os.path
 import re
 import time
@@ -34,6 +35,10 @@ digit_t = find_definition('DIGIT_T')
 digit_r = find_definition('DIGIT_R')
 potential_table_shape = (2 ** digit_x, 2 ** digit_y, 2 ** digit_t)
 sz1d = 2 ** digit_r
+
+
+class ForceTorque(ct.Structure):
+    _fields_ = [('force', ct.c_float), ('torque', ct.c_float)]
 
 
 # exceptions
@@ -103,6 +108,10 @@ class CArray:
     def max_abs(self, N: int) -> np.float32:
         from .kernel import ker
         return ker.dll.MaxAbsVector4(self.ptr, N * 4)
+
+    def max_ft(self, N: int) -> ForceTorque:
+        from .kernel import ker
+        return ker.dll.FastMaxFT(self.ptr, N)
 
     def reshape(self, *shape):
         return CArray(self.data.reshape(*shape), None)
