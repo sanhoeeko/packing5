@@ -148,7 +148,7 @@ class PickledEnsemble:
 
     def max_gradient(self):
         if self.state_table.shape[1] == 0: return 0
-        return np.max(self.property('gradient_amp'))
+        return np.max(self.property('max_gradient_amp'))
 
     def apply(self, func_act_on_configuration, num_threads=1, from_to_nth_data=None):
         """

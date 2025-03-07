@@ -1233,7 +1233,10 @@ void jcv_boxshape_fillgaps(const jcv_clipper* clipper, jcv_context_internal* all
         next = site->edges;
     }
 
-    while( current && next )
+    // *** my patch: 3 lines ***
+    int cnt = 0;
+    const int max_loop = 100;
+    while (current && next && cnt++ < max_loop)
     {
         int current_edge_flags = jcv_get_edge_flags(&current->pos[1], &clipper->min, &clipper->max);
         if( current_edge_flags && !jcv_point_eq(&current->pos[1], &next->pos[0]))

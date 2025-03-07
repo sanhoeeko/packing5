@@ -55,7 +55,7 @@ def checkMaxGradientCurveAt(db: Database, i: int, j: int):
     plotListOfArray(db[i].simulation_at(j).maxGradientCurve(), ('descent steps', 'max gradient'))
 
 
-def checkLegal(db: Database) -> np.ndarray:
+def checkLegal(db: Database):
     """
     imshow the number of illegal configurations for each ensemble, each rho/phi
     """

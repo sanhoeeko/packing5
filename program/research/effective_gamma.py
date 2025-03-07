@@ -37,8 +37,8 @@ def cubicBestGamma(state: dict) -> (float, float):
     function act on a single configuration.
     :return: (the best gamma, maximum EllipticPhi6)
     """
-    gs, ys = scanGamma(state, 11)
-    g_min = CubicMinimumXNan(gs, -ys, 1, 2)  # cubic maximum
+    gs, ys = scanGamma(state, 21)
+    g_min = CubicMinimumXNan(gs, -ys, 1, 3)  # cubic maximum
     if np.isnan(g_min):
         return np.float32(np.nan), np.float32(np.nan)
     voro = Voronoi.fromStateDict(state).delaunay(False)
@@ -70,7 +70,8 @@ def GammaLandscape(simulation: PickledSimulation):
 
 
 if __name__ == '__main__':
-    auto_pack()
-    db = Database('data.h5')
-    BestGamma(db[0].simulation_at(0))
+    ut.setWorkingDirectory()
+    db = Database('data-20250306-0.h5')
+    e = db.find(gamma=2.9)[0]
+    BestGamma(e.simulation_at(0))
     # GammaLandscape(db[0].simulation_at(0))
