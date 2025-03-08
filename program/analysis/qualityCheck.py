@@ -20,16 +20,18 @@ def ScalarCurve(x_name: str, y_name: str):
     return inner
 
 
-def plotCurves(db: Database, x_name: str, y_name: str):
+def plotCurves(db: Database, x_name: str, y_name: str, y_restriction: float = None):
     with Figure() as fig:
         xs_ys = flatten(db.apply(ScalarCurve(x_name, y_name)))
         for x, y in xs_ys:
             fig.ax.scatter(x, y, s=2)
         fig.labels(x_name, y_name)
+        if y_restriction is not None:
+            fig.region(None, (0, y_restriction), False)
 
 
-def checkGradient(db: Database):
-    plotCurves(db, 'phi', 'normalized_gradient_amp')
+def checkGradient(db: Database, y_restriction: float = None):
+    plotCurves(db, 'phi', 'normalized_gradient_amp', y_restriction)
 
 
 def checkStateDistance(db: Database):

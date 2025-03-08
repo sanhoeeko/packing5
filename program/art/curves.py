@@ -3,13 +3,15 @@ import numpy as np
 from .art import Figure, ListColor01
 
 
-def plotListOfArray(lst: np.ndarray, labels: tuple[str, str] = None):
+def plotListOfArray(lst: np.ndarray, labels: tuple[str, str] = None, y_restriction: float = None):
     colors = ListColor01('cool', len(lst))
     with Figure() as f:
         for i in range(len(lst)):
             f.ax.plot(lst[i], color=colors[i], alpha=0.5)
         if labels is not None:
             f.labels(*labels)
+        if y_restriction is not None:
+            f.region(None, (0, y_restriction), False)
 
 
 def plotMeanCurvesWithCI(x_lst: list[np.ndarray], y_mean_lst: list[np.ndarray], y_ci_lst: list[np.ndarray],

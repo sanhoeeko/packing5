@@ -41,10 +41,13 @@ class Figure:
         self.ax.set_ylabel(y_label)
         return self
 
-    def region(self, x_interval, y_interval):
-        self.ax.set_xlim(*x_interval)
-        self.ax.set_ylim(*y_interval)
-        self.ax.set_aspect('equal', adjustable='box')
+    def region(self, x_interval, y_interval, equal_aspect_ratio=True):
+        if x_interval is not None:
+            self.ax.set_xlim(*x_interval)
+        if y_interval is not None:
+            self.ax.set_ylim(*y_interval)
+        if equal_aspect_ratio:
+            self.ax.set_aspect('equal', adjustable='box')
         return self
 
     def colorbar(self, collection, label: str):
