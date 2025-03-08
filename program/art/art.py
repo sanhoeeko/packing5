@@ -115,3 +115,35 @@ class Capsule(patches.Patch):
 
 def ListColor01(color_map_name: str, length: int):
     return plt.get_cmap(color_map_name)(np.linspace(0, 1, length))
+
+
+def add_energy_level_colorbar(ax, colormap: str, labels: np.ndarray, title: str, orientation='vertical'):
+    """
+    # [By Bing AI] example:
+    fig, ax = plt.subplots()
+    add_energy_level_colorbar(ax, 'viridis', ['E0', 'E1', 'E2', 'E3', 'E4', 'E5'], orientation='vertical')
+    plt.show()
+    """
+    formatted_labels = [f'{label:.2f}' for label in labels]
+    levels = len(labels)
+    cmap = plt.get_cmap(colormap, levels)
+
+    fig = ax.figure
+    divider = fig.add_gridspec(ncols=2, nrows=1, width_ratios=[1, 0.05])
+    ax.set_position(divider[0].get_position(fig))
+    cax = fig.add_subplot(divider[1])
+
+    for i in range(levels):
+        if orientation == 'vertical':
+            cax.plot([0, 1], [i, i], color=cmap(i), linewidth=6)
+        else:
+            cax.plot([i, i], [0, 1], color=cmap(i), linewidth=6)
+
+    cax.set_yticks(np.arange(levels) if orientation == 'vertical' else [])
+    cax.set_yticklabels(formatted_labels if orientation == 'vertical' else [])
+    cax.set_xticks(np.arange(levels) if orientation == 'horizontal' else [])
+    cax.set_xticklabels(formatted_labels if orientation == 'horizontal' else [])
+
+    cax.set_title(title)
+    cax.get_xaxis().set_visible(orientation == 'horizontal')
+    cax.get_yaxis().set_visible(orientation == 'vertical')

@@ -1,5 +1,6 @@
 import h5py
 import matplotlib.pyplot as plt
+import numpy as np
 
 from analysis.database import DatabaseBase
 from analysis.h5tools import struct_array_to_dataframe
@@ -43,8 +44,9 @@ def batch_analyze(filename: str, from_to: tuple):
     db = MeanCIDatabase(filename)
     x, y = zip(*db.orderParameterList('EllipticPhi6'))
     mean, ci = zip(*y)
+    gammas = np.arange(1, 3.1, 0.1)[1:]
     f, t = from_to
-    art.plotMeanCurvesWithCI(x[f:t], mean[f:t], ci[f:t])
+    art.plotMeanCurvesWithCI(x[f:t], mean[f:t], ci[f:t], gammas[f:t])
     plt.show()
 
 
