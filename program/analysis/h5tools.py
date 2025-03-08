@@ -29,7 +29,7 @@ def dict_to_analysis_hdf5(file_name: str, data_dict: dict):
                     group.create_dataset('mean', data=value[0].astype(np.float32), dtype=np.float32)
                     group.create_dataset('ci', data=value[1].astype(np.float32), dtype=np.float32)
                 else:
-                    hdf5_file.create_dataset(key, data=value, dtype=np.float32)
+                    ensemble_h5.create_dataset(key, data=value, dtype=np.float32)
 
 
 def add_array_to_hdf5(file_name: str, name: str, data: np.ndarray):
@@ -39,7 +39,7 @@ def add_array_to_hdf5(file_name: str, name: str, data: np.ndarray):
 
 def add_property_to_hdf5(file_name: str, key: str, value):
     with h5py.File(file_name, 'a') as hdf5_file:
-        hdf5_file[key] = value
+        hdf5_file.attrs[key] = value
 
 
 def read_hdf5_groups_to_dicts(file_path: str) -> (dict, dict[dict]):

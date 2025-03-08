@@ -89,7 +89,6 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
     out_file = 'analysis.h5'
     dic = {}
     for ensemble in database:
-        # if ensemble.data_length() == 0: continue
         if ensemble.n_density < 100: continue
         sub_dic = {}
         x, y_mean, y_ci = averageByReplica(
@@ -97,11 +96,11 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
         )
         for order_parameter in order_parameters:
             sub_dic[order_parameter] = (y_mean[order_parameter], y_ci[order_parameter])
+        sub_dic[x_axis_name] = x[0, :]
         dic[ensemble.metadata['id'][0].decode('utf-8')] = sub_dic
 
     # add x-axis
     dict_to_analysis_hdf5(out_file, dic)
-    dic['x_axis'] = x
     add_property_to_hdf5(out_file, 'x_axis_name', x_axis_name)
 
     # add metadata
@@ -110,7 +109,7 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
 
 
 def calAllOrderParameters(database: Database, x_axis_name: str, weighted=False, num_threads=4):
-    order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6', 'MeanSegmentDist', 'StdSegmentDist']
+    order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6', 'MeanSegmentDist']
     try:
         orderParameterAnalysis(
             database, order_parameters, x_axis_name, weighted, num_threads
