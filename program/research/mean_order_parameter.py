@@ -40,15 +40,17 @@ class MeanCIData:
         return self.dic[item]
 
 
-def batch_analyze(filename: str, from_to: tuple):
+def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
     db = MeanCIDatabase(filename)
-    x, y = zip(*db.orderParameterList('EllipticPhi6'))
+    x, y = zip(*db.orderParameterList(order_parameter_name))
     mean, ci = zip(*y)
     gammas = np.arange(1, 3.1, 0.1)[1:]
     f, t = from_to
-    art.plotMeanCurvesWithCI(x[f:t], mean[f:t], ci[f:t], gammas[f:t])
+    art.plotMeanCurvesWithCI(x[f:t], mean[f:t], ci[f:t], gammas[f:t],
+                             x_label='volume fraction', y_label=order_parameter_name)
     plt.show()
 
 
 if __name__ == '__main__':
-    batch_analyze('analysis-20250306-0.h5', (0, 15))
+    # batch_analyze('analysis-20250306-0.h5', 'EllipticPhi6', (0, 15))
+    batch_analyze('analysis.h5', 'Phi6', (0, 20))

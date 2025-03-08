@@ -23,9 +23,9 @@ class DatabaseBase:
     def __init__(self, file_name: str):
         self.file_name = file_name
         self.file = h5py.File(self.file_name, 'r')
-        self.summary_table_array = extract_metadata(self.file_name)
-        self.ids = self.summary_table_array['id'].tolist()
-        self.summary = self.process_summary(struct_array_to_dataframe(self.summary_table_array))
+        self._summary_table_array = extract_metadata(self.file_name)
+        self.ids = self._summary_table_array['id'].tolist()
+        self.summary = self.process_summary(struct_array_to_dataframe(self._summary_table_array))
 
     def __repr__(self):
         return self.summary.to_string()

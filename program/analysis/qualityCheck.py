@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from art.art import Figure
-from art.curves import plotMeanCurvesWithCI, plotListOfArray
+from art.curves import plotMeanCurvesWithCI, plotListOfArray, scatterList
 from h5tools.utils import flatten
 from . import mymath as mm
 from .analysis import averageEnergy
@@ -20,22 +19,18 @@ def ScalarCurve(x_name: str, y_name: str):
     return inner
 
 
-def plotCurves(db: Database, x_name: str, y_name: str, y_restriction: float = None):
-    with Figure() as fig:
-        xs_ys = flatten(db.apply(ScalarCurve(x_name, y_name)))
-        for x, y in xs_ys:
-            fig.ax.scatter(x, y, s=2)
-        fig.labels(x_name, y_name)
-        if y_restriction is not None:
-            fig.region(None, (0, y_restriction), False)
+def scatterCurves(db: Database, x_name: str, y_name: str, y_restriction: float = None):
+    xs_ys = flatten(db.apply(ScalarCurve(x_name, y_name)))
+    gammas = db.summary['gamma']
+    scatterList(xs_ys, x_name, y_name, y_restriction, gammas)
 
 
 def checkGradient(db: Database, y_restriction: float = None):
-    plotCurves(db, 'phi', 'normalized_gradient_amp', y_restriction)
+    scatterCurves(db, 'rho', 'normalized_gradient_amp', y_restriction)
 
 
 def checkStateDistance(db: Database):
-    plotCurves(db, 'phi', 'state_distance')
+    scatterCurves(db, 'phi', 'state_distance')
 
 
 def checkEnergy(db: Database):

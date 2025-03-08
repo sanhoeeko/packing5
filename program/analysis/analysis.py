@@ -104,8 +104,7 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
     add_property_to_hdf5(out_file, 'x_axis_name', x_axis_name)
 
     # add metadata
-    # add_array_to_hdf5(out_file, 'state_table', database.state_table)
-    add_array_to_hdf5(out_file, 'summary_table', database.summary_table_array)
+    add_array_to_hdf5(out_file, 'summary_table', database._summary_table_array)
 
 
 def calAllOrderParameters(database: Database, x_axis_name: str, weighted=False, num_threads=4):
