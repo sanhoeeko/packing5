@@ -15,17 +15,16 @@ class LBFGS:
     def __del__(self):
         ker.dll.DeleteLBFGS(self.ptr)
 
-    def init(self, step_size: float):
+    def init(self):
         self.gradient_cache.set_data(self.state.CalGradient_pure().data)
-        ker.dll.LbfgsInit(self.ptr, step_size)
 
     def update(self):
-        self.gradient_cache.set_data(self.state.CalGradient_pure().data)
-        ker.dll.LbfgsUpdate(self.ptr)
+        # x_new has been calculated by `State.descent` method
+        self.gradient_cache.set_data(self.state.CalGradient_pure().data)  # calculate g_new
+        ker.dll.LbfgsUpdate(self.ptr, self.state.xyt.ptr, self.gradient_cache.ptr)
 
     def CalDirection(self) -> ut.CArray:
         ker.dll.LbfgsDirection(self.ptr, self.direction.ptr)
-        ker.dll.ClipGradient(self.direction.ptr, self.N)
         return self.direction
 
     def gradientAmp(self) -> np.float32:

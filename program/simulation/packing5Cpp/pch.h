@@ -55,9 +55,7 @@ DLLEXPORT void* CreateLBFGS(int N, void* configuration_src, void* gradient_src);
 
 DLLEXPORT void DeleteLBFGS(void* ptr);
 
-DLLEXPORT void LbfgsInit(void* ptr, float initial_stepsize);
-
-DLLEXPORT void LbfgsUpdate(void* ptr);
+DLLEXPORT void LbfgsUpdate(void* ptr, void* x_new, void* g_new);
 
 DLLEXPORT void LbfgsDirection(void* ptr, void* dst);
 

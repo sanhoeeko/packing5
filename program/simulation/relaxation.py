@@ -123,7 +123,6 @@ def Relaxation(
 
             def getGradient() -> ut.CArray:
                 d = state.lbfgs_agent.CalDirection()
-                state.lbfgs_agent.update()
                 return d
 
             def getGradientAmp() -> np.float32:
@@ -174,7 +173,7 @@ def Relaxation(
             if criterion == Criterion.EnergyFlat:
                 state.energy_counter.clear()
             if enable_lbfgs:
-                state.lbfgs_agent.init(stepsize)
+                state.lbfgs_agent.init()
 
         # If state pools are not applied
         if state_pool_stride == 1:
@@ -185,6 +184,7 @@ def Relaxation(
                     gradient = getGradient()
                     sz = stepsize_provider(gradient)
                     state.descent(gradient, sz)
+                    if enable_lbfgs: state.lbfgs_agent.update()
                     record(t)
                     if judgeTermination(): break
                     state.clear_dependency()
@@ -201,9 +201,11 @@ def Relaxation(
                         if state.optimizer.particles_too_close_cache or state.isOutOfBoundary():
                             relax.state_pool.add(state, 1e5)
                             state.descent(gradient, sz)
+                            if enable_lbfgs: state.lbfgs_agent.update()
                         else:
                             relax.state_pool.add(state, getGradientAmp())
                             state.descent(gradient, sz)
+                            if enable_lbfgs: state.lbfgs_agent.update()
                             state.clear_dependency()
                     energy, min_state = relax.state_pool.average_zero_temperature()
                     state.xyt.set_data(min_state.data)

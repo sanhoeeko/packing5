@@ -108,23 +108,16 @@ void DeleteLBFGS(void* ptr)
     delete lbfgs;
 }
 
-void LbfgsInit(void* ptr, float initial_stepsize)
+void LbfgsUpdate(void* ptr, void* x_new, void* g_new)
 {
     LBFGS* lbfgs = (LBFGS*)ptr;
-    lbfgs->init(initial_stepsize);
-}
-
-void LbfgsUpdate(void* ptr)
-{
-    LBFGS* lbfgs = (LBFGS*)ptr;
-    lbfgs->update();
+    lbfgs->update((float*)x_new, (float*)g_new);
 }
 
 void LbfgsDirection(void* ptr, void* dst)
 {
     LBFGS* lbfgs = (LBFGS*)ptr;
-    v4 v_dst(lbfgs->N, (float*)dst);
-    lbfgs->calDirection_to(v_dst);
+    lbfgs->calDirection_to((float*)dst);
 }
 
 float MinDistanceRij(void* p_state, void* p_grid, int lines, int cols, int N)

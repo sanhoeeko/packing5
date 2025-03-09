@@ -211,7 +211,7 @@ class State(ut.HasMeta):
         """
         self.grid.gridLocate()
         self.gradient.calGradient()
-        gradient = self.gradient.sum.g()
+        gradient = self.gradient.sum.g().copy()
         self.clear_dependency()
         return gradient
 

@@ -178,6 +178,20 @@ float DotVector4(void* p_a, void* p_b, int N) {
         result[4] + result[5] + result[6] /* + result[7]*/;
 }
 
+void ClipGradient(void* q_ptr, int N) {
+    xyt* q = (xyt*)q_ptr;
+    for (int i = 0; i < N; i++) {
+        float absg2 = q[i].x * q[i].x + q[i].y * q[i].y + q[i].t * q[i].t;
+        if (absg2 > max_gradient_amp * max_gradient_amp) {
+            float ratio = max_gradient_amp / sqrtf(absg2);
+            float* ptr = (float*)&q[i];
+            __m128 vec = _mm_loadu_ps(ptr);
+            __m128 r = _mm_set_ps1(ratio);
+            _mm_storer_ps(ptr, _mm_mul_ps(vec, r));
+        }
+    }
+}
+
 v4::v4()
 {
 }
@@ -201,7 +215,7 @@ void v4::die()
     if (!cited)free(data);
 }
 
-float v4::dot(const v4& y)
+float v4::dot(v4& y)
 {
     return DotVector4(data, y.data, N);
 }
@@ -274,42 +288,22 @@ void v4::operator*=(float s)
     CwiseMulVector4(data, N, s);
 }
 
-void v4::lbfgs_alg_1(float a, const v4& v_y)
-{
-    // Meaning: z -= a[i] * y[i];
-    float* z = this->data;
-    float* y = v_y.data;
-    __m256 a_vec = _mm256_set1_ps(a);
+void _mul_add_vector4_inplace(void* p_a, void* p_b, float ratio, int N) {
+    /*
+        require: number of particles being a multiple of 4
+    */
+    float* a = (float*)p_a;
+    float* b = (float*)p_b;
+    __m256 r_vec1 = _mm256_set1_ps(ratio);
     for (int i8 = 0; i8 < N * 4; i8 += 8) {
-        __m256 z_vec = _mm256_loadu_ps(z + i8);
-        __m256 y_vec = _mm256_loadu_ps(y + i8);
-        _mm256_storeu_ps(z + i8, _mm256_sub_ps(z_vec, _mm256_mul_ps(a_vec, y_vec)));
+        __m256 a_vec1 = _mm256_loadu_ps(a + i8);
+        __m256 b_vec1 = _mm256_loadu_ps(b + i8);
+        __m256 result_vec1 = _mm256_add_ps(a_vec1, _mm256_mul_ps(r_vec1, b_vec1));
+        _mm256_storeu_ps(a + i8, result_vec1);
     }
 }
 
-void v4::lbfgs_alg_2(float a_b, const v4& v_s)
+void v4::mul_add(const v4& y, float a)
 {
-    // z += (a[i] - b[i]) * s[i];
-    float* z = this->data;
-    float* s = v_s.data;
-    __m256 a_b_vec = _mm256_set1_ps(a_b);
-    for (int i8 = 0; i8 < N * 4; i8 += 8) {
-        __m256 z_vec = _mm256_loadu_ps(z + i8);
-        __m256 s_vec = _mm256_loadu_ps(s + i8);
-        _mm256_storeu_ps(z + i8, _mm256_add_ps(z_vec, _mm256_mul_ps(s_vec, a_b_vec)));
-    }
-}
-
-void ClipGradient(void* q_ptr, int N) {
-    xyt* q = (xyt*)q_ptr;
-    for (int i = 0; i < N; i++) {
-        float absg2 = q[i].x * q[i].x + q[i].y * q[i].y + q[i].t * q[i].t;
-        if (absg2 > max_gradient_amp * max_gradient_amp) {
-            float ratio = max_gradient_amp / sqrtf(absg2);
-            float* ptr = (float*)&q[i];
-            __m128 vec = _mm_loadu_ps(ptr);
-            __m128 r = _mm_set_ps1(ratio);
-            _mm_storer_ps(ptr, _mm_mul_ps(vec, r));
-        }
-    }
+    _mul_add_vector4_inplace(data, y.data, a, N);
 }
