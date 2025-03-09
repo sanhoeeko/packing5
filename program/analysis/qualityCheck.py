@@ -26,7 +26,7 @@ def scatterCurves(db: Database, x_name: str, y_name: str, y_restriction: float =
 
 
 def checkGradient(db: Database, y_restriction: float = None):
-    scatterCurves(db, 'rho', 'normalized_gradient_amp', y_restriction)
+    scatterCurves(db, 'phi', 'normalized_gradient_amp', y_restriction)
 
 
 def checkStateDistance(db: Database):

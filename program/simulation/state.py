@@ -187,6 +187,11 @@ class State(ut.HasMeta):
         state.initAsDisks()
         self.xyt.set_data(state.xyt.data / length_scale)
 
+    def initAsHardRods(self):
+        status_code = ker.dll.SegmentInitialization(self.xyt.ptr, self.N, self.A, self.B, 1 - 1 / self.gamma)
+        if status_code != 0:
+            raise ut.InitFailException
+
     def compile_relaxation_functions(self):
         lst = [func(self) for func in self.relaxations]
         self.relaxations = lst
@@ -208,17 +213,6 @@ class State(ut.HasMeta):
         self.gradient.calGradient()
         gradient = self.gradient.sum.g()
         self.clear_dependency()
-        return gradient
-
-    def CalGradientNormalized_pure(self, power: float = 1) -> ut.CArray:
-        """
-        :param power: 0 for not normalized. 1 for proper normalized.
-        """
-        gradient = self.CalGradient_pure()
-        g = ker.dll.FastNorm(gradient.ptr, self.N * 4)
-        if g < 1e-6: return gradient  # do not normalize zero gradient
-        s = np.float32(1) / (g ** power)
-        ker.dll.CwiseMulVector4(gradient.ptr, self.N, s)
         return gradient
 
     def CalEnergy_pure(self) -> np.float32:

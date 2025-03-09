@@ -93,19 +93,21 @@ def Relaxation(
         stepsize: float,
         relaxation_steps: Union[int, float],
         state_pool_stride: Union[int, float],
-        auto_stepsize: bool,
         enable_lbfgs: bool,
         record_descent: bool,
+        auto_stepsize: ss.StepsizeHelper,
         criterion: Criterion
 ):
     def inner(state):
         # Determine stepsize:
-        if auto_stepsize:
-            def stepsize_provider() -> float:
-                return stepsize * ss.findCubicStepsize(state, 1e-2, 6)
-        else:
-            def stepsize_provider() -> float:
+        if auto_stepsize is ss.StepsizeHelper.Nothing:
+            def stepsize_provider(g: ut.CArray) -> float:
                 return stepsize
+        else:
+            stepsizeFinder = ss.StepsizeHelperSwitch(auto_stepsize)
+
+            def stepsize_provider(g: ut.CArray) -> float:
+                return stepsize * stepsizeFinder(state, g, 1e-3)
 
         # Determine whether refresh optimizer
         if stochastic_p != 1:
@@ -178,10 +180,10 @@ def Relaxation(
         if state_pool_stride == 1:
             def relax():
                 prepare_relaxation()
-                sz = stepsize_provider()
                 for t in range(int(relaxation_steps)):
                     refresh_optimizer()
                     gradient = getGradient()
+                    sz = stepsize_provider(gradient)
                     state.descent(gradient, sz)
                     record(t)
                     if judgeTermination(): break
@@ -193,7 +195,7 @@ def Relaxation(
                 for t in range(int(relaxation_steps) // state_pool_stride):
                     relax.state_pool.clear()
                     refresh_optimizer()
-                    sz = stepsize_provider()
+                    sz = stepsize_provider(getGradient())
                     for i in range(state_pool_stride):
                         gradient = getGradient()
                         if state.optimizer.particles_too_close_cache or state.isOutOfBoundary():

@@ -1,11 +1,30 @@
+from enum import IntEnum
+from typing import Any, Callable
+
 import numpy as np
 
 from h5tools.cubic import CubicMinimumX
 from . import utils as ut
 from .kernel import ker
 
+
+class StepsizeHelper(IntEnum):
+    Nothing = 0
+    Best = 1
+    Good = 2
+    Cubic = 3
+    Armijo = 4
+
+
+def StepsizeHelperSwitch(helper: StepsizeHelper) -> Callable[[Any, ut.CArray, float], float]:
+    funcs = [None, findBestStepsize, findGoodStepsize, findCubicStepsize]
+    return funcs[helper]
+
+
 alpha = np.float32(0.96)
 beta = np.float32(0.4)
+n_samples = 32
+cubic_samples = 8
 
 
 def energyScan(s, g: ut.CArray, step_sizes: np.ndarray, need_energy=False):
@@ -23,24 +42,28 @@ def energyScan(s, g: ut.CArray, step_sizes: np.ndarray, need_energy=False):
     return ys
 
 
-def findBestStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
+def findBestStepsize(s, g: ut.CArray, max_stepsize: float) -> np.float32:
     """
     :param s: State
     """
-    normalized_gradient = s.CalGradientNormalized_pure(1)
-    if normalized_gradient is None: return max_stepsize
+    absg = g.norm(g.data.shape[0])
+    if absg < 1e-6: return max_stepsize
+    normalized_gradient = ut.CArray(g.data / absg)
+
     xs = max_stepsize * alpha ** np.arange(n_samples)
     ys = energyScan(s, normalized_gradient, xs)
     index = np.argmin(ys)
     return np.float32(xs[index])
 
 
-def findGoodStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
+def findGoodStepsize(s, g: ut.CArray, max_stepsize: float) -> np.float32:
     """
     :param s: State
     """
-    normalized_gradient = s.CalGradientNormalized_pure(1)
-    if normalized_gradient is None: return max_stepsize
+    absg = g.norm(g.data.shape[0])
+    if absg < 1e-6: return max_stepsize
+    normalized_gradient = ut.CArray(g.data / absg)
+
     state = s.copy(train=True)
     stepsize = np.float32(max_stepsize)
     energy = state.CalEnergy_pure()
@@ -57,18 +80,7 @@ def findGoodStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
     return stepsize
 
 
-def findCubicStepsize(s, max_stepsize: float, n_samples: int) -> np.float32:
-    """
-    :param s: State
-    """
-    normalized_gradient = s.CalGradientNormalized_pure(1)
-    if normalized_gradient is None: return max_stepsize
-    xs = max_stepsize * beta ** np.arange(n_samples)
-    ys = energyScan(s, normalized_gradient, xs)
-    return CubicMinimumX(xs, ys, 0, max_stepsize)
-
-
-def findCubicStepsizeNG(s, g: ut.CArray, max_stepsize: float, n_samples: int) -> np.float32:
+def findCubicStepsize(s, g: ut.CArray, max_stepsize: float) -> np.float32:
     """
     :param s: State
     :param g: non-normalized gradient from external scope
@@ -76,6 +88,6 @@ def findCubicStepsizeNG(s, g: ut.CArray, max_stepsize: float, n_samples: int) ->
     absg = g.norm(g.data.shape[0])
     if absg < 1e-6: return max_stepsize
     normalized_gradient = ut.CArray(g.data / absg)
-    xs = max_stepsize * beta ** np.arange(n_samples)
+    xs = max_stepsize * beta ** np.arange(cubic_samples)
     ys = energyScan(s, normalized_gradient, xs)
-    return CubicMinimumX(xs, ys, 0, max_stepsize)
+    return CubicMinimumX(xs, ys, 1e-6, max_stepsize)

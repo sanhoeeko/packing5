@@ -113,7 +113,7 @@ class Simulator(ut.HasMeta):
                     if default.if_hyperuniform_initialize:
                         self.state.initAsDisksWithPhi(0.8)
                     else:
-                        self.state.initAsDisks()
+                        self.state.initAsHardRods()
                     if self.state.legal_pure():
                         print(f"[{self.id}] Successfully initialized.")
                         break
