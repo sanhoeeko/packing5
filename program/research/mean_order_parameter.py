@@ -52,5 +52,4 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 if __name__ == '__main__':
-    # batch_analyze('analysis-20250306-0.h5', 'EllipticPhi6', (0, 15))
-    batch_analyze('analysis.h5', 'Phi6', (0, 20))
+    batch_analyze('../analysis-20250310.h5', 'MeanSegmentDist', (0, 20))

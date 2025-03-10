@@ -27,5 +27,14 @@ class LBFGS:
         ker.dll.LbfgsDirection(self.ptr, self.direction.ptr)
         return self.direction
 
+    def directionProduct(self) -> np.float32:
+        return ker.dll.DotVector4(self.direction.ptr, self.gradient_cache.ptr, self.N)
+
     def gradientAmp(self) -> np.float32:
         return self.gradient_cache.norm(self.N)
+
+    def maxGradientAmp(self) -> np.float32:
+        return self.gradient_cache.max_abs(self.N)
+
+    def energy(self) -> np.float32:
+        return np.sum(self.gradient_cache[:, 3])

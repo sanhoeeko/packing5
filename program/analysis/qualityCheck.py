@@ -36,7 +36,7 @@ def checkStateDistance(db: Database):
 def checkEnergy(db: Database):
     plotMeanCurvesWithCI(
         *db.apply(lambda ensemble: averageEnergy(ensemble, 'phi')),
-        x_label='packing fraction', y_label='energy'
+        x_label='packing fraction', y_label='energy', gammas=db.summary['gamma']
     )
 
 

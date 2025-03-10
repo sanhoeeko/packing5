@@ -2,7 +2,7 @@
 
 #define max_neighbors 32
 #define cores 1
-#define LBFGS_MEMORY_SIZE 20
+#define LBFGS_MEMORY_SIZE 100
 
 #define DIGIT_X 9
 #define DIGIT_Y 9

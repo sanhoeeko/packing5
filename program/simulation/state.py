@@ -29,6 +29,7 @@ class State(ut.HasMeta):
         self.grid = Grid(self)
         self.gradient = GradientMatrix(self, self.grid)
         self.ge_valid = False
+        self.train = train
         self.compile_relaxation_functions()
         # optional objects
         if train:
@@ -56,18 +57,27 @@ class State(ut.HasMeta):
 
     @property
     def mean_gradient_amp(self):
-        if not self.ge_valid: self.refreshGE()
-        return self.gradient.sum.G_mean()
+        if hasattr(self, 'lbfgs_agent'):
+            return self.lbfgs_agent.gradientAmp()
+        else:
+            if not self.ge_valid: self.refreshGE()
+            return self.gradient.sum.G_mean()
 
     @property
     def max_gradient_amp(self):
-        if not self.ge_valid: self.refreshGE()
-        return self.gradient.sum.G_max()
+        if hasattr(self, 'lbfgs_agent'):
+            return self.lbfgs_agent.maxGradientAmp()
+        else:
+            if not self.ge_valid: self.refreshGE()
+            return self.gradient.sum.G_max()
 
     @property
     def energy(self):
-        if not self.ge_valid: self.refreshGE()
-        return self.gradient.sum.E()
+        if hasattr(self, 'lbfgs_agent'):
+            return self.lbfgs_agent.energy()
+        else:
+            if not self.ge_valid: self.refreshGE()
+            return self.gradient.sum.E()
 
     @property
     def min_dist(self):
@@ -212,7 +222,7 @@ class State(ut.HasMeta):
         self.grid.gridLocate()
         self.gradient.calGradient()
         gradient = self.gradient.sum.g().copy()
-        self.clear_dependency()
+        self.clear_dependency()  # TODO: But it causes `record` to calculate energy twice. How to fix it?
         return gradient
 
     def CalEnergy_pure(self) -> np.float32:

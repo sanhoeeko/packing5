@@ -118,7 +118,7 @@ class CArray:
 
 
 def CArrayF(arr: np.ndarray):
-    if arr.dtype is np.float32:
+    if arr.dtype == np.float32:
         return CArray(arr, None)
     return CArray(arr, np.float32)
 

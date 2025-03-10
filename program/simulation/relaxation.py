@@ -105,9 +105,11 @@ def Relaxation(
                 return stepsize
         else:
             stepsizeFinder = ss.StepsizeHelperSwitch(auto_stepsize)
+            if state.train and not hasattr(state, 'scanner'):
+                setattr(state, 'scanner', ss.EnergyScanner(state))
 
             def stepsize_provider(g: ut.CArray) -> float:
-                return stepsize * stepsizeFinder(state, g, 1e-3)
+                return stepsize * stepsizeFinder(state.scanner, state, g, 1e-3)
 
         # Determine whether refresh optimizer
         if stochastic_p != 1:
@@ -119,7 +121,8 @@ def Relaxation(
 
         # Simply calculate gradient or use LBFGS
         if enable_lbfgs:
-            if not hasattr(state, 'lbfgs_agent'): setattr(state, 'lbfgs_agent', LBFGS(state))
+            if state.train and not hasattr(state, 'lbfgs_agent'):
+                setattr(state, 'lbfgs_agent', LBFGS(state))
 
             def getGradient() -> ut.CArray:
                 d = state.lbfgs_agent.CalDirection()
@@ -137,10 +140,10 @@ def Relaxation(
         # Termination criteria
         if criterion == Criterion.MeanGradientAmp:
             def judgeTermination() -> bool:
-                return state.optimizer.gradientAmp() < default.terminal_grad_for_mean_gradient_amp
+                return state.mean_gradient_amp < default.terminal_grad_for_mean_gradient_amp
         elif criterion == Criterion.MaxGradientAmp:
             def judgeTermination() -> bool:
-                return state.optimizer.maxGradient() < default.terminal_grad_for_max_gradient_amp
+                return state.max_gradient_amp < default.terminal_grad_for_max_gradient_amp
         elif criterion == Criterion.EnergyFlat:
             setattr(state, 'energy_counter', EnergyCounter(
                 default.terminal_energy_slope, default.energy_counter_stride, default.energy_counter_occurrence))
@@ -174,6 +177,8 @@ def Relaxation(
                 state.energy_counter.clear()
             if enable_lbfgs:
                 state.lbfgs_agent.init()
+            if hasattr(state, 'scanner'):
+                state.scanner.state.setPotential(state.gradient.potential)
 
         # If state pools are not applied
         if state_pool_stride == 1:
@@ -186,8 +191,9 @@ def Relaxation(
                     state.descent(gradient, sz)
                     if enable_lbfgs: state.lbfgs_agent.update()
                     record(t)
-                    if judgeTermination(): break
+                    if_terminate = judgeTermination()
                     state.clear_dependency()
+                    if if_terminate: break
         else:
             # If state pools are applied
             def relax():
@@ -200,13 +206,11 @@ def Relaxation(
                         gradient = getGradient()
                         if state.optimizer.particles_too_close_cache or state.isOutOfBoundary():
                             relax.state_pool.add(state, 1e5)
-                            state.descent(gradient, sz)
-                            if enable_lbfgs: state.lbfgs_agent.update()
                         else:
                             relax.state_pool.add(state, getGradientAmp())
-                            state.descent(gradient, sz)
-                            if enable_lbfgs: state.lbfgs_agent.update()
-                            state.clear_dependency()
+                        state.descent(gradient, sz)
+                        if enable_lbfgs: state.lbfgs_agent.update()
+                        state.clear_dependency()
                     energy, min_state = relax.state_pool.average_zero_temperature()
                     state.xyt.set_data(min_state.data)
                     record(t)
