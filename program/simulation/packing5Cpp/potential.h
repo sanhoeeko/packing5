@@ -38,6 +38,7 @@ struct ParticleShape {
     // auxiliary functions 
     xyt interpolateGradientSimplex(const xyt& q);
     xyt interpolatePotentialSimplex(const xyt& q);
+    xyt interpolatePotentialCBS(const xyt& q);
 
     // interfaces
     void initPotential(int threads, float* scalar_potential);
