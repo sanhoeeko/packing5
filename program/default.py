@@ -1,6 +1,6 @@
 max_energy_curve_capacity = 1000000
-terminal_grad_for_mean_gradient_amp = 1e-3
-terminal_grad_for_max_gradient_amp = 0.01
+terminal_grad_for_mean_gradient_amp = 1e-4
+terminal_grad_for_max_gradient_amp = 1e-4
 terminal_energy_slope = 1e-6
 energy_counter_stride = 100
 energy_counter_occurrence = 10

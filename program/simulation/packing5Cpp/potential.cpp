@@ -134,99 +134,6 @@ bool ParticleShape::isSegmentCrossing(const xyt& q)
         q.y * fcos(q.t) >(q.x - c) * fsin(q.t);
 }
 
-xyt ParticleShape::interpolateGradientSimplex(const xyt& q)
-{
-    if (q.y >= 1)return { 0,0,0,0 };
-    const float 
-        a1 = szx - 1,
-        a2 = szy - 1,
-        a3 = szt - 1;
-    /*
-        fetch potential values of 4 points:
-        (i,j,k), (i ¡À 1,j,k), (i,j ¡À 1,k), (i,j,k ¡À 1)
-    */
-    float
-        X = q.x * a1,
-        Y = q.y * a2,
-        T = q.t * a3;
-    int 
-        i = round(X),
-        j = round(Y),
-        k = round(T);
-    int
-        hi = i <= X ? 1 : -1,   // do not use '<', because X and i can be both 0.0f and hi = -1 causes an illegal access
-        hj = j <= Y ? 1 : -1,
-        hk = k <= T ? 1 : -1;
-    float
-        v000 = data[i][j][k],
-        v100 = data[i + hi][j][k],
-        v010 = data[i][j + hj][k],
-        v001 = data[i][j][k + hk];
-    /*
-        solve the linear equation for (A,B,C,D):
-        V(x,y,t) = A(x-x0) + B(y-y0) + C(t-t0) + D
-    */
-    float
-        A = (-v000 + v100) * a1 * hi,
-        B = (-v000 + v010) * a2 * hj,
-        C = (-v000 + v001) * a3 * hk;
-        // D = v000;
-    /*
-        the gradient: (A,B,C) is already obtained. (if only cauculate gradient, directly return)
-        the value: A(x-x0) + B(y-y0) + C(t-t0) + D
-    */
-    return { A,B,C,0 };
-}
-
-xyt ParticleShape::interpolatePotentialSimplex(const xyt& q)
-{
-    if (q.y >= 1)return { 0,0,0,0 };
-    const float
-        a1 = szx - 1,
-        a2 = szy - 1,
-        a3 = szt - 1;
-    /*
-        fetch potential values of 4 points:
-        (i,j,k), (i ¡À 1,j,k), (i,j ¡À 1,k), (i,j,k ¡À 1)
-    */
-    float
-        X = q.x * a1,
-        Y = q.y * a2,
-        T = q.t * a3;
-    int
-        i = round(X),
-        j = round(Y),
-        k = round(T);
-    float
-        dx = (X - i) / a1,
-        dy = (Y - j) / a2,
-        dt = (T - k) / a3;
-    int
-        hi = dx >= 0 ? 1 : -1,
-        hj = dy >= 0 ? 1 : -1,
-        hk = dt >= 0 ? 1 : -1;
-    float
-        v000 = data[i][j][k],
-        v100 = data[i + hi][j][k],
-        v010 = data[i][j + hj][k],
-        v001 = data[i][j][k + hk];
-    /*
-        solve the linear equation for (A,B,C,D):
-        V(x,y,t) = A(x-x0) + B(y-y0) + C(t-t0) + D
-    */
-    float
-        A = (-v000 + v100) * a1 * hi,
-        B = (-v000 + v010) * a2 * hj,
-        C = (-v000 + v001) * a3 * hk,
-        D = v000;
-    /*
-        the energy: A(x-x0) + B(y-y0) + C(t-t0) + D
-        since x0 <- floor'(x), there must be x > x0, y > y0, t > t0
-    */
-    float energy = A * dx + B * dy + C * dt + D;
-    return { A, B, C, energy };
-}
-
 inline static XytPair ZeroXytPair() {
     return { 0,0,0,0,0,0 };
 }
@@ -259,7 +166,7 @@ xyt ParticleShape::potential(const xyt& q) {
     /*
         q: real x y theta
     */
-    xyt g = transform_signed(interpolatePotentialSimplex(transform(q)));
+    xyt g = transform_signed(interpolatePotential(transform(q)));
     bool
         sign_x = q.x > 0,
         sign_y = q.y > 0;
@@ -273,7 +180,7 @@ xyt ParticleShape::gradient(const xyt& q) {
     /*
         q: real x y theta
     */
-    xyt g = transform_signed(interpolateGradientSimplex(transform(q)));
+    xyt g = transform_signed(interpolateGradient(transform(q)));
     bool
         sign_x = q.x > 0,
         sign_y = q.y > 0;

@@ -3,6 +3,14 @@
 #include"defs.h"
 #include"functional.h"
 
+#if interpolate_SIMPLEX
+#define interpolatePotential interpolatePotentialSimplex
+#define interpolateGradient interpolateGradientSimplex
+#else
+#define interpolatePotential interpolatePotentialTrilinear
+#define interpolateGradient interpolateGradientTrilinear
+#endif
+
 /*
     The range of (x,y,t): x = X/(2a) in [0,1), y = Y/(a+b) in [0,1), t = Theta/pi in [0,1)
     if szx == szy == szz, the maximal szx is 1024 for the sake of int.
@@ -38,6 +46,8 @@ struct ParticleShape {
     // auxiliary functions 
     xyt interpolateGradientSimplex(const xyt& q);
     xyt interpolatePotentialSimplex(const xyt& q);
+    xyt interpolateGradientTrilinear(const xyt& q);
+    xyt interpolatePotentialTrilinear(const xyt& q);
 
     // interfaces
     void initPotential(int threads, float* scalar_potential);

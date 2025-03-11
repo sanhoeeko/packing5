@@ -11,6 +11,8 @@
 #define DIGIT_RAND 24
 #define ENERGY_STRIDE 1000
 
+#define interpolate_SIMPLEX false
+
 #include <omp.h>
 #include <cmath>
 #include <iostream>
