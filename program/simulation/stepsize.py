@@ -17,17 +17,18 @@ class StepsizeHelper(IntEnum):
 
 
 def StepsizeHelperSwitch(helper: StepsizeHelper) -> Callable[[Any, Any, ut.CArray, float], float]:
-    funcs = [None, findBestStepsize, findGoodStepsize, findCubicStepsize]
+    funcs = [None, findBestStepsize, findGoodStepsize, findCubicStepsize, ArmijoStepsize]
     return funcs[helper]
 
 
-alpha = np.float32(0.96)
-beta = np.float32(0.4)
 n_samples = 32
+cubic_alpha = 0.4
 cubic_samples = 8
 
 
 class EnergyScanner:
+    alpha = 0.96
+
     def __init__(self, ref_state):
         # ref_state: State
         self.state = ref_state.copy(train=False)
@@ -49,7 +50,7 @@ class EnergyScanner:
         stepsize = np.float32(max_stepsize)
         energy = s.CalEnergy_pure() if need_energy else s.mean_gradient_amp
         for i in range(n_samples):
-            current_stepsize = stepsize * alpha
+            current_stepsize = stepsize * EnergyScanner.alpha
             ker.dll.AddVector4(s.xyt.ptr, g.ptr, self.state.xyt.ptr, self.state.N, current_stepsize)
             if self.state.isOutOfBoundary():
                 continue
@@ -70,7 +71,7 @@ def findBestStepsize(scanner: EnergyScanner, s, g: ut.CArray, max_stepsize: floa
     if absg < 1e-6: return max_stepsize
     normalized_gradient = ut.CArray(g.data / absg)
 
-    xs = max_stepsize * alpha ** np.arange(n_samples)
+    xs = max_stepsize * EnergyScanner.alpha ** np.arange(n_samples)
     ys = scanner.scan(s, normalized_gradient, xs)
     index = np.argmin(ys)
     return np.float32(xs[index])
@@ -94,7 +95,7 @@ def findCubicStepsize(scanner: EnergyScanner, s, g: ut.CArray, max_stepsize: flo
     absg = g.norm(g.data.shape[0])
     if absg < 1e-6: return max_stepsize
     normalized_gradient = ut.CArray(g.data / absg)
-    xs = max_stepsize * beta ** np.arange(cubic_samples)
+    xs = max_stepsize * cubic_alpha ** np.arange(cubic_samples)
     ys = scanner.scan(s, normalized_gradient, xs)
     return CubicMinimumX(xs, ys, 1e-6, max_stepsize)
 
@@ -104,10 +105,10 @@ class ArmijoAgent:
         # ref_state: State
         self.state = ref_state.copy(train=False)
         self.c1 = 1e-4
-        self.beta = 0.5
+        self.beta = 0.6
 
-    def armijo(self, s, g: ut.CArray, direction_product: float):
-        alpha = 1.0
+    def armijo(self, s, g: ut.CArray, direction_product: float, max_stepsize: float):
+        alpha = max_stepsize
         current_loss = s.CalEnergy_pure()
         for ls in range(20):
             ker.dll.AddVector4(s.xyt.ptr, g.ptr, self.state.xyt.ptr, self.state.N, alpha)
@@ -123,4 +124,4 @@ def ArmijoStepsize(agent: ArmijoAgent, s, g: ut.CArray, max_stepsize: float) -> 
     Especially for LBFGS
     """
     direction_product = s.lbfgs_agent.directionProduct()
-    return agent.armijo(s, g, direction_product)
+    return agent.armijo(s, g, direction_product, max_stepsize)

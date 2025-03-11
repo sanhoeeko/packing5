@@ -30,6 +30,7 @@ class Kernel:
             ('SumTensor4', [ct.c_void_p] * 2 + [ct.c_int], None),
             ('AddVector4', [ct.c_void_p] * 3 + [ct.c_int, ct.c_float], None),
             ('AddVector4FT', [ct.c_void_p] * 3 + [ct.c_int, ct.c_float, ct.c_float], None),
+            ('DotVector4', [ct.c_void_p] * 2 + [ct.c_int], ct.c_float),
             ('PerturbVector4', [ct.c_void_p, ct.c_int, ct.c_float], None),
             ('FastClear', [ct.c_void_p, ct.c_int], None),
             ('HollowClear', [ct.c_void_p, ct.c_int, ct.c_int], None),

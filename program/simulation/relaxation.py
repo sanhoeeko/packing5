@@ -105,11 +105,19 @@ def Relaxation(
                 return stepsize
         else:
             stepsizeFinder = ss.StepsizeHelperSwitch(auto_stepsize)
-            if state.train and not hasattr(state, 'scanner'):
-                setattr(state, 'scanner', ss.EnergyScanner(state))
+            if auto_stepsize is ss.StepsizeHelper.Armijo:
+                assert enable_lbfgs, "Armijo step size is specially designed for LBFGS."
+                if state.train and not hasattr(state, 'armijo_agent'):
+                    setattr(state, 'armijo_agent', ss.ArmijoAgent(state))
 
-            def stepsize_provider(g: ut.CArray) -> float:
-                return stepsize * stepsizeFinder(state.scanner, state, g, 1e-3)
+                def stepsize_provider(g: ut.CArray) -> float:
+                    return stepsize * stepsizeFinder(state.armijo_agent, state, g, 1e-3)
+            else:
+                if state.train and not hasattr(state, 'scanner'):
+                    setattr(state, 'scanner', ss.EnergyScanner(state))
+
+                def stepsize_provider(g: ut.CArray) -> float:
+                    return stepsize * stepsizeFinder(state.scanner, state, g, 1e-3)
 
         # Determine whether refresh optimizer
         if stochastic_p != 1:
@@ -179,6 +187,8 @@ def Relaxation(
                 state.lbfgs_agent.init()
             if hasattr(state, 'scanner'):
                 state.scanner.state.setPotential(state.gradient.potential)
+            if hasattr(state, 'armijo_agent'):
+                state.armijo_agent.state.setPotential(state.gradient.potential)
 
         # If state pools are not applied
         if state_pool_stride == 1:

@@ -222,7 +222,7 @@ class State(ut.HasMeta):
         self.grid.gridLocate()
         self.gradient.calGradient()
         gradient = self.gradient.sum.g().copy()
-        self.clear_dependency()  # TODO: But it causes `record` to calculate energy twice. How to fix it?
+        # self.clear_dependency()  # TODO: But it causes `record` to calculate energy twice. How to fix it?
         return gradient
 
     def CalEnergy_pure(self) -> np.float32:
