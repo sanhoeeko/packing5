@@ -29,7 +29,7 @@ def dict_to_analysis_hdf5(file_name: str, data_dict: dict):
                     group.create_dataset('mean', data=value[0].astype(np.float32), dtype=np.float32)
                     group.create_dataset('ci', data=value[1].astype(np.float32), dtype=np.float32)
                 else:
-                    ensemble_h5.create_dataset(key, data=value, dtype=np.float32)
+                    ensemble_h5.create_dataset(key, data=value.astype(np.float32), dtype=np.float32)
 
 
 def add_array_to_hdf5(file_name: str, name: str, data: np.ndarray):

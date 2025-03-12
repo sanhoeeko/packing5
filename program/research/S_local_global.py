@@ -24,7 +24,6 @@ def scatter(S_local: np.ndarray, S_global: np.ndarray):
     plt.xlabel(r'$S_\text{local}$')
     plt.ylabel(r'$S_\text{global}$')
     plt.subplots_adjust(left=0.15, right=0.85, top=0.85, bottom=0.15)
-    plt.show()
 
 
 def S_local_vs_global(simu: PickledSimulation):
@@ -35,5 +34,7 @@ def S_local_vs_global(simu: PickledSimulation):
 
 if __name__ == '__main__':
     auto_pack()
-    db = Database('data.h5')
+    db = Database('../data-20250312.h5')
     S_local_vs_global(db[0].simulation_at(0))
+    S_local_vs_global(db[1].simulation_at(0))
+    plt.show()

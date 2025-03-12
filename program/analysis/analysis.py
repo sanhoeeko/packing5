@@ -84,19 +84,25 @@ def averageEnergy(ensemble: PickledEnsemble, x_axis_name: str):
     return averageByReplica(x_tensor[0], ensemble.property('energy'))
 
 
-def orderParameterAnalysis(database: Database, order_parameters: list[str], x_axis_name: str,
+def orderParameterAnalysis(database: Database, order_parameters: list[str], x_axis_name: str, averaged=False,
                            weighted=False, num_threads=1, from_to=None):
     out_file = 'analysis.h5'
     dic = {}
     for ensemble in database:
-        if ensemble.n_density < 100: continue
+        if ensemble.n_density < 1: continue
         sub_dic = {}
-        x, y_mean, y_ci = averageByReplica(
-            *orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)
-        )
-        for order_parameter in order_parameters:
-            sub_dic[order_parameter] = (y_mean[order_parameter], y_ci[order_parameter])
-        sub_dic[x_axis_name] = x[0, :]
+        if averaged:
+            x, y_mean, y_ci = averageByReplica(
+                *orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)
+            )
+            for order_parameter in order_parameters:
+                sub_dic[order_parameter] = (y_mean[order_parameter], y_ci[order_parameter])
+            sub_dic[x_axis_name] = x[0, :]
+        else:
+            x, y_tensor = orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)
+            for order_parameter in order_parameters:
+                sub_dic[order_parameter] = y_tensor
+            sub_dic[x_axis_name] = x[0, :]
         dic[ensemble.metadata['id'][0].decode('utf-8')] = sub_dic
 
     # add x-axis
@@ -107,15 +113,15 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
     add_array_to_hdf5(out_file, 'summary_table', database._summary_table_array)
 
 
-def calAllOrderParameters(database: Database, x_axis_name: str, weighted=False, num_threads=4):
+def calAllOrderParameters(database: Database, x_axis_name: str, averaged=False, weighted=False, num_threads=4):
     order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6', 'MeanSegmentDist']
     try:
         orderParameterAnalysis(
-            database, order_parameters, x_axis_name, weighted, num_threads
+            database, order_parameters, x_axis_name, averaged, weighted, num_threads
         )
     except DirtyDataException as e:
         print(e)
         print("Exception is caught. Try to calculate in smaller range.")
         orderParameterAnalysis(
-            database, order_parameters, x_axis_name, weighted, num_threads, from_to=(0, e.nth_state)
+            database, order_parameters, x_axis_name, weighted, averaged, num_threads, from_to=(0, e.nth_state)
         )

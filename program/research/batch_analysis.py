@@ -10,11 +10,11 @@ def batch_analyze(filename: str):
     # db.search_max_gradient()
     # checkGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=2.4)[0]
+    e = db.find(gamma=1.95)[0]
     # plotListOfArray(e[0].energyCurve(), y_restriction=2)
-    InteractiveViewer(e[0], RenderSetup('S_local')).show()
-    # calAllOrderParameters(db, 'phi', num_threads=4)
+    # InteractiveViewer(e[0], RenderSetup('S_global')).show()
+    calAllOrderParameters(db, 'phi', num_threads=4)
 
 
 if __name__ == '__main__':
-    batch_analyze('../data-20250310.h5')
+    batch_analyze('../data-20250312.h5')

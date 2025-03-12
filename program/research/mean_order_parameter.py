@@ -44,7 +44,7 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
     db = MeanCIDatabase(filename)
     x, y = zip(*db.orderParameterList(order_parameter_name))
     mean, ci = zip(*y)
-    gammas = np.arange(1, 3.1, 0.1)[1:]
+    gammas = db.summary['gamma']
     f, t = from_to
     art.plotMeanCurvesWithCI(x[f:t], mean[f:t], ci[f:t], gammas[f:t],
                              x_label='volume fraction', y_label=order_parameter_name)
@@ -52,4 +52,4 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 if __name__ == '__main__':
-    batch_analyze('../analysis-20250310.h5', 'MeanSegmentDist', (0, 20))
+    batch_analyze('../analysis-20250312.h5', 'MeanSegmentDist', (0, 20))

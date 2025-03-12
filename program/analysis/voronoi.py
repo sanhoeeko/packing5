@@ -54,7 +54,7 @@ class Voronoi:
         from .orders import Delaunay
         # if isParticleTooClose(ut.CArrayF(self.configuration)):
         #     return None
-        return Delaunay(True, *self.delaunay_template(ker.dll.weightedDelaunay))
+        return Delaunay(True, *self.delaunay_template(ker.dll.weightedDelaunay), self.gamma)
 
     def delaunay(self, weighted: bool):
         if weighted:
