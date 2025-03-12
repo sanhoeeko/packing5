@@ -214,15 +214,15 @@ class State(ut.HasMeta):
     def n_steps(self) -> int:
         return sum(map(lambda x: x.n_steps, self.relaxations))
 
-    def CalGradient_pure(self) -> ut.CArray:
+    def CalGradient_pure(self, need_energy=False) -> ut.CArray:
         """
         For class State, most methods are impure that leaves some caches.
         The method is pure and returns a gradient CArray.
         """
         self.grid.gridLocate()
-        self.gradient.calGradient()
+        self.gradient.calGradientAndEnergy() if need_energy else self.gradient.calGradient()
         gradient = self.gradient.sum.g().copy()
-        # self.clear_dependency()  # TODO: But it causes `record` to calculate energy twice. How to fix it?
+        # self.clear_dependency()
         return gradient
 
     def CalEnergy_pure(self) -> np.float32:
@@ -231,9 +231,6 @@ class State(ut.HasMeta):
         The method is pure and returns an energy value.
         """
         self.grid.gridLocate()
-        # is_too_close = self.gradient.isTooClose()
-        # if is_too_close or self.isOutOfBoundary():
-        #     return np.float32(np.inf)
         self.gradient.calGradientAndEnergy()
         energy = self.gradient.sum.E()
         self.clear_dependency()

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string.h>
 using namespace std;
 
 struct v4 {

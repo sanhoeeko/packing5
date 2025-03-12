@@ -16,11 +16,11 @@ class LBFGS:
         ker.dll.DeleteLBFGS(self.ptr)
 
     def init(self):
-        self.gradient_cache.set_data(self.state.CalGradient_pure().data)
+        self.gradient_cache.set_data(self.state.CalGradient_pure(True).data)
 
     def update(self):
         # x_new has been calculated by `State.descent` method
-        self.gradient_cache.set_data(self.state.CalGradient_pure().data)  # calculate g_new
+        self.gradient_cache.set_data(self.state.CalGradient_pure(True).data)  # calculate g_new
         ker.dll.LbfgsUpdate(self.ptr, self.state.xyt.ptr, self.gradient_cache.ptr)
 
     def CalDirection(self) -> ut.CArray:

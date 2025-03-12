@@ -119,7 +119,7 @@ void FastMask(void* p_x, void* p_mask, int N)
     for (int i = 0; i < N; i++) {
         __m128 vec = _mm_loadu_ps(x + i * 4);
         __m128 result = _mm_and_ps(vec, patch[mask[i]]);
-        _mm_storeu_ps(x + i * 4, vec);
+        _mm_storeu_ps(x + i * 4, result);
     }
 }
 
