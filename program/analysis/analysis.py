@@ -101,12 +101,12 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
         else:
             x, y_tensor = orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)
             for order_parameter in order_parameters:
-                sub_dic[order_parameter] = y_tensor
+                sub_dic[order_parameter] = y_tensor[order_parameter]
             sub_dic[x_axis_name] = x[0, :]
         dic[ensemble.metadata['id'][0].decode('utf-8')] = sub_dic
 
     # add x-axis
-    dict_to_analysis_hdf5(out_file, dic)
+    dict_to_analysis_hdf5(out_file, dic)  # TODO: BUG for multi order parameters
     add_property_to_hdf5(out_file, 'x_axis_name', x_axis_name)
 
     # add metadata

@@ -1,43 +1,17 @@
-import h5py
 import matplotlib.pyplot as plt
-import numpy as np
 
-from analysis.database import DatabaseBase
-from analysis.h5tools import struct_array_to_dataframe
+from analysis.post_analysis import PostDatabase, PostData
 from art import curves as art
 
 
-class MeanCIDatabase(DatabaseBase):
-    def __init__(self, file_name: str):
-        self.file_name = file_name
-        self.file = h5py.File(self.file_name, 'r')
-        self.x_axis_name = self.file.attrs['x_axis_name']
-        self.summary_table_array = self.file['summary_table'][:]
-        self.ids = self.summary_table_array['id'].tolist()
-        self.summary = self.process_summary(struct_array_to_dataframe(self.summary_table_array))
-
+class MeanCIDatabase(PostDatabase):
     def id(self, ensemble_id: str):
         return MeanCIData(self.file[ensemble_id], self.x_axis_name)
 
-    def orderParameterList(self, prop: str) -> list[tuple]:
-        return [(ensemble_data.x_axis, ensemble_data[prop]) for ensemble_data in self]
 
-
-class MeanCIData:
-    def __init__(self, h5_group, x_axis_name: str):
-        self.dic = {}
-        self.x_axis_name = x_axis_name
-        for key in h5_group.keys():
-            if key == x_axis_name:
-                self.x_axis = h5_group[key][:]
-            else:
-                self.dic[key] = (h5_group[key]['mean'][:], h5_group[key]['ci'][:])
-        for k, v in self.dic.items():
-            self.n_density = len(v[0])
-            break
-
-    def __getitem__(self, item):
-        return self.dic[item]
+class MeanCIData(PostData):
+    def process_data(self, key, data_group):
+        self.dic[key] = (data_group['mean'][:], data_group['ci'][:])
 
 
 def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
@@ -52,4 +26,4 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 if __name__ == '__main__':
-    batch_analyze('../analysis-20250312.h5', 'MeanSegmentDist', (0, 20))
+    batch_analyze('../analysis-20250313.h5', 'EllipticPhi6', (0, 20))
