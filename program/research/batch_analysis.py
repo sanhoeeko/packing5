@@ -13,7 +13,7 @@ def batch_analyze(filename: str):
     e = db.find(gamma=1.9)[0]
     # plotListOfArray(e[0].energyCurve(), y_restriction=2)
     # InteractiveViewer(e[0], RenderSetup('S_global')).show()
-    calAllOrderParameters(db, 'phi', num_threads=4)
+    calAllOrderParameters(db, 'phi', num_threads=4, averaged=True)
 
 
 if __name__ == '__main__':

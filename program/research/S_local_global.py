@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
 
-from analysis.database import PickledSimulation, Database
+import default
 from h5tools.dataset import *
+from research.two_order_plot import two_order_plot
 
 
-def plot_hyperbola(ax, a: float = 1):
+def _plot_hyperbola(ax, a: float = 1):
     theta = np.linspace(0, np.pi / 4, 400)
     r = 1 / np.sqrt(np.cos(2 * theta))
     x = a * r * np.cos(theta)
@@ -13,11 +14,9 @@ def plot_hyperbola(ax, a: float = 1):
             alpha=0.2, linewidth=2)
 
 
-def scatter(S_local: np.ndarray, S_global: np.ndarray):
+def plot_hyperbola(ax):
     plt.rcParams.update({'font.size': 20})
-    fig, ax = plt.subplots()
-    ax.scatter(S_local, S_global, s=1)
-    plot_hyperbola(ax, a=0.338)
+    _plot_hyperbola(ax, a=default.S_local_background)
     ax.set_aspect(1)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
@@ -26,15 +25,8 @@ def scatter(S_local: np.ndarray, S_global: np.ndarray):
     plt.subplots_adjust(left=0.15, right=0.85, top=0.85, bottom=0.15)
 
 
-def S_local_vs_global(simu: PickledSimulation):
-    S_local = simu.op('S_local')
-    S_global = simu.op('S_global')
-    scatter(S_local, S_global)
-
-
 if __name__ == '__main__':
-    auto_pack()
-    db = Database('../data-20250312.h5')
-    S_local_vs_global(db[0].simulation_at(0))
-    S_local_vs_global(db[1].simulation_at(0))
+    fig, ax = plt.subplots()
+    two_order_plot(ax, '../full-20250313.h5', 'S_local', 'S_global')
+    plot_hyperbola(ax)
     plt.show()

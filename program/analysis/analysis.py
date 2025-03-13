@@ -21,7 +21,7 @@ def OrderParameterFunc(order_parameter_list: list[str], weighted: bool, abs_aver
         abg: tuple = args[0]
         xyt: np.ndarray = args[1]
         Xi = OrderParameterList(order_parameter_list)(xyt, abg, weighted)
-        return ut.apply_struct(np.mean)(ut.apply_struct(np.abs)(Xi)) if abs_averaged else Xi
+        return ut.apply_struct(np.mean)(Xi) if abs_averaged else Xi
 
     return inner
 

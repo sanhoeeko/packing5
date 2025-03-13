@@ -33,6 +33,9 @@ class DatabaseBase:
     def __getitem__(self, index: int):
         return self.id(self.ids[index])
 
+    def __len__(self):
+        return len(self.summary)
+
     def __iter__(self):
         """
         We don't load all data into memory. Here we use some transformation to "sort" data by [gamma]

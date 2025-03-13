@@ -5,26 +5,27 @@ from .kernel import ker
 
 
 class Voronoi:
+    d = 0.1
+
     def __init__(self, gamma: float, A: float, B: float, configuration: np.ndarray):
         self.gamma = gamma
         self.A, self.B = A, B
         self.configuration = configuration
         self.num_rods = configuration.shape[0]
-        self.disks_per_rod = 3
+        self.disks_per_rod = int(1 + 2 * (gamma - 1) / Voronoi.d)
         self.disk_map = ut.CArray(self.getDiskMap(configuration), dtype=np.float32)
 
     @classmethod
     def fromStateDict(cls, dic: dict):
         return cls(dic['metadata']['gamma'], dic['metadata']['A'], dic['metadata']['B'], dic['xyt'])
 
-    def getDiskMap(self, xytu: np.ndarray):
+    def getDiskMap(self, xytu: np.ndarray):  # TODO: rewrite it
         xy = xytu[:, :2]
         t = xytu[:, 2]
-        a = self.gamma - 1
+        a = - 1 + 1 / self.gamma
         v = np.vstack([np.cos(t), np.sin(t)]).T
-        left_xy = xy - a * v
-        right_xy = xy + a * v
-        return np.vstack([left_xy, xy, right_xy])
+        pts = [xy + (a + j * Voronoi.d / self.gamma) * v for j in range(self.disks_per_rod)]
+        return np.vstack(pts)
 
     def true_voronoi(self) -> np.ndarray:
         output = ut.CArray(np.zeros(self.num_rods * self.disks_per_rod * 8, dtype=[

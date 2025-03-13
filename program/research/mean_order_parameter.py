@@ -26,4 +26,4 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 if __name__ == '__main__':
-    batch_analyze('../analysis-20250313.h5', 'EllipticPhi6', (0, 20))
+    batch_analyze('../analysis-20250313.h5', 'S_local', (0, 20))

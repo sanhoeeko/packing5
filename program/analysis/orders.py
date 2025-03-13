@@ -9,19 +9,26 @@ from . import utils as ut
 from .voronoi import Voronoi, DelaunayBase
 
 
-def S_global(xyt: np.ndarray):
-    # calculate the eigenvector of total Q-tensor
-    t = xyt[:, 2]
-    c = np.mean(np.cos(2 * t))
-    s = np.mean(np.sin(2 * t))
-    S_g = np.sqrt(c ** 2 + s ** 2)
-    director_angle = np.arctan2(s, c + S_g)
-    # calculate 2*cos(θ-α)^2-1
-    return np.cos(2 * (t - director_angle))
+class StaticOrders:
+    @staticmethod
+    def S_global(xyt: np.ndarray):
+        # calculate the eigenvector of total Q-tensor
+        t = xyt[:, 2] % np.pi
+        c = np.mean(np.cos(2 * t))
+        s = np.mean(np.sin(2 * t))
+        S_g = np.sqrt(c ** 2 + s ** 2)
+        director_angle = np.arctan2(s, c + S_g)
+        # calculate 2*cos(θ-α)^2-1
+        return np.cos(2 * (t - director_angle))
 
+    @staticmethod
+    def S_x(xyt: np.ndarray):
+        t = xyt[:, 2] % np.pi
+        return np.cos(2 * t)
 
-def Angle(xyt: np.ndarray):
-    return xyt[:, 2] % np.pi
+    @staticmethod
+    def Angle(xyt: np.ndarray):
+        return xyt[:, 2] % np.pi
 
 
 def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, abg: tuple = None):
@@ -29,10 +36,8 @@ def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, ab
     :return: a numpy array of shape (N,), N = particle number.
     parameter `name` and `xyt` are necessary.
     """
-    if name == 'S_global':
-        return S_global(xyt)
-    elif name == 'Angle':
-        return Angle(xyt)
+    if name in ['S_global', 'S_x', 'Angle']:
+        return getattr(StaticOrders, name)(xyt)
     elif name.startswith('Elliptic'):
         return getattr(voro, name)(ut.CArray(xyt), abg[2])
     else:
