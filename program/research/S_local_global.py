@@ -11,7 +11,7 @@ def _plot_hyperbola(ax, a: float = 1):
     x = a * r * np.cos(theta)
     y = a / np.sqrt(1 - a ** 2) * r * np.sin(theta)
     ax.plot(x, y, label=r'$y = \sqrt{x^2 - a^2}$', color='black',
-            alpha=0.2, linewidth=2)
+            alpha=1, linewidth=1)
 
 
 def plot_hyperbola(ax):
@@ -27,6 +27,6 @@ def plot_hyperbola(ax):
 
 if __name__ == '__main__':
     fig, ax = plt.subplots()
-    two_order_plot(ax, '../full-20250313.h5', 'S_local', 'S_global')
+    two_order_plot(ax, '../merge-full.h5', 'S_local', 'S_global')
     plot_hyperbola(ax)
     plt.show()

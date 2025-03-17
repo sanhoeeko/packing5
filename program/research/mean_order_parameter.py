@@ -1,17 +1,7 @@
 import matplotlib.pyplot as plt
 
-from analysis.post_analysis import PostDatabase, PostData
+from analysis.post_analysis import MeanCIDatabase
 from art import curves as art
-
-
-class MeanCIDatabase(PostDatabase):
-    def id(self, ensemble_id: str):
-        return MeanCIData(self.file[ensemble_id], self.x_axis_name)
-
-
-class MeanCIData(PostData):
-    def process_data(self, key, data_group):
-        self.dic[key] = (data_group['mean'][:], data_group['ci'][:])
 
 
 def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
@@ -26,4 +16,4 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 if __name__ == '__main__':
-    batch_analyze('../analysis-20250313.h5', 'S_local', (0, 20))
+    batch_analyze('../merge-analysis.h5', 'EllipticPhi6', (0, 20))

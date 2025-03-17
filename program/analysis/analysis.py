@@ -64,8 +64,8 @@ def orderParameterCurve(ensemble: PickledEnsemble, order_parameter_names: list[s
 def averageByReplica(x: np.ndarray, y: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
     """
     :param x: interpolated 1 dim
-    :param y: interpolated 3 dim
-    :return: (interpolated x: 1 dim, mean y: 2 dim, CI radius y: 2 dim)
+    :param y: interpolated 2 dim
+    :return: (interpolated x: 1 dim, mean y: 1 dim, CI radius y: 1 dim)
     """
     if y.dtype.fields is not None:
         ave_curve = ut.apply_struct(np.nanmean, axis=0)(y)
@@ -106,7 +106,7 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
         dic[ensemble.metadata['id'][0].decode('utf-8')] = sub_dic
 
     # add x-axis
-    dict_to_analysis_hdf5(out_file, dic)  # TODO: BUG for multi order parameters
+    dict_to_analysis_hdf5(out_file, dic)
     add_property_to_hdf5(out_file, 'x_axis_name', x_axis_name)
 
     # add metadata
