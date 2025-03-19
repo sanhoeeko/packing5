@@ -5,7 +5,7 @@ from .kernel import ker
 
 
 class Voronoi:
-    d = 0.1
+    d = 0.05
 
     def __init__(self, gamma: float, A: float, B: float, configuration: np.ndarray):
         self.gamma = gamma
@@ -22,7 +22,7 @@ class Voronoi:
     def getDiskMap(self, xytu: np.ndarray):  # TODO: rewrite it
         xy = xytu[:, :2]
         t = xytu[:, 2]
-        a = - 1 + 1 / self.gamma
+        a = -self.disks_per_rod * Voronoi.d / self.gamma / 2
         v = np.vstack([np.cos(t), np.sin(t)]).T
         pts = [xy + (a + j * Voronoi.d / self.gamma) * v for j in range(self.disks_per_rod)]
         return np.vstack(pts)
@@ -84,8 +84,8 @@ class DelaunayBase:
 
     @classmethod
     def legacy(cls, num_rods: int, gamma: float, xyt: ut.CArray):
-        disks_per_rod = 3
-        output = ut.CArray(np.zeros(num_rods * 8, dtype=[('id2', np.int32), ('weight', np.float32)]))
+        disks_per_rod = int(1 + 2 * (gamma - 1) / Voronoi.d)
+        output = ut.CArray(np.zeros(num_rods * 10, dtype=[('id2', np.int32), ('weight', np.float32)]))
         indices = ut.CArray(np.zeros((num_rods,), dtype=np.int32))
         try:
             n_edges = ker.dll.legacyDelaunay(num_rods, disks_per_rod, gamma, xyt.ptr, output.ptr, indices.ptr)
@@ -97,6 +97,13 @@ class DelaunayBase:
     @property
     def params(self):
         return self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr
+
+    def iter_edges(self):
+        i = 0
+        for k in range(self.num_edges):
+            j = self.edges.data[k]
+            if k >= self.indices[i + 1]: i += 1
+            yield i, j
 
     def z_number(self, arg=None) -> np.ndarray:
         if self.weighted:

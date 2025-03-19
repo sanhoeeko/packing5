@@ -28,11 +28,14 @@ class RenderSetup:
         self.style = get_style(order_parameter_name)
         self.real_size = real_size
 
-        def func(x):
-            arr = OrderParameterFunc([order_parameter_name], weighted, False)(x)
-            return arr[order_parameter_name]
+        if order_parameter_name is None:
+            self.func = None
+        else:
+            def func(x):
+                arr = OrderParameterFunc([order_parameter_name], weighted, False)(x)
+                return arr[order_parameter_name]
 
-        self.func = func
+            self.func = func
 
 
 def selectCmapAndNorm(style: str):
@@ -60,12 +63,16 @@ class RenderState:
         self.A, self.B = A, B
         return self
 
-    def drawParticles(self, setup: RenderSetup, xyt: np.ndarray, metadata: dict):
+    def drawParticles(self, xyt: np.ndarray, metadata: dict, setup: RenderSetup = None, with_label=True):
         """
         :param xyt: (N, 3) configuration
-        :param metadata: dict converted from 1 x 1 struct array
+        :param metadata: dict converted from 1 x 1 structured array, must include "gamma"
         """
-        assert hasattr(self, 'A'), "You may forget to set the boundary."
+        if not hasattr(self, 'A'):
+            self.A = np.max(np.abs(xyt[:, 0]))
+            self.B = np.max(np.abs(xyt[:, 1]))
+        if setup is None:
+            setup = RenderSetup()
         cmap, norm = selectCmapAndNorm(setup.style)
 
         # Create a list to hold the patches
@@ -84,8 +91,11 @@ class RenderState:
             ellipses.append(ellipse)
 
         # Calculate color_data, which determines the color to display on particles
-        abg = (metadata['A'], metadata['B'], metadata['gamma'])
-        color_data = setup.func((abg, xyt)).data
+        if setup.func is None:
+            color_data = np.ones((xyt.shape[0],))
+        else:
+            abg = (metadata['A'], metadata['B'], metadata['gamma'])
+            color_data = setup.func((abg, xyt)).data
 
         # Create a collection with the ellipses and add it to the axes
         col = collections.PatchCollection(ellipses, array=color_data, norm=norm, cmap=cmap, alpha=alpha)
@@ -97,16 +107,17 @@ class RenderState:
         self.handle.ax.set_aspect('equal')
 
         # Add a text [at the top left side] to show information of the state
-        self.handle.ax.text(
-            -self.A, self.B * 1.1,
-            (
-                f"n={metadata['n']}, d={'{:.3f}'.format(metadata['d'])}, "
-                f"φ={'{:.3f}'.format(metadata['phi'])}, "
-                f"A={'{:.2f}'.format(metadata['A'])}, B={'{:.2f}'.format(metadata['B'])}, "
-                f"\n"
-                f"E={'{:.3f}'.format(metadata['energy'])}, g={'{:.3f}'.format(metadata['mean_gradient_amp'])}"
+        if with_label:
+            self.handle.ax.text(
+                -self.A, self.B * 1.1,
+                (
+                    f"n={metadata['n']}, d={'{:.3f}'.format(metadata['d'])}, "
+                    f"φ={'{:.3f}'.format(metadata['phi'])}, "
+                    f"A={'{:.2f}'.format(metadata['A'])}, B={'{:.2f}'.format(metadata['B'])}, "
+                    f"\n"
+                    f"E={'{:.3f}'.format(metadata['energy'])}, g={'{:.3f}'.format(metadata['mean_gradient_amp'])}"
+                )
             )
-        )
         self.handle.colorbar(col, 'θ')
         return self
 
@@ -138,7 +149,7 @@ class InteractiveViewer:
         self.handle.clear()
         dic = self.simu[self.index]
         self.renderer.drawBoundary(dic['metadata']['A'], dic['metadata']['B'])
-        self.renderer.drawParticles(self.setup, dic['xyt'], dic['metadata'])
+        self.renderer.drawParticles(dic['xyt'], dic['metadata'], self.setup)
         plt.draw()
 
     def show(self):
