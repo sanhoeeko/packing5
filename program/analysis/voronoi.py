@@ -1,7 +1,19 @@
 import numpy as np
+from scipy.spatial import Delaunay
 
 from . import utils as ut
 from .kernel import ker
+
+
+def ConvertToCompressedEdges(delaunay: Delaunay) -> (ut.CArray, ut.CArray):
+    indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
+    edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
+    n = indices_in.data.shape[0]
+    m = edges_in.data.shape[0]
+    indices_out = ut.CArray(np.zeros((n,), np.int32))
+    edges_out = ut.CArray(np.zeros((m // 2,), np.int32))
+    ker.dll.ConvertToCompressedEdges(n, m, indices_in.ptr, edges_in.ptr, indices_out.ptr, edges_out.ptr)
+    return indices_out, edges_out
 
 
 class Voronoi:
@@ -13,13 +25,13 @@ class Voronoi:
         self.configuration = configuration
         self.num_rods = configuration.shape[0]
         self.disks_per_rod = int(1 + 2 * (gamma - 1) / Voronoi.d)
-        self.disk_map = ut.CArray(self.getDiskMap(configuration), dtype=np.float32)
+        self.disk_map = self.getDiskMap(configuration)
 
     @classmethod
     def fromStateDict(cls, dic: dict):
         return cls(dic['metadata']['gamma'], dic['metadata']['A'], dic['metadata']['B'], dic['xyt'])
 
-    def getDiskMap(self, xytu: np.ndarray):  # TODO: rewrite it
+    def getDiskMap(self, xytu: np.ndarray) -> np.ndarray:
         xy = xytu[:, :2]
         t = xytu[:, 2]
         a = -self.disks_per_rod * Voronoi.d / self.gamma / 2
@@ -27,41 +39,18 @@ class Voronoi:
         pts = [xy + (a + j * Voronoi.d / self.gamma) * v for j in range(self.disks_per_rod)]
         return np.vstack(pts)
 
-    def true_voronoi(self) -> np.ndarray:
-        output = ut.CArray(np.zeros(self.num_rods * self.disks_per_rod * 8, dtype=[
-            ('id1', np.int32), ('id2', np.int32),
-            ('x1', np.float32), ('y1', np.float32), ('x2', np.float32), ('y2', np.float32)]))
-        n_edges = ker.dll.disksToVoronoiEdges(self.num_rods, self.disks_per_rod,
-                                              self.disk_map.ptr, output.ptr, self.A, self.B)
-        return output.data[:n_edges]
-
-    def delaunay_template(self, kernel_function) -> (ut.CArray, np.ndarray):
+    def delaunay(self) -> (ut.CArray, np.ndarray):
         """
         :param kernel_function: ker.dll.trueDelaunay | ker.dll.weightedDelaunay
         """
-        output = ut.CArray(np.zeros(self.num_rods * 8, dtype=[('id2', np.int32), ('weight', np.float32)]))
-        indices = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
-        n_edges = kernel_function(self.num_rods, self.disks_per_rod,
-                                  self.disk_map.ptr, output.ptr, indices.ptr, self.A, self.B)
-        return indices, output.data[:n_edges]
-
-    def true_delaunay(self):
-        from .orders import Delaunay
-        # if isParticleTooClose(ut.CArrayF(self.configuration)):
-        #     return None
-        return Delaunay(False, *self.delaunay_template(ker.dll.trueDelaunay), self.gamma)
-
-    def weighted_delaunay(self):
-        from .orders import Delaunay
-        # if isParticleTooClose(ut.CArrayF(self.configuration)):
-        #     return None
-        return Delaunay(True, *self.delaunay_template(ker.dll.weightedDelaunay), self.gamma)
-
-    def delaunay(self, weighted: bool):
-        if weighted:
-            return self.weighted_delaunay()
-        else:
-            return self.true_delaunay()
+        delaunay = Delaunay(self.disk_map)
+        indices_for_points, edges_for_points = ConvertToCompressedEdges(delaunay)
+        print(indices_for_points)
+        # output = ut.CArray(np.zeros(self.num_rods * 8, dtype=[('id2', np.int32), ('weight', np.float32)]))
+        # indices = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
+        # n_edges = kernel_function(self.num_rods, self.disks_per_rod,
+        #                           self.disk_map.ptr, output.ptr, indices.ptr, self.A, self.B)
+        # return indices, output.data[:n_edges]
 
 
 class DelaunayBase:

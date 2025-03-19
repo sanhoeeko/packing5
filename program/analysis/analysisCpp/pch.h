@@ -8,16 +8,8 @@
 #define DLLEXPORT extern "C"
 #endif
 
-#include "voro_interface.h"
-
-DLLEXPORT int disksToVoronoiEdges(int num_rods, int disks_per_rod, void* input_points_ptr, void* output_ptr, 
-    float A, float B);
-DLLEXPORT int trueDelaunay(int num_rods, int disks_per_rod, void* input_points_ptr, void* output_ptr,
-    void* output_indices_ptr, float A, float B);
-DLLEXPORT int weightedDelaunay(int num_rods, int disks_per_rod, void* input_points_ptr, void* output_ptr,
-    void* output_indices_ptr, float A, float B);
-DLLEXPORT int legacyDelaunay(int num_rods, int disks_per_rod, float gamma, void* input_points_ptr, void* output_ptr,
-    void* output_indices_ptr);
+DLLEXPORT void ConvertToCompressedEdges(int n, int m, void* indices_in, void* edges_in, void* indices_out, 
+    void* edges_out);
 DLLEXPORT void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* weights_ptr, void* output_ptr);
 DLLEXPORT void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
