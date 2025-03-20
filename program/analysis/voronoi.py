@@ -3,15 +3,14 @@ import scipy.spatial as sp
 
 from . import utils as ut
 from .kernel import ker
-from numba import njit
 
 
 def DelaunayModulo(delaunay: sp.Delaunay, N: int) -> (ut.CArray, ut.CArray, ut.CArray):
     indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
     edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
-    mask = ut.CArray(DelaunayClip(delaunay))
     n = indices_in.data.shape[0]
     m = edges_in.data.shape[0]
+    mask = DelaunayClip(delaunay, indices_in, edges_in)
     indices_out = ut.CArray(np.zeros((N,), np.int32))
     edges_out = ut.CArray(np.zeros((m // 2,), np.int32))
     weights_out = ut.CArray(np.zeros((m // 2,), np.int32))
@@ -23,51 +22,18 @@ def DelaunayModulo(delaunay: sp.Delaunay, N: int) -> (ut.CArray, ut.CArray, ut.C
     return indices_out, edges_out, weights_out
 
 
-# 使用 njit 加速的核心函数
-@njit
-def _DelaunayClip_core(indptr, indices, convex_hull):
-    # 初始化 mask，初始值为 1
-    mask = np.ones(len(indices), dtype=np.int32)
-
-    # 将凸包边转化为稠密的标记矩阵
-    max_index = np.max(indices)
-    convex_hull_mask = np.zeros((max_index + 1, max_index + 1), dtype=np.uint8)
-    for edge in convex_hull:
-        convex_hull_mask[edge[0], edge[1]] = 1
-        convex_hull_mask[edge[1], edge[0]] = 1  # 双向标记
-
-    # 遍历每个顶点的邻接点，检查是否为凸包边
-    for i in range(len(indptr) - 1):
-        neighbors = indices[indptr[i]:indptr[i + 1]]
-        for neighbor in neighbors:
-            if convex_hull_mask[i, neighbor] == 1:
-                for k in range(indptr[i], indptr[i + 1]):  # 手动匹配位置
-                    if indices[k] == neighbor:
-                        mask[k] = 0
-                        break
-
+def DelaunayClip(delaunay: sp.Delaunay, indices_in, edges_in) -> ut.CArray:
+    cos_threshold = -0.9
+    u_tri = delaunay.simplices
+    u_tri = np.sort(u_tri, axis=1)
+    tri = u_tri[np.lexsort((u_tri[:, 2], u_tri[:, 1], u_tri[:, 0]))]
+    tri = ut.CArray(np.concatenate([tri.astype(np.int32), np.ones((tri.shape[0], 1), dtype=np.int32)], axis=1))
+    mask = ut.CArray(np.ones((delaunay.vertex_neighbor_vertices[1].shape[0],), dtype=np.int32))
+    points = ut.CArray(delaunay.points, dtype=np.float32)
+    convex_hull = ut.CArray(np.sort(delaunay.convex_hull, axis=1))
+    ker.dll.RemoveBadBoundaryEdges(points.ptr, convex_hull.ptr, tri.ptr, indices_in.ptr, edges_in.ptr, mask.ptr,
+                                   convex_hull.data.shape[0], cos_threshold)
     return mask
-
-
-# 封装为用户友好的接口
-def DelaunayClip(delaunay):
-    """
-    输入 Delaunay 剖分对象，返回一个 mask 数组，用于标记
-    vertex_neighbor_vertices[1] 中是否包含凸包边。
-
-    参数:
-        delaunay: scipy.spatial.Delaunay 对象
-
-    返回:
-        mask: np.ndarray, int32 类型，0 表示对应边是凸包边，1 表示不是。
-    """
-    # 提取 vertex_neighbor_vertices 和凸包数据
-    indptr, indices = delaunay.vertex_neighbor_vertices
-    convex_hull = np.array([tuple(sorted(edge)) for edge in delaunay.convex_hull])
-
-    # 调用加速的核心函数
-    return _DelaunayClip_core(indptr, indices, convex_hull)
-
 
 class Voronoi:
     d = 0.05
