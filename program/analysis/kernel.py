@@ -10,6 +10,7 @@ class Kernel:
         self.dll = ct.CDLL('./x64/Release/analysisCpp.dll')
         self.setTypes(
             ('DelaunayModulo', [ct.c_int] * 3 + [ct.c_void_p] * 6, ct.c_int),
+            ('ConvertConvexHull', [ct.c_void_p] * 2 + [ct.c_int] * 2, None),
             ('sumOverWeights', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumOverNeighbors', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
