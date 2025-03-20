@@ -8,9 +8,8 @@
 #define DLLEXPORT extern "C"
 #endif
 
-DLLEXPORT int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* hull_ptr, void* indices_out_ptr,
+DLLEXPORT int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* mask_ptr, void* indices_out_ptr,
     void* edges_out_ptr, void* weights_out_ptr);
-DLLEXPORT void ConvertConvexHull(void* convex_hull_ptr, void* out_ptr, int convex_hull_length, int n_points);
 DLLEXPORT void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* weights_ptr, void* output_ptr);
 DLLEXPORT void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,

@@ -84,8 +84,8 @@ if __name__ == '__main__':
                         x2, y2 = xyt[j, :2]
                         f.ax.plot([x1, x2], [y1, y2], color='blue')
             else:
-                delaunay = Delaunay(voro.disk_map)
-                xy = voro.disk_map
+                delaunay = Delaunay(voro.disk_map.data)
+                xy = voro.disk_map.data
                 f.ax.triplot(xy[:, 0], xy[:, 1], delaunay.simplices.copy())
         else:
             delaunay = Delaunay(xyt[:, :2])
