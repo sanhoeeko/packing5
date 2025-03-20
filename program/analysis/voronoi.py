@@ -1,19 +1,72 @@
 import numpy as np
-from scipy.spatial import Delaunay
+import scipy.spatial as sp
 
 from . import utils as ut
 from .kernel import ker
+from numba import njit
 
 
-def ConvertToCompressedEdges(delaunay: Delaunay) -> (ut.CArray, ut.CArray):
+def DelaunayModulo(delaunay: sp.Delaunay, N: int) -> (ut.CArray, ut.CArray, ut.CArray):
     indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
     edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
+    mask = ut.CArray(DelaunayClip(delaunay))
     n = indices_in.data.shape[0]
     m = edges_in.data.shape[0]
-    indices_out = ut.CArray(np.zeros((n,), np.int32))
+    indices_out = ut.CArray(np.zeros((N,), np.int32))
     edges_out = ut.CArray(np.zeros((m // 2,), np.int32))
-    ker.dll.ConvertToCompressedEdges(n, m, indices_in.ptr, edges_in.ptr, indices_out.ptr, edges_out.ptr)
-    return indices_out, edges_out
+    weights_out = ut.CArray(np.zeros((m // 2,), np.int32))
+    n_edges = ker.dll.DelaunayModulo(n, m, N, indices_in.ptr, edges_in.ptr, mask.ptr,
+                                     indices_out.ptr, edges_out.ptr, weights_out.ptr)
+    # clip edges data
+    edges_out = ut.CArray(edges_out.data[:n_edges])
+    weights_out = ut.CArray(weights_out.data[:n_edges])
+    return indices_out, edges_out, weights_out
+
+
+# 使用 njit 加速的核心函数
+@njit
+def _DelaunayClip_core(indptr, indices, convex_hull):
+    # 初始化 mask，初始值为 1
+    mask = np.ones(len(indices), dtype=np.int32)
+
+    # 将凸包边转化为稠密的标记矩阵
+    max_index = np.max(indices)
+    convex_hull_mask = np.zeros((max_index + 1, max_index + 1), dtype=np.uint8)
+    for edge in convex_hull:
+        convex_hull_mask[edge[0], edge[1]] = 1
+        convex_hull_mask[edge[1], edge[0]] = 1  # 双向标记
+
+    # 遍历每个顶点的邻接点，检查是否为凸包边
+    for i in range(len(indptr) - 1):
+        neighbors = indices[indptr[i]:indptr[i + 1]]
+        for neighbor in neighbors:
+            if convex_hull_mask[i, neighbor] == 1:
+                for k in range(indptr[i], indptr[i + 1]):  # 手动匹配位置
+                    if indices[k] == neighbor:
+                        mask[k] = 0
+                        break
+
+    return mask
+
+
+# 封装为用户友好的接口
+def DelaunayClip(delaunay):
+    """
+    输入 Delaunay 剖分对象，返回一个 mask 数组，用于标记
+    vertex_neighbor_vertices[1] 中是否包含凸包边。
+
+    参数:
+        delaunay: scipy.spatial.Delaunay 对象
+
+    返回:
+        mask: np.ndarray, int32 类型，0 表示对应边是凸包边，1 表示不是。
+    """
+    # 提取 vertex_neighbor_vertices 和凸包数据
+    indptr, indices = delaunay.vertex_neighbor_vertices
+    convex_hull = np.array([tuple(sorted(edge)) for edge in delaunay.convex_hull])
+
+    # 调用加速的核心函数
+    return _DelaunayClip_core(indptr, indices, convex_hull)
 
 
 class Voronoi:
@@ -39,18 +92,14 @@ class Voronoi:
         pts = [xy + (a + j * Voronoi.d / self.gamma) * v for j in range(self.disks_per_rod)]
         return np.vstack(pts)
 
-    def delaunay(self) -> (ut.CArray, np.ndarray):
+    def delaunay(self) -> 'Delaunay':
         """
         :param kernel_function: ker.dll.trueDelaunay | ker.dll.weightedDelaunay
         """
-        delaunay = Delaunay(self.disk_map)
-        indices_for_points, edges_for_points = ConvertToCompressedEdges(delaunay)
-        print(indices_for_points)
-        # output = ut.CArray(np.zeros(self.num_rods * 8, dtype=[('id2', np.int32), ('weight', np.float32)]))
-        # indices = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
-        # n_edges = kernel_function(self.num_rods, self.disks_per_rod,
-        #                           self.disk_map.ptr, output.ptr, indices.ptr, self.A, self.B)
-        # return indices, output.data[:n_edges]
+        from .orders import Delaunay
+        delaunay = sp.Delaunay(self.disk_map)
+        indices, edges, weights = DelaunayModulo(delaunay, self.num_rods)
+        return Delaunay(indices, edges, weights, self.gamma)
 
 
 class DelaunayBase:
@@ -59,40 +108,39 @@ class DelaunayBase:
     weighted_edges: dtype=[('id2', np.int32), ('weight', np.float32)]
     """
 
-    def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray, gamma: float):
+    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float):
         self.gamma = gamma
-        self.weighted = weighted
         self.indices = indices
+        self.edges = edges
+        self.weights = weights
         self.num_rods = indices.data.shape[0]
-        self.weight_sums = ut.CArrayFZeros((self.num_rods,))
-        self.edges = ut.CArray(weighted_edges['id2'], dtype=np.int32)
         self.num_edges = self.edges.data.shape[0]
-        self.weights = ut.CArray(weighted_edges['weight'], dtype=np.float32)
-        ker.dll.sumOverWeights(self.num_edges, self.num_rods, self.indices.ptr,
-                               self.edges.ptr, self.weights.ptr, self.weight_sums.ptr)
-
-    @classmethod
-    def legacy(cls, num_rods: int, gamma: float, xyt: ut.CArray):
-        disks_per_rod = int(1 + 2 * (gamma - 1) / Voronoi.d)
-        output = ut.CArray(np.zeros(num_rods * 10, dtype=[('id2', np.int32), ('weight', np.float32)]))
-        indices = ut.CArray(np.zeros((num_rods,), dtype=np.int32))
-        try:
-            n_edges = ker.dll.legacyDelaunay(num_rods, disks_per_rod, gamma, xyt.ptr, output.ptr, indices.ptr)
-        except OSError:
-            return None
-        obj = cls(False, indices, output.data, gamma)
-        return obj
 
     @property
     def params(self):
         return self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr
 
+    @property
+    def edge_types(self) -> np.ndarray[np.int32]:
+        """
+        :return: array, 0 for head-to-head, 1 for head-to-side, 2 for side-to-side
+        """
+        res = np.full((self.num_edges,), 1, dtype=np.int32)
+        max_weight = np.max(self.weights.data)
+        # res[self.weights.data == 1] = 0
+        # res[self.weights.data == max_weight] = 2
+        res[self.weights.data <= 60] = 0
+        res[self.weights.data >= 120] = 2
+        return res
+
     def iter_edges(self):
+        ty = self.edge_types
         i = 0
         for k in range(self.num_edges):
             j = self.edges.data[k]
-            if k >= self.indices[i + 1]: i += 1
-            yield i, j
+            while k >= self.indices[i] and i < self.num_rods:
+                i += 1
+            yield i - 1, j, ty[k]
 
     def z_number(self, arg=None) -> np.ndarray:
         if self.weighted:

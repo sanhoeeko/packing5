@@ -8,8 +8,8 @@
 #define DLLEXPORT extern "C"
 #endif
 
-DLLEXPORT void ConvertToCompressedEdges(int n, int m, void* indices_in, void* edges_in, void* indices_out, 
-    void* edges_out);
+DLLEXPORT int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* mask_ptr, void* indices_out_ptr,
+    void* edges_out_ptr, void* weights_out_ptr);
 DLLEXPORT void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* weights_ptr, void* output_ptr);
 DLLEXPORT void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,

@@ -72,8 +72,8 @@ class Delaunay(DelaunayBase):
     All order parameters that requires Delaunay triangulation are here.
     """
 
-    def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray, gamma: float):
-        super().__init__(weighted, indices, weighted_edges, gamma)
+    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float):
+        super().__init__(indices, edges, weights, gamma)
 
     def z_number(self, arg=None) -> np.ndarray:
         return super().z_number(arg)
