@@ -13,8 +13,8 @@ int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr
         n: number of points
         m: number of edges * 2
         N: number of rods
-        mask[k] = 0 => the k-th edge is in the convex hull
-        return: total number of edges
+        mask[k] = 0 => the k-th edge is a bad edge (mask can be NULL)
+        return: total number of rod edges
     */
     int* indices_in = (int*)indices_in_ptr;
     int* edges_in = (int*)edges_in_ptr;
@@ -29,16 +29,35 @@ int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr
     int i = 0;
     int i_rod = 0;
     int k_for_next_i = indices_in[0];
-    for (int k = 0; k < m; k++) {
-        while (k == k_for_next_i && i < n) {
-            ++i;
-            i_rod = i % N;
-            k_for_next_i = indices_in[i];
+    if (mask != NULL) {
+        for (int k = 0; k < m; k++) {
+            while (k == k_for_next_i && i < n) {
+                ++i;
+                i_rod = i % N;
+                k_for_next_i = indices_in[i];
+            }
+            if (mask[k]) {
+                int j_rod = edges_in[k] % N;
+                if (i_rod < j_rod) {
+                    graph[i_rod][j_rod]++;
+                }
+            }
         }
-        if (mask[k]) {
-            int j_rod = edges_in[k] % N;
-            if (i_rod < j_rod) {
-                graph[i_rod][j_rod]++;
+    }
+    else {
+        for (int k = 0; k < m; k++) {
+            while (k == k_for_next_i && i < n) {
+                ++i;
+                i_rod = i % N;
+                k_for_next_i = indices_in[i];
+            }
+            if (i >= n)break;
+            int j = edges_in[k];
+            if (j < n) {
+                int j_rod = j % N;
+                if (i_rod < j_rod) {
+                    graph[i_rod][j_rod]++;
+                }
             }
         }
     }

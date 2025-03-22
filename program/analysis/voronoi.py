@@ -1,14 +1,62 @@
 import numpy as np
 import scipy.spatial as sp
+from scipy.special import ellipe as EllipticE
 
 from . import utils as ut
 from .kernel import ker
 
 
-def DelaunayModulo(delaunay: sp.Delaunay, N: int) -> (ut.CArray, ut.CArray, ut.CArray):
+def DelaunayModulo(delaunay: sp.Delaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
     indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
     edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
-    n = indices_in.data.shape[0]
+    n = N * disks_per_rod
+    m = edges_in.data.shape[0]
+    indices_out = ut.CArray(np.zeros((N,), np.int32))
+    edges_out = ut.CArray(np.zeros((m // 2,), np.int32))
+    weights_out = ut.CArray(np.zeros((m // 2,), np.int32))
+    n_edges = ker.dll.DelaunayModulo(n, m, N, indices_in.ptr, edges_in.ptr, 0,
+                                     indices_out.ptr, edges_out.ptr, weights_out.ptr)
+    # clip edges data
+    edges_out = ut.CArray(edges_out.data[:n_edges])
+    weights_out = ut.CArray(weights_out.data[:n_edges])
+    return indices_out, edges_out, weights_out
+
+
+def EllipsePoints(a: float, b: float, d: float) -> np.ndarray:
+    """
+    :return: (2, n) matrix: [[x], [y]]
+    """
+
+    def X(t):
+        return np.array([a * np.cos(t), b * np.sin(t)])
+
+    def NextT(s, t):
+        if t % (np.pi / 2) == 0: t += 1e-6
+        r = np.sqrt(1 - e ** 2 * np.cos(t) ** 2)
+        sqr = np.sqrt(a * r * (a * r ** 3 - 2 * (-1 + r ** 2) * s * np.tan(t)))
+        return (a * r ** 2 - sqr) / (a * np.tan(t) * (-1 + r ** 2))
+
+    e = np.sqrt(1 - b ** 2 / a ** 2)
+    C = 4 * a * EllipticE(e ** 2)  # Note python's definition of elliptic integrals!
+    n = int(np.round(C / d))
+    s = C / n
+    ts = np.zeros((n,))
+    for i in range(1, n):
+        ts[i] = ts[i - 1] + NextT(s, ts[i - 1])
+    pts = X(ts)  # (2, n) matrix
+    # Evaluation of error (typically < 0.002)
+    # dx = np.diff(pts[0], prepend=pts[0, -1])
+    # dy = np.diff(pts[1], prepend=pts[1, -1])
+    # dr = np.sqrt(dx ** 2 + dy ** 2)
+    # error = (np.max(dr) - np.min(dr)) / s
+    # print(error)
+    return pts
+
+
+def DelaunayModuloClip(delaunay: sp.Delaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
+    indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
+    edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
+    n = N * disks_per_rod
     m = edges_in.data.shape[0]
     mask = DelaunayClip(delaunay, indices_in, edges_in)
     indices_out = ut.CArray(np.zeros((N,), np.int32))
@@ -35,6 +83,7 @@ def DelaunayClip(delaunay: sp.Delaunay, indices_in, edges_in) -> ut.CArray:
                                    convex_hull.data.shape[0], cos_threshold)
     return mask
 
+
 class Voronoi:
     d = 0.05
 
@@ -44,7 +93,7 @@ class Voronoi:
         self.configuration = configuration
         self.num_rods = configuration.shape[0]
         self.disks_per_rod = int(1 + 2 * (gamma - 1) / Voronoi.d)
-        self.disk_map = self.getDiskMap(configuration)
+        self.disk_map = np.vstack([self.getDiskMap(configuration), self.getEllipsePoints()])
 
     @classmethod
     def fromStateDict(cls, dic: dict):
@@ -58,13 +107,16 @@ class Voronoi:
         pts = [xy + (a + j * Voronoi.d / self.gamma) * v for j in range(self.disks_per_rod)]
         return np.vstack(pts)
 
-    def delaunay(self) -> 'Delaunay':
+    def getEllipsePoints(self):
+        return EllipsePoints(self.A + 1 / self.gamma, self.B + 1 / self.gamma, Voronoi.d).T
+
+    def delaunay(self):
         """
         :param kernel_function: ker.dll.trueDelaunay | ker.dll.weightedDelaunay
         """
         from .orders import Delaunay
         delaunay = sp.Delaunay(self.disk_map)
-        indices, edges, weights = DelaunayModulo(delaunay, self.num_rods)
+        indices, edges, weights = DelaunayModulo(delaunay, self.num_rods, self.disks_per_rod)
         return Delaunay(indices, edges, weights, self.gamma)
 
 
