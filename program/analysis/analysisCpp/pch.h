@@ -12,6 +12,7 @@ DLLEXPORT int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* ed
     void* edges_out_ptr, void* weights_out_ptr);
 DLLEXPORT void RemoveBadBoundaryEdges(void* points_ptr, void* convex_hull_ptr, void* table_ptr, void* indices_ptr, void* edges_ptr,
     void* mask_ptr, int convex_hull_length, float cos_threshold);
+DLLEXPORT void neighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr);
 DLLEXPORT void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* weights_ptr, void* output_ptr);
 DLLEXPORT void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,

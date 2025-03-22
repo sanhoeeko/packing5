@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import Delaunay
 
-from analysis.voronoi import Voronoi, EllipsePoints
+from analysis.voronoi import Voronoi
 from art.art import Figure
 from art.viewer import RenderState
 
@@ -55,8 +55,6 @@ gamma = 2.5
 use_segment_delaunay = True
 use_modulo = True
 show_types = True
-
-EllipsePoints(30, 15, 0.1)
 
 if __name__ == '__main__':
     xyt = np.array(pd.read_csv('testScripts/example_data.csv', header=None))

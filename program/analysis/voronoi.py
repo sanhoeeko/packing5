@@ -31,7 +31,7 @@ def EllipsePoints(a: float, b: float, d: float) -> np.ndarray:
         return np.array([a * np.cos(t), b * np.sin(t)])
 
     def NextT(s, t):
-        if t % (np.pi / 2) == 0: t += 1e-6
+        if np.abs(t - np.round(t / (np.pi / 2)) * (np.pi / 2)) < 1e-6: t += 1e-6
         r = np.sqrt(1 - e ** 2 * np.cos(t) ** 2)
         sqr = np.sqrt(a * r * (a * r ** 3 - 2 * (-1 + r ** 2) * s * np.tan(t)))
         return (a * r ** 2 - sqr) / (a * np.tan(t) * (-1 + r ** 2))
@@ -160,16 +160,10 @@ class DelaunayBase:
                 i += 1
             yield i - 1, j, ty[k]
 
-    def z_number(self, arg=None) -> np.ndarray:
-        if self.weighted:
-            result = ut.CArrayFZeros((self.num_rods,))
-            one_weights = ut.CArray(np.ones((self.num_edges,), dtype=np.float32))
-            ker.dll.sumOverWeights(
-                *self.params, one_weights.ptr, result.ptr
-            )
-            return result.data.copy()
-        else:
-            return self.weight_sums.data.copy()
+    def z_number(self, arg=None) -> np.ndarray[np.int32]:
+        z = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
+        ker.dll.neighbors(*self.params, z.ptr)
+        return z.data
 
     def phi_p(self, p: int, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         """

@@ -11,6 +11,7 @@ class Kernel:
         self.setTypes(
             ('DelaunayModulo', [ct.c_int] * 3 + [ct.c_void_p] * 6, ct.c_int),
             ('RemoveBadBoundaryEdges', [ct.c_void_p] * 6 + [ct.c_int, ct.c_float], None),
+            ('neighbors', [ct.c_int] * 2 + [ct.c_void_p] * 3, None),
             ('sumOverWeights', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumOverNeighbors', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),

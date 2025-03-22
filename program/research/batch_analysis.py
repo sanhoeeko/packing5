@@ -10,9 +10,9 @@ def batch_analyze(filename: str):
     # db.search_max_gradient()
     # checkGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=2.5)[0]
+    e = db.find(gamma=1.2)[0]
     # plotListOfArray(e[0].energyCurve(), y_restriction=2)
-    InteractiveViewer(e[0], RenderSetup('S_global')).show()
+    InteractiveViewer(e[0], RenderSetup('z_number')).show()
     # calAllOrderParameters(db, 'phi', num_threads=4, averaged=True)
 
 
