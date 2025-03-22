@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <queue>
 #include <tuple>
+#include <cmath>
 using namespace std;
 
 int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* mask_ptr, void* indices_out_ptr, 
@@ -14,6 +15,8 @@ int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr
         m: number of edges * 2
         N: number of rods
         mask[k] = 0 => the k-th edge is a bad edge (mask can be NULL)
+        indices_in_ptr: n numbers, indptr[1:]
+        edges_in_ptr: m numbers
         return: total number of rod edges
     */
     int* indices_in = (int*)indices_in_ptr;
@@ -156,4 +159,76 @@ void RemoveBadBoundaryEdges(void* points_ptr, void* convex_hull_ptr, void* table
             }
         }
     }
+}
+
+// code for plot
+
+static inline float sq(float x) { return x * x; }
+
+static int argmin(const float* arr, int size) {
+    int idx = 0;
+    float min_val = arr[0];
+    for (int i = 1; i < size; ++i) {
+        if (arr[i] < min_val) {
+            min_val = arr[i];
+            idx = i;
+        }
+    }
+    return idx;
+}
+
+void convertXY(int edge_type, float r, float t1, float t2, void* xyxy_ptr) {
+    float* xyxy = (float*)xyxy_ptr;
+    float x1 = xyxy[0], y1 = xyxy[1], x2 = xyxy[2], y2 = xyxy[3];
+    if (edge_type == 0) {  // head-to-head
+        float dx1 = r * cos(t1);
+        float dy1 = r * sin(t1);
+        float x1l = x1 - dx1, x1r = x1 + dx1;
+        float y1l = y1 - dy1, y1r = y1 + dy1;
+
+        float dx2 = r * cos(t2);
+        float dy2 = r * sin(t2);
+        float x2l = x2 - dx2, x2r = x2 + dx2;
+        float y2l = y2 - dy2, y2r = y2 + dy2;
+
+        float distances[4] = {
+            sq(x1l - x2l) + sq(y1l - y2l),
+            sq(x1l - x2r) + sq(y1l - y2r),
+            sq(x1r - x2l) + sq(y1r - y2l),
+            sq(x1r - x2r) + sq(y1r - y2r)
+        };
+
+        switch (argmin(distances, 4)) {
+        case 0: x1 = x1l; y1 = y1l; x2 = x2l; y2 = y2l; break;
+        case 1: x1 = x1l; y1 = y1l; x2 = x2r; y2 = y2r; break;
+        case 2: x1 = x1r; y1 = y1r; x2 = x2l; y2 = y2l; break;
+        case 3: x1 = x1r; y1 = y1r; x2 = x2r; y2 = y2r; break;
+        }
+    }
+    else if (edge_type == 1) {  // head-to-side
+        float dx1 = r * cos(t1);
+        float dy1 = r * sin(t1);
+        float x1l = x1 - dx1, x1r = x1 + dx1;
+        float y1l = y1 - dy1, y1r = y1 + dy1;
+
+        float dx2 = r * cos(t2);
+        float dy2 = r * sin(t2);
+        float x2l = x2 - dx2, x2r = x2 + dx2;
+        float y2l = y2 - dy2, y2r = y2 + dy2;
+
+        float distances[4] = {
+            sq(x1l - x2) + sq(y1l - y2),
+            sq(x1r - x2) + sq(y1r - y2),
+            sq(x1 - x2l) + sq(y1 - y2l),
+            sq(x1 - x2r) + sq(y1 - y2r)
+        };
+
+        switch (argmin(distances, 4)) {
+        case 0: x1 = x1l; y1 = y1l; break;
+        case 1: x1 = x1r; y1 = y1r; break;
+        case 2: x2 = x2l; y2 = y2l; break;
+        case 3: x2 = x2r; y2 = y2r; break;
+        }
+    }
+    xyxy[0] = x1; xyxy[1] = y1; xyxy[2] = x2; xyxy[3] = y2;
 }

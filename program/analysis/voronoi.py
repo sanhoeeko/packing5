@@ -7,7 +7,7 @@ from .kernel import ker
 
 
 def DelaunayModulo(delaunay: sp.Delaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
-    indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
+    indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0][1:])
     edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
     n = N * disks_per_rod
     m = edges_in.data.shape[0]
@@ -85,7 +85,7 @@ def DelaunayClip(delaunay: sp.Delaunay, indices_in, edges_in) -> ut.CArray:
 
 
 class Voronoi:
-    d = 0.05
+    d = 0.1
 
     def __init__(self, gamma: float, A: float, B: float, configuration: np.ndarray):
         self.gamma = gamma
@@ -102,7 +102,7 @@ class Voronoi:
     def getDiskMap(self, xytu: np.ndarray) -> np.ndarray:
         xy = xytu[:, :2]
         t = xytu[:, 2]
-        a = -self.disks_per_rod * Voronoi.d / self.gamma / 2
+        a = -(self.disks_per_rod - 1) * Voronoi.d / self.gamma / 2
         v = np.vstack([np.cos(t), np.sin(t)]).T
         pts = [xy + (a + j * Voronoi.d / self.gamma) * v for j in range(self.disks_per_rod)]
         return np.vstack(pts)
@@ -145,10 +145,8 @@ class DelaunayBase:
         """
         res = np.full((self.num_edges,), 1, dtype=np.int32)
         max_weight = np.max(self.weights.data)
-        # res[self.weights.data == 1] = 0
-        # res[self.weights.data == max_weight] = 2
-        res[self.weights.data <= 60] = 0
-        res[self.weights.data >= 120] = 2
+        res[self.weights.data == 1] = 0
+        res[self.weights.data == max_weight] = 2
         return res
 
     def iter_edges(self):
@@ -158,7 +156,7 @@ class DelaunayBase:
             j = self.edges.data[k]
             while k >= self.indices[i] and i < self.num_rods:
                 i += 1
-            yield i - 1, j, ty[k]
+            yield i, j, ty[k]
 
     def z_number(self, arg=None) -> np.ndarray[np.int32]:
         z = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))

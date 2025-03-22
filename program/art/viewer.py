@@ -2,12 +2,15 @@ import matplotlib.collections as collections
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
 import numpy as np
+import scipy.spatial as sp
 from matplotlib import pyplot as plt
 
 from analysis.analysis import OrderParameterFunc
 from analysis.database import PickledSimulation
+from analysis.voronoi import Voronoi
 from art.art import Figure
 from . import art
+from .delaunay_art import showTypedDelaunay
 
 style_dict = {
     'angle': ['Angle', 'DirectorAngle', 'PureRotationAngle'],
@@ -68,10 +71,12 @@ class RenderState:
         :param xyt: (N, 3) configuration
         :param metadata: dict converted from 1 x 1 structured array, must include "gamma"
         """
+        external_option = None
         if not hasattr(self, 'A'):
             self.A = np.max(np.abs(xyt[:, 0]))
             self.B = np.max(np.abs(xyt[:, 1]))
-        if setup is None:
+        if type(setup) != RenderSetup:
+            external_option = str(setup)
             setup = RenderSetup()
         cmap, norm = selectCmapAndNorm(setup.style)
 
@@ -95,7 +100,7 @@ class RenderState:
             color_data = np.ones((xyt.shape[0],))
         else:
             abg = (metadata['A'], metadata['B'], metadata['gamma'])
-            color_data = setup.func((abg, xyt)).data
+            color_data = setup.func((abg, xyt))
 
         # Create a collection with the ellipses and add it to the axes
         col = collections.PatchCollection(ellipses, array=color_data, norm=norm, cmap=cmap, alpha=alpha)
@@ -118,7 +123,16 @@ class RenderState:
                     f"E={'{:.3f}'.format(metadata['energy'])}, g={'{:.3f}'.format(metadata['mean_gradient_amp'])}"
                 )
             )
-        self.handle.colorbar(col, 'θ')
+        if external_option is None:
+            self.handle.colorbar(col, 'θ')  # TODO: fix this
+        if external_option == 'typed delaunay':
+            delaunay = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay()
+            showTypedDelaunay(self.handle, delaunay, xyt)
+        elif external_option == 'full delaunay':
+            voro = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt)
+            delaunay = sp.Delaunay(voro.disk_map)
+            xy = voro.disk_map
+            self.handle.ax.triplot(xy[:, 0], xy[:, 1], delaunay.simplices.copy())
         return self
 
 

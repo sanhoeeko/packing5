@@ -25,6 +25,7 @@ class Kernel:
             ('RijRatio', [ct.c_void_p, ct.c_int], ct.c_float),
             ('isOutOfBoundary', [ct.c_void_p, ct.c_int, ct.c_float, ct.c_float], ct.c_int),
             ('CubicMinimum', [ct.c_float] * 4, ct.c_float),
+            ('convertXY', [ct.c_int] + [ct.c_float] * 3 + [ct.c_void_p], None),
         )
 
     def setTypes(self, *tup):

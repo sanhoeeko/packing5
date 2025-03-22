@@ -24,7 +24,7 @@ struct xyt3f { float x, y, t; };
 
 void neighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr)
 {
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     int* output = (int*)output_ptr;                 // length: num_edges * 2
     int id1 = 0;
