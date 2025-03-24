@@ -6,7 +6,7 @@ struct xyt3f { float x, y, t; };
 
 /* Iterating over a Delaunay diagram:
 
-    int* indices = (int*)indices_ptr + 1;
+    int* indices = (int*)indices_ptr;
     int* edges = (int*)edges_ptr;
     ...
     int id1 = 0;

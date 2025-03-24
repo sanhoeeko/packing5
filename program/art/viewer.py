@@ -32,6 +32,7 @@ class RenderSetup:
         self.real_size = real_size
 
         if order_parameter_name is None:
+            self.style = 'single color'
             self.func = None
         else:
             def func(x):
@@ -45,8 +46,12 @@ def selectCmapAndNorm(style: str):
     """
     :return: cmap, norm
     """
+    single_color = (0, 0.78, 0.625)
     try:
         return {
+            'single color': (mcolors.LinearSegmentedColormap.from_list("single_color_cmap",
+                                                                       [(0, single_color), (1, single_color)]),
+                             mcolors.Normalize(vmin=0, vmax=1)),
             'default': ('viridis', None),
             'angle': ('hsv', mcolors.Normalize(vmin=0, vmax=np.pi)),
             'pm1': ('bwr', mcolors.Normalize(vmin=-1, vmax=1)),

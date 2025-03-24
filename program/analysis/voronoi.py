@@ -117,7 +117,7 @@ class Voronoi:
         from .orders import Delaunay
         delaunay = sp.Delaunay(self.disk_map)
         indices, edges, weights = DelaunayModulo(delaunay, self.num_rods, self.disks_per_rod)
-        return Delaunay(indices, edges, weights, self.gamma)
+        return Delaunay(indices, edges, weights, self.gamma, self.disks_per_rod)
 
 
 class DelaunayBase:
@@ -126,13 +126,14 @@ class DelaunayBase:
     weighted_edges: dtype=[('id2', np.int32), ('weight', np.float32)]
     """
 
-    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float):
+    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float, disks_per_rod: int):
         self.gamma = gamma
         self.indices = indices
         self.edges = edges
         self.weights = weights
         self.num_rods = indices.data.shape[0]
         self.num_edges = self.edges.data.shape[0]
+        self.disks_per_rod = disks_per_rod
 
     @property
     def params(self):
@@ -144,9 +145,8 @@ class DelaunayBase:
         :return: array, 0 for head-to-head, 1 for head-to-side, 2 for side-to-side
         """
         res = np.full((self.num_edges,), 1, dtype=np.int32)
-        max_weight = np.max(self.weights.data)
-        res[self.weights.data == 1] = 0
-        res[self.weights.data == max_weight] = 2
+        res[self.weights.data < 0.5 * self.disks_per_rod] = 0
+        res[self.weights.data >= 1.5 * self.disks_per_rod] = 2
         return res
 
     def iter_edges(self):
@@ -170,9 +170,8 @@ class DelaunayBase:
         z_p = ut.CArray(np.zeros((self.num_edges,), dtype=np.complex64))
         Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
         ker.dll.z_ij_power_p(*self.params, xyt.ptr, z_p.ptr, np.float32(p))
-        z_p.data *= self.weights.data
         ker.dll.sumComplex(*self.params, z_p.ptr, Phi.ptr)
-        return Phi.data / self.weight_sums.data
+        return Phi.data / self.z_number()
 
     def phi_p_ellipse_template(self, function_providing_angles):
         """

@@ -12,7 +12,7 @@ def batch_analyze(filename: str):
     # checkEnergy(db)
     e = db.find(gamma=1.1)[0]
     # plotListOfArray(e[0].energyCurve(), y_restriction=2)
-    InteractiveViewer(e[0], 'typed delaunay').show()
+    InteractiveViewer(e[0], RenderSetup('Phi6')).show()
     # calAllOrderParameters(db, 'phi', num_threads=4, averaged=True)
 
 

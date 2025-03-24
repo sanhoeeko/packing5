@@ -1,7 +1,5 @@
 import tracemalloc
 
-import default
-
 tracemalloc.start()
 import numpy as np
 
@@ -69,8 +67,8 @@ class Delaunay(DelaunayBase):
     All order parameters that requires Delaunay triangulation are here.
     """
 
-    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float):
-        super().__init__(indices, edges, weights, gamma)
+    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float, disks_per_rod: int):
+        super().__init__(indices, edges, weights, gamma, disks_per_rod)
 
     def z_number(self, arg=None) -> np.ndarray:
         return super().z_number(arg)
