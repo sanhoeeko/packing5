@@ -86,8 +86,9 @@ class Delaunay(DelaunayBase):
         return np.abs(self.phi_p(4, xyt))
 
     def EllipticPhi6(self, xyt: ut.CArray, gamma: float) -> np.ndarray:
-        return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
-        # return np.abs(self.phi_p_ellipse_template(Angle)(6, gamma, xyt))
+        # return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
+        return np.abs(self.phi_p_ellipse_template(self.DirectorAngle)(6, gamma, xyt))
+        # return np.abs(self.phi_p_ellipse_template(StaticOrders.Angle)(6, gamma, xyt))
 
     def PureRotationAngle(self, xyt: ut.CArray) -> np.ndarray:
         return super().pure_rotation_phi(xyt)
@@ -101,7 +102,7 @@ class Delaunay(DelaunayBase):
         """
         sum_ux, sum_uy = self.Q_tensor(xyt)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return S.data / (self.weight_sums.data + 1)
+        return S.data / (self.z_number() + 1)
 
     def DirectorAngle(self, xyt: ut.CArray) -> np.ndarray:
         """

@@ -7,7 +7,7 @@
 
 void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* weights_ptr, void* output_ptr)
 {
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     float* weights = (float*)weights_ptr;           // length: num_edges
     float* output = (float*)output_ptr;             // length: num_rods
@@ -23,12 +23,12 @@ void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_
     }
 }
 
-void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* complex_ptr, void* output_ptr)
+void complexSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* complex_ptr, void* output_ptr)
 {
     /*
         for Phi_{ij} = Phi_{ji}
     */
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     float* cplx = (float*)complex_ptr;              // length: num_edges * 2
     float* output = (float*)output_ptr;             // length: num_rods * 2
@@ -51,7 +51,7 @@ void sumAnisotropicComplex(int num_edges, int num_rods, void* indices_ptr, void*
     /*
         for Phi_{ij} does not equal Phi_{ji}
     */
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     float* cplx = (float*)complex_ptr;              // length: num_edges * 4
     float* output = (float*)output_ptr;             // length: num_rods * 2

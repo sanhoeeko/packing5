@@ -42,7 +42,7 @@ void neighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
 void z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_complex_ptr, float p)
 {
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     xyt3f* q = (xyt3f*)configuration_ptr;           // length: num_rods
     float* output = (float*)output_complex_ptr;     // length: num_edges * 2
@@ -62,7 +62,7 @@ void z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, void* edges_pt
 }
 
 void orientation_diff_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr, void* output_ptr) {
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     xyt3f* q = (xyt3f*)configuration_ptr;           // length: num_rods
     float* output = (float*)output_ptr;             // length: num_edges
@@ -77,9 +77,9 @@ void orientation_diff_ij(int num_edges, int num_rods, void* indices_ptr, void* e
     }
 }
 
-void sumOverNeighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* a_ptr, void* output_ptr)
+void symmetricSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* a_ptr, void* output_ptr)
 {
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     float* a = (float*)a_ptr;                       // length: num_rods
     float* output = (float*)output_ptr;             // length: num_rods
@@ -98,7 +98,7 @@ void sumOverNeighbors(int num_edges, int num_rods, void* indices_ptr, void* edge
 void pure_rotation_direction_phi(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_ptr)
 {
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     xyt3f* q = (xyt3f*)configuration_ptr;           // length: num_rods
     float* output = (float*)output_ptr;             // length: num_rods
@@ -107,9 +107,9 @@ void pure_rotation_direction_phi(int num_edges, int num_rods, void* indices_ptr,
     for (int j = 0; j < num_edges; j++) {
         while (j == *indices && id1 < num_rods) {
             output[id1] = 0.5f * atan2f(2 * sum_numerator, sum_denominator);
+            sum_denominator = 0; sum_numerator = 0;
             indices++;
             id1++;
-            sum_denominator = 0; sum_numerator = 0;
         }
         int id2 = edges[j];
         float dx = q[id2].x - q[id1].x;
@@ -125,7 +125,7 @@ void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, vo
     /*
         return: to be accepted by `sumAnisotropicComplex` in pch.cpp
     */
-    int* indices = (int*)indices_ptr + 1;           // length: num_rods
+    int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     xyt3f* q = (xyt3f*)configuration_ptr;           // length: num_rods
     float* t = (float*)orientation_ptr;             // length: num_rods
@@ -142,8 +142,9 @@ void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, vo
             y = q[id2].y - q[id1].y,
             t1 = t[id1],
             t2 = t[id2];
+        // this coordinate transform is "rotation by -theta"  
         float
-            dx1 = x * cosf(t1) + y * sinf(t1),
+            dx1 = x * cosf(t1) + y * sinf(t1),              
             dy1 = gamma * (-x * sinf(t1) + y * cosf(t1)),
             dx2 = -x * cosf(t2) - y * sinf(t2),
             dy2 = gamma * (x * sinf(t2) - y * cosf(t2));
@@ -159,7 +160,7 @@ void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, vo
 
 float mean_r_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr)
 {
-    int* indices = (int*)indices_ptr + 1;
+    int* indices = (int*)indices_ptr;
     int* edges = (int*)edges_ptr;
     xyt3f* q = (xyt3f*)configuration_ptr;
     float total_rij = 0;
@@ -187,7 +188,7 @@ float segment_dist_moment(int num_edges, int num_rods, void* indices_ptr, void* 
     // moment = 1 or 2
 {
     float R = 1 - 1 / gamma;
-    int* indices = (int*)indices_ptr + 1;
+    int* indices = (int*)indices_ptr;
     int* edges = (int*)edges_ptr;
     xyt3f* q = (xyt3f*)configuration_ptr;
     float total_rij = 0;

@@ -13,16 +13,14 @@ DLLEXPORT int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* ed
 DLLEXPORT void RemoveBadBoundaryEdges(void* points_ptr, void* convex_hull_ptr, void* table_ptr, void* indices_ptr, void* edges_ptr,
     void* mask_ptr, int convex_hull_length, float cos_threshold);
 DLLEXPORT void neighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr);
-DLLEXPORT void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
-    void* weights_ptr, void* output_ptr);
-DLLEXPORT void sumComplex(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
+DLLEXPORT void symmetricSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
+    void* a_ptr, void* output_ptr);
+DLLEXPORT void complexSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* complex_ptr, void* output_ptr);
 DLLEXPORT void z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_complex_ptr, float p);
 DLLEXPORT void orientation_diff_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
     void* configuration_ptr, void* output_ptr);
-DLLEXPORT void sumOverNeighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
-    void* a_ptr, void* output_ptr);
 DLLEXPORT void pure_rotation_direction_phi(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_ptr);
 DLLEXPORT void anisotropic_z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,

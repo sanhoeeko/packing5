@@ -165,12 +165,13 @@ class DelaunayBase:
 
     def phi_p(self, p: int, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         """
-        Assume that p is an even number. Because we use (-z)^4 = z^4, (-z)^6 = z^6
+        Assume that p is an even number. Because we use (-z)^4 = z^4, (-z)^6 = z^6, where z=exp(i*theta)
+        For an edge (i,j), z(j,i)=exp(i*(theta+pi))=-z(i,j)
         """
         z_p = ut.CArray(np.zeros((self.num_edges,), dtype=np.complex64))
         Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
         ker.dll.z_ij_power_p(*self.params, xyt.ptr, z_p.ptr, np.float32(p))
-        ker.dll.sumComplex(*self.params, z_p.ptr, Phi.ptr)
+        ker.dll.complexSum(*self.params, z_p.ptr, Phi.ptr)
         return Phi.data / self.z_number()
 
     def phi_p_ellipse_template(self, function_providing_angles):
@@ -184,9 +185,8 @@ class DelaunayBase:
             Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
             ker.dll.anisotropic_z_ij_power_p(*self.params, xyt.ptr, angle.ptr, z_p.ptr,
                                              np.float32(gamma), np.float32(p))
-            z_p.data *= np.repeat(self.weights.data, 2)
             ker.dll.sumAnisotropicComplex(*self.params, z_p.ptr, Phi.ptr)
-            return Phi.data / self.weight_sums.data
+            return Phi.data / self.z_number()
 
         return inner
 
@@ -203,8 +203,8 @@ class DelaunayBase:
         ker.dll.orientation_diff_ij(*self.params, xyt.ptr, ti_tj.ptr)
         c = ut.CArray(np.cos(2 * ti_tj.data))
         S = ut.CArrayFZeros((self.num_rods,))
-        ker.dll.sumOverWeights(*self.params, c.ptr, S.ptr)
-        return S.data / self.weight_sums.data
+        ker.dll.symmetricSum(*self.params, c.ptr, S.ptr)
+        return S.data / self.z_number()
 
     def Q_tensor(self, xyt: ut.CArray) -> (ut.CArray, ut.CArray):
         """
@@ -219,12 +219,8 @@ class DelaunayBase:
         uy = ut.CArray(np.sin(t_mul_2))
         sum_ux = ux.copy()
         sum_uy = uy.copy()
-        ker.dll.sumOverNeighbors(*self.params, ux.ptr, sum_ux.ptr)
-        ker.dll.sumOverNeighbors(*self.params, uy.ptr, sum_uy.ptr)
-        if self.weighted:
-            # TODO: bug
-            sum_ux.data *= self.weights.data
-            sum_uy.data *= self.weights.data
+        ker.dll.symmetricSum(*self.params, ux.ptr, sum_ux.ptr)
+        ker.dll.symmetricSum(*self.params, uy.ptr, sum_uy.ptr)
         return sum_ux, sum_uy
 
     def mean_rij(self, xyt: ut.CArray) -> np.float32:

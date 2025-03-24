@@ -28,6 +28,7 @@ def get_style(order_parameter_name: str) -> str:
 
 class RenderSetup:
     def __init__(self, order_parameter_name: str = None, weighted=False, real_size=True):
+        self.name = order_parameter_name
         self.style = get_style(order_parameter_name)
         self.real_size = real_size
 
@@ -129,7 +130,7 @@ class RenderState:
                 )
             )
         if external_option is None:
-            self.handle.colorbar(col, 'θ')  # TODO: fix this
+            self.handle.colorbar(col, setup.name)
         if external_option == 'typed delaunay':
             delaunay = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay()
             showTypedDelaunay(self.handle, delaunay, xyt)
