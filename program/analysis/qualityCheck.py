@@ -44,7 +44,7 @@ def checkEnergyCurveAt(db: Database, i: int, j: int):
     plotListOfArray(db[i].simulation_at(j).energyCurve(), ('descent steps', 'E/E0'))
 
 
-def checkGradientCurveAt(db: Database, i: int, j: int):
+def checkMeanGradientCurveAt(db: Database, i: int, j: int):
     plotListOfArray(db[i].simulation_at(j).meanGradientCurve(), ('descent steps', 'mean gradient'))
 
 
