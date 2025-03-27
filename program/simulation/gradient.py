@@ -90,11 +90,13 @@ class GradientSum:
         self.mean_gradient_amp_cache = ut.Cache(0)
         self.max_gradient_amp_cache = ut.Cache(0)
         self.energy_cache = ut.Cache(0)
+        self.max_ft_cache = ut.Cache(ut.ForceTorque(0, 0))
 
     def clear(self):
         self.mean_gradient_amp_cache.valid = False
         self.max_gradient_amp_cache.valid = False
         self.energy_cache.valid = False
+        self.max_ft_cache.valid = False
 
     def g(self) -> ut.CArray:
         if self.capacity > 1:
@@ -121,6 +123,12 @@ class GradientSum:
             self.g()
             self.max_gradient_amp_cache.set(self.data.max_abs(self.N))
         return self.max_gradient_amp_cache._obj
+
+    def MaxFT(self) -> ut.ForceTorque:
+        if not self.max_ft_cache.valid:
+            self.g()
+            self.max_ft_cache.set(self.data.max_ft(self.N))
+        return self.max_ft_cache._obj
 
 
 class Optimizer:
