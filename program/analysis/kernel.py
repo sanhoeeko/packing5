@@ -7,8 +7,9 @@ ut.setWorkingDirectory()
 
 class Kernel:
     def __init__(self):
-        self.dll = ct.CDLL('./x64/Release/analysisCpp.dll')
+        self.dll = ct.CDLL('./x64/Debug/analysisCpp.dll')
         self.setTypes(
+            ('CreateDelaunay', [ct.c_int] + [ct.c_void_p] * 4, ct.c_int),
             ('DelaunayModulo', [ct.c_int] * 3 + [ct.c_void_p] * 6, ct.c_int),
             ('RemoveBadBoundaryEdges', [ct.c_void_p] * 6 + [ct.c_int, ct.c_float], None),
             ('neighbors', [ct.c_int] * 2 + [ct.c_void_p] * 3, None),

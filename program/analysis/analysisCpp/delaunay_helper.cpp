@@ -1,11 +1,57 @@
 #include "pch.h"
 #include "defs.h"
+#include "delaunator.hpp"
 #include <vector>
 #include <unordered_map>
 #include <queue>
 #include <tuple>
+#include <set>
 #include <cmath>
+#include <stdexcept>
 using namespace std;
+using namespace delaunator;
+
+int CreateDelaunay(int n_points, void* points_ptr, void* indices_ptr, void* double_edges_ptr, void* convex_hull_ptr) {
+    /*
+        convex_hull_ptr: can be NULL
+    */
+    float* points = (float*)points_ptr;
+    int* indices = (int*)indices_ptr;
+    int* double_edges = (int*)double_edges_ptr;
+    std::vector<float> point_vec(points, points + n_points * 2);
+
+    vector<set<int>> neighbors(n_points);
+    int edges_cnt = 0;
+    try {
+        delaunator::Delaunator d(point_vec);
+        cout << "here" << endl;
+        // iterate over triangles
+        for (int i = 0; i < d.triangles.size(); i += 3) {
+            int* p = &(d.triangles[i]);
+            neighbors[p[0]].insert(p[1]); neighbors[p[0]].insert(p[2]);
+            neighbors[p[1]].insert(p[2]); neighbors[p[1]].insert(p[0]);
+            neighbors[p[2]].insert(p[0]); neighbors[p[2]].insert(p[1]);
+        }
+        // fill the result
+        // indices starts form 0
+        for (int i = 0; i < n_points; i++) {
+            int edges_i = neighbors[i].size();
+            indices[i + 1] = edges_i;
+            std::copy(neighbors[i].begin(), neighbors[i].end(), double_edges + edges_i);
+            edges_cnt += edges_i;
+        }
+
+        // calcualte convex hull (unused)
+        if (convex_hull_ptr != NULL) {
+            ;
+        }
+    }
+    catch (std::runtime_error e) {
+        cout << "Delaunator Exception: " << e.what() << endl;
+        throw e;
+    }
+    return edges_cnt;
+}
 
 int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* mask_ptr, void* indices_out_ptr, 
     void* edges_out_ptr, void* weights_out_ptr) 

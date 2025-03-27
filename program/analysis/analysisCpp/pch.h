@@ -8,6 +8,7 @@
 #define DLLEXPORT extern "C"
 #endif
 
+DLLEXPORT int CreateDelaunay(int n_points, void* points_ptr, void* indices_ptr, void* double_edges_ptr, void* convex_hull_ptr);
 DLLEXPORT int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* mask_ptr, void* indices_out_ptr,
     void* edges_out_ptr, void* weights_out_ptr);
 DLLEXPORT void RemoveBadBoundaryEdges(void* points_ptr, void* convex_hull_ptr, void* table_ptr, void* indices_ptr, void* edges_ptr,

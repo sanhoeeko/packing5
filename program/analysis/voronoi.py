@@ -1,12 +1,13 @@
 import numpy as np
-import scipy.spatial as sp
+# from scipy.spatial import Delaunay as MyDelaunay
+from analysis.delaunator import Delaunay as MyDelaunay
 from scipy.special import ellipe as EllipticE
 
 from . import utils as ut
 from .kernel import ker
 
 
-def DelaunayModulo(delaunay: sp.Delaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
+def DelaunayModulo(delaunay: MyDelaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
     indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0][1:])
     edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
     n = N * disks_per_rod
@@ -53,7 +54,7 @@ def EllipsePoints(a: float, b: float, d: float) -> np.ndarray:
     return pts
 
 
-def DelaunayModuloClip(delaunay: sp.Delaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
+def DelaunayModuloClip(delaunay: MyDelaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
     indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
     edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
     n = N * disks_per_rod
@@ -70,7 +71,7 @@ def DelaunayModuloClip(delaunay: sp.Delaunay, N: int, disks_per_rod: int) -> (ut
     return indices_out, edges_out, weights_out
 
 
-def DelaunayClip(delaunay: sp.Delaunay, indices_in, edges_in) -> ut.CArray:
+def DelaunayClip(delaunay: MyDelaunay, indices_in, edges_in) -> ut.CArray:
     cos_threshold = -0.9
     u_tri = delaunay.simplices
     u_tri = np.sort(u_tri, axis=1)
@@ -115,7 +116,7 @@ class Voronoi:
         :param kernel_function: ker.dll.trueDelaunay | ker.dll.weightedDelaunay
         """
         from .orders import Delaunay
-        delaunay = sp.Delaunay(self.disk_map)
+        delaunay = MyDelaunay(self.disk_map)
         indices, edges, weights = DelaunayModulo(delaunay, self.num_rods, self.disks_per_rod)
         return Delaunay(indices, edges, weights, self.gamma, self.disks_per_rod)
 
