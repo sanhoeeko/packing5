@@ -116,7 +116,7 @@ float compute_min_cos(const Point& a, const Point& b, const Point& c) {
     float cos_alpha = (ab.x * ac.x + ab.y * ac.y) / (len_ab * len_ac);
     float cos_beta = (-ab.x * bc.x - ab.y * bc.y) / (len_ab * len_bc);
     float cos_gamma = (ac.x * bc.x + ac.y * bc.y) / (len_ac * len_bc);
-    return std::min({ cos_alpha, cos_beta, cos_gamma });
+    return std::min(cos_alpha, std::min(cos_beta, cos_gamma));
 }
 
 pair<int, int> make_sorted_pair(int a, int b) {

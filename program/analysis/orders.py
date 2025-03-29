@@ -110,7 +110,7 @@ class Delaunay(DelaunayBase):
         """
         sum_ux, sum_uy = self.Q_tensor(xyt)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return np.atan2(sum_uy.data, sum_ux.data + S)
+        return np.arctan2(sum_uy.data, sum_ux.data + S)
 
     def CrystalNematicAngle(self, xyt: ut.CArray) -> np.ndarray:
         phi = self.PureRotationAngle(xyt)

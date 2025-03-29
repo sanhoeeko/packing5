@@ -12,7 +12,7 @@ def scanGamma(state: dict, steps: int) -> (np.ndarray, np.ndarray):
     function act on a single configuration.
     :return: (the best gamma, maximum EllipticPhi6)
     """
-    voro = Voronoi.fromStateDict(state).delaunay(False)
+    voro = Voronoi.fromStateDict(state).delaunay()
     gs = np.linspace(1, 2, steps)
     ys = np.zeros_like(gs)
     if voro is None:
@@ -38,10 +38,10 @@ def cubicBestGamma(state: dict) -> (float, float):
     :return: (the best gamma, maximum EllipticPhi6)
     """
     gs, ys = scanGamma(state, 21)
-    g_min = CubicMinimumXNan(gs, -ys, 1, 3)  # cubic maximum
+    g_min = CubicMinimumXNan(gs, -ys, 1, 2)  # cubic maximum
     if np.isnan(g_min):
         return np.float32(np.nan), np.float32(np.nan)
-    voro = Voronoi.fromStateDict(state).delaunay(False)
+    voro = Voronoi.fromStateDict(state).delaunay()
     y_practical = np.mean(voro.EllipticPhi6(ut.CArray(state['xyt']), g_min))
     return g_min, y_practical
 
@@ -51,7 +51,7 @@ def BestGamma(simulation: PickledSimulation):
     PhiEs = np.zeros_like(gs)
     for i, state in enumerate(simulation):
         gs[i], PhiEs[i] = cubicBestGamma(state)
-    Phis = simulation.op('Phi6')
+    Phis = simulation.op('EllipticPhi6')
     plt.plot(gs)
     plt.plot(PhiEs)
     plt.plot(Phis)
@@ -71,7 +71,7 @@ def GammaLandscape(simulation: PickledSimulation):
 
 if __name__ == '__main__':
     ut.setWorkingDirectory()
-    db = Database('data-20250306-0.h5')
-    e = db.find(gamma=2.9)[0]
+    db = Database('../data-20250328.h5')
+    e = db.find(gamma=1.6)[0]
     BestGamma(e.simulation_at(0))
     # GammaLandscape(db[0].simulation_at(0))

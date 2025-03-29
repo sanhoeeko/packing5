@@ -94,10 +94,17 @@ class Database(DatabaseBase):
         ensemble_names = df['id']
         return [self.id(name) for name in ensemble_names]
 
-    def search_max_gradient(self):
-        gs = [e.max_gradient() for e in self]
+    def search_max(self, flag: str):
+        """
+        flag: mean_gradient_amp | max_gradient_amp | max_force | max_torque
+        """
+        gs = [e.max_gradient(flag) for e in self]
         idx = np.argmax(gs)
-        print(f"Maximum gradient: {gs[idx]}, at ensemble {self.ids[idx]}")
+        print(f"Maximum {flag}: {gs[idx]}, at ensemble {self.ids[idx]}")
+
+    def search_max_gradient(self):
+        for flag in ['mean_gradient_amp', 'max_gradient_amp', 'max_force', 'max_torque']:
+            self.search_max(flag)
 
 
 class PickledEnsemble:
@@ -149,9 +156,12 @@ class PickledEnsemble:
         except ValueError:
             return getattr(self, prop)
 
-    def max_gradient(self):
+    def max_gradient(self, flag: str):
+        """
+        flag: mean_gradient_amp | max_gradient_amp | max_force | max_torque
+        """
         if self.state_table.shape[1] == 0: return 0
-        return np.max(self.property('max_gradient_amp'))
+        return np.max(self.property(flag))
 
     def apply(self, func_act_on_configuration, num_threads=1, from_to_nth_data=None):
         """
@@ -237,11 +247,8 @@ class PickledSimulation:
     def op_at(self, order_parameter_name: str):
         def inner(index: int):
             state = self[index]
-            if default.if_using_legacy_delaunay:
-                voro = Delaunay.legacy(state['metadata']['N'], state['metadata']['gamma'], ut.CArray(state['xyt']))
-            else:
-                voro = Voronoi.fromStateDict(state).delaunay(False)
-                if voro is None: return np.float32(np.nan)
+            voro = Voronoi.fromStateDict(state).delaunay()
+            if voro is None: return np.float32(np.nan)
             return np.mean(general_order_parameter(
                 order_parameter_name, state['xyt'], voro,
                 (state['metadata']['A'], state['metadata']['B'], state['metadata']['gamma'])
