@@ -12,7 +12,7 @@ from .utils import NaNInGradientException, OutOfBoundaryException
 
 class State(ut.HasMeta):
     meta_hint = ("N: i4, A: f4, B: f4, gamma: f4, rho: f4, phi: f4, "
-                 "mean_gradient_amp: f4, max_gradient_amp: f4, energy: f4")
+                 "mean_gradient_amp: f4, max_gradient_amp: f4, energy: f4, max_force: f4, max_torque: f4")
 
     def __init__(self, N: int, n: int, d: float, A: float, B: float, configuration: np.ndarray, train=True):
         super().__init__()
@@ -30,9 +30,9 @@ class State(ut.HasMeta):
         self.gradient = GradientMatrix(self, self.grid)
         self.ge_valid = False
         self.train = train
-        self.compile_relaxation_functions()
         # optional objects
         if train:
+            self.compile_relaxation_functions()
             self.descent_curve = DescentCurve()
 
     @property
@@ -54,6 +54,10 @@ class State(ut.HasMeta):
     @property
     def phi(self):
         return self.rho * (np.pi + 4 * (self.gamma - 1)) / self.gamma ** 2
+
+    @property
+    def h_ref(self):
+        return (1 + self.gamma) - np.sqrt((self.gamma - 1) ** 2 + 1 / self.rho)
 
     @property
     def mean_gradient_amp(self):
@@ -78,6 +82,22 @@ class State(ut.HasMeta):
         else:
             if not self.ge_valid: self.refreshGE()
             return self.gradient.sum.E()
+
+    @property
+    def max_ft(self):
+        if hasattr(self, 'lbfgs_agent'):
+            raise NotImplementedError
+        else:
+            if not self.ge_valid: self.refreshGE()
+            return self.gradient.sum.MaxFT()
+
+    @property
+    def max_force(self):
+        return self.max_ft.force
+
+    @property
+    def max_torque(self):
+        return self.max_ft.torque
 
     @property
     def min_dist(self):

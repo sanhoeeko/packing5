@@ -27,6 +27,6 @@ def plot_hyperbola(ax):
 
 if __name__ == '__main__':
     fig, ax = plt.subplots()
-    two_order_plot(ax, '../merge-full.h5', 'S_local', 'S_global')
+    two_order_plot(ax, '../full-20250328.h5', 'S_local', 'S_global')
     plot_hyperbola(ax)
     plt.show()

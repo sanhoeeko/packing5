@@ -1,7 +1,5 @@
 import tracemalloc
 
-import default
-
 tracemalloc.start()
 import numpy as np
 
@@ -54,10 +52,7 @@ def OrderParameterList(order_parameter_names: list[str]):
     def inner(xyt, abg, weighted) -> np.ndarray:
         xyt_c = ut.CArray(xyt)
         n = xyt.shape[-2]
-        if default.if_using_legacy_delaunay:
-            voro = Delaunay.legacy(xyt.shape[0], abg[2], xyt_c)
-        else:
-            voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay(weighted)
+        voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
         result = np.full((n,), np.nan, dtype=dtype)
         if voro is not None:
             for name in order_parameter_names:
@@ -72,8 +67,8 @@ class Delaunay(DelaunayBase):
     All order parameters that requires Delaunay triangulation are here.
     """
 
-    def __init__(self, weighted: bool, indices: ut.CArray, weighted_edges: np.ndarray, gamma: float):
-        super().__init__(weighted, indices, weighted_edges, gamma)
+    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float, disks_per_rod: int):
+        super().__init__(indices, edges, weights, gamma, disks_per_rod)
 
     def z_number(self, arg=None) -> np.ndarray:
         return super().z_number(arg)
@@ -91,8 +86,9 @@ class Delaunay(DelaunayBase):
         return np.abs(self.phi_p(4, xyt))
 
     def EllipticPhi6(self, xyt: ut.CArray, gamma: float) -> np.ndarray:
-        return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
-        # return np.abs(self.phi_p_ellipse_template(Angle)(6, gamma, xyt))
+        # return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
+        return np.abs(self.phi_p_ellipse_template(self.DirectorAngle)(6, gamma, xyt))
+        # return np.abs(self.phi_p_ellipse_template(StaticOrders.Angle)(6, gamma, xyt))
 
     def PureRotationAngle(self, xyt: ut.CArray) -> np.ndarray:
         return super().pure_rotation_phi(xyt)
@@ -106,7 +102,7 @@ class Delaunay(DelaunayBase):
         """
         sum_ux, sum_uy = self.Q_tensor(xyt)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return S.data / (self.weight_sums.data + 1)
+        return S.data / (self.z_number() + 1)
 
     def DirectorAngle(self, xyt: ut.CArray) -> np.ndarray:
         """
@@ -114,7 +110,7 @@ class Delaunay(DelaunayBase):
         """
         sum_ux, sum_uy = self.Q_tensor(xyt)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return np.atan2(sum_uy.data, sum_ux.data + S)
+        return np.arctan2(sum_uy.data, sum_ux.data + S)
 
     def CrystalNematicAngle(self, xyt: ut.CArray) -> np.ndarray:
         phi = self.PureRotationAngle(xyt)

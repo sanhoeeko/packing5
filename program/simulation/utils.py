@@ -107,7 +107,7 @@ class CArray:
 
     def max_abs(self, N: int) -> np.float32:
         from .kernel import ker
-        return ker.dll.MaxAbsVector4(self.ptr, N * 4)
+        return ker.dll.MaxAbsVector4(self.ptr, N)
 
     def max_ft(self, N: int) -> ForceTorque:
         from .kernel import ker

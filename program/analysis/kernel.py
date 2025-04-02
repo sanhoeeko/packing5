@@ -9,13 +9,11 @@ class Kernel:
     def __init__(self):
         self.dll = ct.CDLL('./x64/Release/analysisCpp.dll')
         self.setTypes(
-            ('disksToVoronoiEdges', [ct.c_int] * 2 + [ct.c_void_p] * 2 + [ct.c_float] * 2, ct.c_int),
-            ('trueDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
-            ('weightedDelaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float] * 2, ct.c_int),
-            ('legacyDelaunay', [ct.c_int] * 2 + [ct.c_float] + [ct.c_void_p] * 3, ct.c_int),
-            ('sumOverWeights', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
-            ('sumOverNeighbors', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
-            ('sumComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('DelaunayModulo', [ct.c_int] * 3 + [ct.c_void_p] * 6, ct.c_int),
+            ('RemoveBadBoundaryEdges', [ct.c_void_p] * 6 + [ct.c_int, ct.c_float], None),
+            ('neighbors', [ct.c_int] * 2 + [ct.c_void_p] * 3, None),
+            ('symmetricSum', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('complexSum', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('sumAnisotropicComplex', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
             ('z_ij_power_p', [ct.c_int] * 2 + [ct.c_void_p] * 4 + [ct.c_float], None),
             ('orientation_diff_ij', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
@@ -26,6 +24,7 @@ class Kernel:
             ('RijRatio', [ct.c_void_p, ct.c_int], ct.c_float),
             ('isOutOfBoundary', [ct.c_void_p, ct.c_int, ct.c_float, ct.c_float], ct.c_int),
             ('CubicMinimum', [ct.c_float] * 4, ct.c_float),
+            ('convertXY', [ct.c_int] + [ct.c_float] * 3 + [ct.c_void_p], None),
         )
 
     def setTypes(self, *tup):
