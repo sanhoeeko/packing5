@@ -1,6 +1,9 @@
 import os
 import sys
 
+from analysis.analysis import calAllOrderParameters
+from analysis.database import Database
+from analysis.post_analysis import RawOrderDatabase
 from h5tools import dataset as dset, h5tools as ht
 from simulation.ensemble import StartEnsemble
 
@@ -26,6 +29,13 @@ def pack_and_compress():
 
 def auto_pack():
     dset.auto_pack()
+
+
+def analyze(filename):
+    full_file_name = 'full-' + filename
+    mean_ci_file_name = 'analysis-' + filename
+    calAllOrderParameters(Database(filename), 'phi', num_threads=4, averaged=False, out_file=full_file_name)
+    RawOrderDatabase(full_file_name).mean_ci(mean_ci_file_name)
 
 
 ###################### functions end ##################################################################

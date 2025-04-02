@@ -30,9 +30,9 @@ class State(ut.HasMeta):
         self.gradient = GradientMatrix(self, self.grid)
         self.ge_valid = False
         self.train = train
-        self.compile_relaxation_functions()
         # optional objects
         if train:
+            self.compile_relaxation_functions()
             self.descent_curve = DescentCurve()
 
     @property
@@ -54,6 +54,10 @@ class State(ut.HasMeta):
     @property
     def phi(self):
         return self.rho * (np.pi + 4 * (self.gamma - 1)) / self.gamma ** 2
+
+    @property
+    def h_ref(self):
+        return (1 + self.gamma) - np.sqrt((self.gamma - 1) ** 2 + 1 / self.rho)
 
     @property
     def mean_gradient_amp(self):

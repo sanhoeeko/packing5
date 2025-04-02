@@ -85,8 +85,7 @@ def averageEnergy(ensemble: PickledEnsemble, x_axis_name: str):
 
 
 def orderParameterAnalysis(database: Database, order_parameters: list[str], x_axis_name: str, averaged=False,
-                           weighted=False, num_threads=1, from_to=None):
-    out_file = 'analysis.h5'
+                           weighted=False, num_threads=1, from_to=None, out_file='analysis.h5'):
     dic = {}
     for ensemble in database:
         if ensemble.n_density < 1: continue
@@ -113,15 +112,17 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
     add_array_to_hdf5(out_file, 'summary_table', database._summary_table_array)
 
 
-def calAllOrderParameters(database: Database, x_axis_name: str, averaged=False, weighted=False, num_threads=4):
+def calAllOrderParameters(database: Database, x_axis_name: str, averaged=False, weighted=False, num_threads=4,
+                          out_file='analysis.h5'):
     order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6', 'MeanSegmentDist']
     try:
         orderParameterAnalysis(
-            database, order_parameters, x_axis_name, averaged, weighted, num_threads
+            database, order_parameters, x_axis_name, averaged, weighted, num_threads, out_file=out_file
         )
     except DirtyDataException as e:
         print(e)
         print("Exception is caught. Try to calculate in smaller range.")
         orderParameterAnalysis(
-            database, order_parameters, x_axis_name, weighted, averaged, num_threads, from_to=(0, e.nth_state)
+            database, order_parameters, x_axis_name, weighted, averaged, num_threads,
+            from_to=(0, e.nth_state), out_file=out_file
         )
