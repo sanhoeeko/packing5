@@ -7,7 +7,6 @@ import h5py
 import numpy as np
 import pandas as pd
 
-import default
 from . import utils as ut, mymath as mm
 
 ut.setWorkingDirectory()
@@ -15,7 +14,7 @@ ut.setWorkingDirectory()
 from simulation.state import State
 
 from .h5tools import extract_metadata, struct_array_to_dataframe, filter_dataframe
-from .orders import general_order_parameter, Delaunay
+from .orders import general_order_parameter
 from .voronoi import Voronoi
 
 
@@ -94,17 +93,22 @@ class Database(DatabaseBase):
         ensemble_names = df['id']
         return [self.id(name) for name in ensemble_names]
 
-    def search_max(self, flag: str):
+    def search_max(self, flag: str, normalization_power_of_n=0):
         """
         flag: mean_gradient_amp | max_gradient_amp | max_force | max_torque
         """
-        gs = [e.max_gradient(flag) for e in self]
+        indices, gs = zip(*[e.max_gradient(flag, normalization_power_of_n) for e in self])
         idx = np.argmax(gs)
-        print(f"Maximum {flag}: {gs[idx]}, at ensemble {self.ids[idx]}")
+        print(
+            f"Maximum {flag}: {gs[idx]}, at ensemble {self.summary.iloc[idx].id}, data_index={indices[idx]}. "
+            f"normalization_power_of_n={normalization_power_of_n}"
+        )
 
     def search_max_gradient(self):
-        for flag in ['mean_gradient_amp', 'max_gradient_amp', 'max_force', 'max_torque']:
-            self.search_max(flag)
+        self.search_max('mean_gradient_amp', normalization_power_of_n=0)
+        self.search_max('max_gradient_amp', normalization_power_of_n=0)
+        self.search_max('max_force', normalization_power_of_n=1)
+        self.search_max('max_torque', normalization_power_of_n=2)
 
 
 class PickledEnsemble:
@@ -156,12 +160,16 @@ class PickledEnsemble:
         except ValueError:
             return getattr(self, prop)
 
-    def max_gradient(self, flag: str):
+    def max_gradient(self, flag: str, normalization_power_of_n=0) -> ((int, int), np.float32):
         """
         flag: mean_gradient_amp | max_gradient_amp | max_force | max_torque
+        :return: (max_indices, max_gradient_value)
         """
-        if self.state_table.shape[1] == 0: return 0
-        return np.max(self.property(flag))
+        if self.state_table.shape[1] == 0: return ((0, 0), 0)
+        data = self.property(flag)
+        idx = int(np.argmax(data))
+        i, j = idx // data.shape[1], idx % data.shape[1]
+        return (i, j), data[i, j] / self.metadata['n'] ** normalization_power_of_n
 
     def apply(self, func_act_on_configuration, num_threads=1, from_to_nth_data=None):
         """
