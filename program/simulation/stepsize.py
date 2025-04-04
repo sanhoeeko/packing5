@@ -24,6 +24,7 @@ def StepsizeHelperSwitch(helper: StepsizeHelper) -> Callable[[Any, Any, ut.CArra
 n_samples = 32
 cubic_alpha = 0.4
 cubic_samples = 8
+gradient_prop = 'max_gradient_amp'  # mean_gradient_amp | max_gradient_amp | energy
 
 
 class EnergyScanner:
@@ -33,7 +34,7 @@ class EnergyScanner:
         # ref_state: State
         self.state = ref_state.copy(train=False)
 
-    def scan(self, s, g: ut.CArray, step_sizes: np.ndarray, need_energy=False):
+    def scan(self, s, g: ut.CArray, step_sizes: np.ndarray):
         # s: State
         ys = np.zeros_like(step_sizes)
         for i in range(len(step_sizes)):
@@ -41,20 +42,20 @@ class EnergyScanner:
             if self.state.isOutOfBoundary():
                 ys[i] = np.inf
             else:
-                ys[i] = self.state.CalEnergy_pure() if need_energy else self.state.mean_gradient_amp
+                getattr(self.state, gradient_prop)
             self.state.clear_dependency()
         return ys
 
-    def good(self, s, g: ut.CArray, max_stepsize: float, need_energy=False):
+    def good(self, s, g: ut.CArray, max_stepsize: float):
         # s: State
         stepsize = np.float32(max_stepsize)
-        energy = s.CalEnergy_pure() if need_energy else s.mean_gradient_amp
+        energy = getattr(self.state, gradient_prop)
         for i in range(n_samples):
             current_stepsize = stepsize * EnergyScanner.alpha
             ker.dll.AddVector4(s.xyt.ptr, g.ptr, self.state.xyt.ptr, self.state.N, current_stepsize)
             if self.state.isOutOfBoundary():
                 continue
-            current_energy = self.state.CalEnergy_pure() if need_energy else self.state.mean_gradient_amp
+            current_energy = getattr(self.state, gradient_prop)
             if current_energy > energy:
                 return stepsize
             stepsize = current_stepsize
