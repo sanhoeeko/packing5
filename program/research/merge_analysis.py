@@ -5,4 +5,11 @@ from research.two_order_plot import RawOrderDatabase
 setWorkingDirectory()
 
 if __name__ == '__main__':
-    MergePostDatabase(RawOrderDatabase, 'merge-full.h5')('../full-20250314.h5', '../full-20250315.h5')
+    MergePostDatabase(RawOrderDatabase, 'merge-full-0407.h5')(
+        '../full-data-20250404.h5',
+        '../full-data-20250405.h5',
+        '../full-data-20250406.h5',
+        '../full-data-20250406-2.h5',
+        '../full-data-20250407.h5',
+    )
+    RawOrderDatabase('merge-full-0407.h5').mean_ci('merge-analysis-0407.h5')

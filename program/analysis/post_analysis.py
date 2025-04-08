@@ -84,6 +84,12 @@ class MeanCIDatabase(PostDatabase):
     def id(self, ensemble_id: str):
         return MeanCIData(self.file[ensemble_id], self.x_axis_name)
 
+    def extract_data(self, order_parameter_name: str) -> dict:
+        x, y = zip(*self.orderParameterList(order_parameter_name))
+        mean, ci = zip(*y)
+        gammas = self.summary['gamma']
+        return {self.x_axis_name: x, 'mean': mean, 'ci': ci, 'gammas': gammas}
+
 
 class MeanCIData(PostData):
     def process_data(self, key, data_group):

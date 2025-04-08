@@ -107,7 +107,7 @@ class Database(DatabaseBase):
     def search_max_gradient(self):
         self.search_max('mean_gradient_amp', normalization_power_of_n=0)
         self.search_max('max_gradient_amp', normalization_power_of_n=0)
-        self.search_max('max_force', normalization_power_of_n=1)
+        self.search_max('max_force', normalization_power_of_n=0)
         self.search_max('max_torque', normalization_power_of_n=2)
 
 
