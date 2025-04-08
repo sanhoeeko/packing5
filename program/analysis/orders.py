@@ -49,8 +49,8 @@ def OrderParameterList(order_parameter_names: list[str]):
     """
     dtype = list(zip(order_parameter_names, ['f4'] * len(order_parameter_names)))
 
-    def inner(xyt, abg, weighted) -> np.ndarray:
-        xyt_c = ut.CArray(xyt)
+    def inner(xyt, abg) -> np.ndarray:
+        xyt_c = ut.CArray(xyt, dtype=np.float32)
         n = xyt.shape[-2]
         voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
         result = np.full((n,), np.nan, dtype=dtype)

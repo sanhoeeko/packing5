@@ -163,6 +163,15 @@ class DelaunayBase:
         ker.dll.neighbors(*self.params, z.ptr)
         return z.data
 
+    def convex_hull(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        hull = ut.CArray(np.zeros((self.num_rods,), np.int32))
+        centers = xyt.data[:, 0:2]
+        r = 1 - 1 / self.gamma
+        u = np.hstack([np.cos(xyt.data[:, 2:3]), np.sin(xyt.data[:, 2:3])])
+        xy = ut.CArray(np.vstack([centers - r * u, centers + r * u]), np.float32)
+        ker.dll.ConvexHull(xy.ptr, hull.ptr, self.num_rods * 2, self.num_rods)
+        return hull.data
+
     def phi_p(self, p: int, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         """
         Assume that p is an even number. Because we use (-z)^4 = z^4, (-z)^6 = z^6, where z=exp(i*theta)

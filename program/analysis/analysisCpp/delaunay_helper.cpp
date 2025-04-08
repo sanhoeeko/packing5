@@ -5,6 +5,7 @@
 #include <queue>
 #include <tuple>
 #include <cmath>
+#include <algorithm>
 using namespace std;
 
 int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* mask_ptr, void* indices_out_ptr, 
@@ -76,6 +77,57 @@ int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr
         }
     }
     return cnt;
+}
+
+static inline float cross(const Point& O, const Point& A, const Point& B) {
+    return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
+}
+
+vector<int> convexHull(const vector<Point>& points) {
+    int n = points.size();
+    if (n < 3) return {}; // 至少需要三个点形成凸包
+
+    // generate indices
+    vector<int> indices(n);
+    for (int i = 0; i < n; ++i) indices[i] = i;
+
+    sort(indices.begin(), indices.end(), [&](int i, int j) {
+        return points[i].x < points[j].x || (points[i].x == points[j].x && points[i].y < points[j].y);
+        });
+
+    vector<int> hull;
+
+    // lower hull
+    for (int i : indices) {
+        while (hull.size() >= 2 && cross(points[hull[hull.size() - 2]], points[hull.back()], points[i]) <= 0) {
+            hull.pop_back();
+        }
+        hull.push_back(i);
+    }
+
+    // upper hull
+    size_t lowerHullSize = hull.size();
+    for (int i = n - 2; i >= 0; --i) {
+        while (hull.size() > lowerHullSize && cross(points[hull[hull.size() - 2]], points[hull.back()], points[indices[i]]) <= 0) {
+            hull.pop_back();
+        }
+        hull.push_back(indices[i]);
+    }
+
+    // remove repetitve points
+    if (!hull.empty()) hull.pop_back();
+
+    return hull;
+}
+
+void ConvexHull(void* points_ptr, void* out_mask_ptr, int n_points, int n_rods)
+{
+    int* out_mask = (int*)out_mask_ptr;
+    vector<Point> points((Point*)points_ptr, (Point*)points_ptr + n_points);
+    vector<int> hull = convexHull(points);
+    for (int i : hull) {
+        out_mask[i % n_rods] = 1;
+    }
 }
 
 struct IjkvData

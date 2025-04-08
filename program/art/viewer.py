@@ -27,7 +27,7 @@ def get_style(order_parameter_name: str) -> str:
 
 
 class RenderSetup:
-    def __init__(self, order_parameter_name: str = None, weighted=False, real_size=True):
+    def __init__(self, order_parameter_name: str = None, real_size=True):
         self.name = order_parameter_name
         self.style = get_style(order_parameter_name)
         self.real_size = real_size
@@ -37,7 +37,7 @@ class RenderSetup:
             self.func = None
         else:
             def func(x):
-                arr = OrderParameterFunc([order_parameter_name], weighted, False)(x)
+                arr = OrderParameterFunc([order_parameter_name], False)(x)
                 return arr[order_parameter_name]
 
             self.func = func

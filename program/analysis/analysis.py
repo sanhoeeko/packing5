@@ -9,7 +9,7 @@ from .mymath import DirtyDataException
 from .orders import OrderParameterList
 
 
-def OrderParameterFunc(order_parameter_list: list[str], weighted: bool, abs_averaged: bool):
+def OrderParameterFunc(order_parameter_list: list[str], abs_averaged: bool):
     """
     parameters of inner function:
     abg = (A_upper_bound, B_upper_bound, gamma) for each state
@@ -20,13 +20,13 @@ def OrderParameterFunc(order_parameter_list: list[str], weighted: bool, abs_aver
     def inner(args) -> np.ndarray:
         abg: tuple = args[0]
         xyt: np.ndarray = args[1]
-        Xi = OrderParameterList(order_parameter_list)(xyt, abg, weighted)
+        Xi = OrderParameterList(order_parameter_list)(xyt, abg)
         return ut.apply_struct(np.mean)(Xi) if abs_averaged else Xi
 
     return inner
 
 
-def CorrelationFunc(order_a: str, order_b: str, normal_a: float, normal_b: float, weighted: bool, averaged: bool):
+def CorrelationFunc(order_a: str, order_b: str, normal_a: float, normal_b: float, averaged: bool):
     """
     order_a, order_b: order parameter names.
     All means are taken over each simulation separately.
@@ -34,7 +34,7 @@ def CorrelationFunc(order_a: str, order_b: str, normal_a: float, normal_b: float
     """
 
     def inner(args) -> Union[np.float32, np.ndarray]:
-        fields = OrderParameterFunc([order_a, order_b], weighted, False)(args)
+        fields = OrderParameterFunc([order_a, order_b], False)(args)
         a_field = fields[order_a]
         b_field = fields[order_b]
         cor_field = (a_field - normal_a) * (b_field - normal_b)
@@ -47,7 +47,7 @@ def CorrelationFunc(order_a: str, order_b: str, normal_a: float, normal_b: float
 
 
 def orderParameterCurve(ensemble: PickledEnsemble, order_parameter_names: list[str], x_axis_name: str,
-                        weighted=False, num_threads=1, from_to=None) -> (np.ndarray, np.ndarray):
+                        num_threads=1, from_to=None) -> (np.ndarray, np.ndarray):
     """
     :return: (interpolated x: 1 dim, interpolated y: 3 dim)
     """
@@ -56,7 +56,7 @@ def orderParameterCurve(ensemble: PickledEnsemble, order_parameter_names: list[s
         x_tensor = ensemble.property(x_axis_name)
     else:
         x_tensor = ensemble.property(x_axis_name)[:, :, from_to[0]:from_to[1]]
-    y_tensor = ensemble.apply(OrderParameterFunc(order_parameter_names, weighted, True),
+    y_tensor = ensemble.apply(OrderParameterFunc(order_parameter_names, True),
                               num_threads=num_threads, from_to_nth_data=from_to)
     return x_tensor, y_tensor
 
@@ -85,20 +85,20 @@ def averageEnergy(ensemble: PickledEnsemble, x_axis_name: str):
 
 
 def orderParameterAnalysis(database: Database, order_parameters: list[str], x_axis_name: str, averaged=False,
-                           weighted=False, num_threads=1, from_to=None, out_file='analysis.h5'):
+                           num_threads=1, from_to=None, out_file='analysis.h5'):
     dic = {}
     for ensemble in database:
         if ensemble.n_density < 1: continue
         sub_dic = {}
         if averaged:
             x, y_mean, y_ci = averageByReplica(
-                *orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)
+                *orderParameterCurve(ensemble, order_parameters, x_axis_name, num_threads, from_to)
             )
             for order_parameter in order_parameters:
                 sub_dic[order_parameter] = (y_mean[order_parameter], y_ci[order_parameter])
             sub_dic[x_axis_name] = x[0, :]
         else:
-            x, y_tensor = orderParameterCurve(ensemble, order_parameters, x_axis_name, weighted, num_threads, from_to)
+            x, y_tensor = orderParameterCurve(ensemble, order_parameters, x_axis_name, num_threads, from_to)
             for order_parameter in order_parameters:
                 sub_dic[order_parameter] = y_tensor[order_parameter]
             sub_dic[x_axis_name] = x[0, :]
@@ -112,17 +112,17 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
     add_array_to_hdf5(out_file, 'summary_table', database._summary_table_array)
 
 
-def calAllOrderParameters(database: Database, x_axis_name: str, averaged=False, weighted=False, num_threads=4,
+def calAllOrderParameters(database: Database, x_axis_name: str, averaged=False, num_threads=4,
                           out_file='analysis.h5'):
     order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6', 'MeanSegmentDist']
     try:
         orderParameterAnalysis(
-            database, order_parameters, x_axis_name, averaged, weighted, num_threads, out_file=out_file
+            database, order_parameters, x_axis_name, averaged, num_threads, out_file=out_file
         )
     except DirtyDataException as e:
         print(e)
         print("Exception is caught. Try to calculate in smaller range.")
         orderParameterAnalysis(
-            database, order_parameters, x_axis_name, weighted, averaged, num_threads,
+            database, order_parameters, x_axis_name, averaged, num_threads,
             from_to=(0, e.nth_state), out_file=out_file
         )
