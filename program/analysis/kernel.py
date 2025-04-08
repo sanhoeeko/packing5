@@ -11,6 +11,7 @@ class Kernel:
         self.setTypes(
             ('DelaunayModulo', [ct.c_int] * 3 + [ct.c_void_p] * 6, ct.c_int),
             ('ConvexHull', [ct.c_void_p] * 2 + [ct.c_int] * 2, None),
+            ('DistToEllipse', [ct.c_float] * 2 + [ct.c_void_p] * 2 + [ct.c_int], None),
             ('RemoveBadBoundaryEdges', [ct.c_void_p] * 6 + [ct.c_int, ct.c_float], None),
             ('neighbors', [ct.c_int] * 2 + [ct.c_void_p] * 3, None),
             ('symmetricSum', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),

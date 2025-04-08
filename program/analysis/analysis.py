@@ -114,7 +114,7 @@ def orderParameterAnalysis(database: Database, order_parameters: list[str], x_ax
 
 def calAllOrderParameters(database: Database, x_axis_name: str, averaged=False, num_threads=4,
                           out_file='analysis.h5'):
-    order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6', 'MeanSegmentDist']
+    order_parameters = ['Phi4', 'Phi6', 'S_local', 'S_global', 'EllipticPhi6', 'MeanSegmentDist', 'defect']
     try:
         orderParameterAnalysis(
             database, order_parameters, x_axis_name, averaged, num_threads, out_file=out_file

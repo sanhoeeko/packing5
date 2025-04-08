@@ -67,11 +67,19 @@ class Delaunay(DelaunayBase):
     All order parameters that requires Delaunay triangulation are here.
     """
 
-    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float, disks_per_rod: int):
-        super().__init__(indices, edges, weights, gamma, disks_per_rod)
+    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float,
+                 A: float, B: float, disks_per_rod: int):
+        super().__init__(indices, edges, weights, gamma, A, B, disks_per_rod)
 
     def z_number(self, arg=None) -> np.ndarray:
         return super().z_number(arg)
+
+    def defect(self, xyt: ut.CArray) -> np.ndarray:
+        z = self.z_number()
+        body = 1 - self.dist_hull(xyt)
+        body_rods = np.sum(body)
+        d = np.bitwise_and(body.astype(bool), z != 6)
+        return d / body_rods
 
     def Phi6Complex(self, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         return self.phi_p(6, xyt)

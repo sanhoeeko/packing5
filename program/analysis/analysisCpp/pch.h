@@ -11,6 +11,7 @@
 DLLEXPORT int DelaunayModulo(int n, int m, int N, void* indices_in_ptr, void* edges_in_ptr, void* mask_ptr, void* indices_out_ptr,
     void* edges_out_ptr, void* weights_out_ptr);
 DLLEXPORT void ConvexHull(void* points_ptr, void* out_mask_ptr, int n_points, int n_rods);
+DLLEXPORT void DistToEllipse(float a, float b, void* points_ptr, void* out_ptr, int N);
 DLLEXPORT void RemoveBadBoundaryEdges(void* points_ptr, void* convex_hull_ptr, void* table_ptr, void* indices_ptr, void* edges_ptr,
     void* mask_ptr, int convex_hull_length, float cos_threshold);
 DLLEXPORT void neighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr);

@@ -8,7 +8,7 @@ from art.delaunay_art import showTypedDelaunay
 from art.viewer import RenderState, RenderSetup
 
 gamma = 2.5
-A = 32
+A = 31.1
 B = 16
 use_segment_delaunay = True
 use_modulo = True
@@ -19,7 +19,7 @@ if __name__ == '__main__':
     xyt = np.array(pd.read_csv('testScripts/example_data.csv', header=None))
     with Figure() as f:
         RenderState(f).drawParticles(xyt, {'gamma': gamma, 'A': A, 'B': B},
-                                     RenderSetup('convex_hull'), with_label=False)
+                                     RenderSetup('dist_hull'), with_label=False)
         if use_segment_delaunay:
             voro = Voronoi(gamma, np.max(np.abs(xyt[:, 0])), np.max(np.abs(xyt[:, 1])), xyt)
             if use_modulo:

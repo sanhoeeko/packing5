@@ -117,7 +117,7 @@ class Voronoi:
         from .orders import Delaunay
         delaunay = sp.Delaunay(self.disk_map)
         indices, edges, weights = DelaunayModulo(delaunay, self.num_rods, self.disks_per_rod)
-        return Delaunay(indices, edges, weights, self.gamma, self.disks_per_rod)
+        return Delaunay(indices, edges, weights, self.gamma, self.A, self.B, self.disks_per_rod)
 
 
 class DelaunayBase:
@@ -126,8 +126,10 @@ class DelaunayBase:
     weighted_edges: dtype=[('id2', np.int32), ('weight', np.float32)]
     """
 
-    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float, disks_per_rod: int):
+    def __init__(self, indices: ut.CArray, edges: ut.CArray, weights: ut.CArray, gamma: float,
+                 A: float, B: float, disks_per_rod: int):
         self.gamma = gamma
+        self.A, self.B = A, B
         self.indices = indices
         self.edges = edges
         self.weights = weights
@@ -171,6 +173,16 @@ class DelaunayBase:
         xy = ut.CArray(np.vstack([centers - r * u, centers + r * u]), np.float32)
         ker.dll.ConvexHull(xy.ptr, hull.ptr, self.num_rods * 2, self.num_rods)
         return hull.data
+
+    def dist_hull(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        min_dist = 2
+        return (self.dist_to_ellipse(xyt) < min_dist).astype(np.int32)
+
+    def dist_to_ellipse(self, xyt: ut.CArray) -> np.ndarray:
+        dists = ut.CArrayFZeros((self.num_rods,))
+        xy = ut.CArray(xyt.data[:, 0:2], dtype=np.float32)
+        ker.dll.DistToEllipse(self.A, self.B, xy.ptr, dists.ptr, self.num_rods)
+        return dists.data
 
     def phi_p(self, p: int, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         """

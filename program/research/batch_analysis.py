@@ -14,7 +14,7 @@ def batch_analyze(filename: str):
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('S_local')).show()
+    InteractiveViewer(e, RenderSetup('defect')).show()
     # calAllOrderParameters(db, 'phi', num_threads=4, averaged=True)
 
 

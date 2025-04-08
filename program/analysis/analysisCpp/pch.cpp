@@ -129,3 +129,57 @@ float CubicMinimum(float a, float b, float c, float d) {
         return numeric_limits<float>::quiet_NaN();
     }
 }
+
+float distToEllipse(float a, float b, float x1, float y1) {
+    /*
+        Formulae:
+        the point (x0, y0) on the ellipse cloest to (x1, y1) in the first quadrant:
+
+            x0 = a2*x1 / (t+a2)
+            y0 = b2*y1 / (t+b2)
+
+        where t is the root of
+
+            ((a*x1)/(t+a2))^2 + ((b*y1)/(t+b2))^2 - 1 = 0
+
+        in the range of t > -b*b. The initial guess can be t0 = -b*b + b*y1.
+    */
+    // float t_prolate = -b2 + b * y1;
+    // float t_oblate = -a2 + a * x1;
+    float a2 = a * a, b2 = b * b;
+    float t = a < b ? (-a2 + a * x1) : (-b2 + b * y1);
+
+    for (int i = 0; i < 16; i++) {
+        // Newton root finding. There is always `Ga * Ga + Gb * Gb - 1 > 0`.
+        // There must be MORE iterations for particles near principal axes.
+        float
+            a2pt = a2 + t,
+            b2pt = b2 + t,
+            ax1 = a * x1,
+            by1 = b * y1,
+            Ga = ax1 / a2pt,
+            Gb = by1 / b2pt,
+            G = Ga * Ga + Gb * Gb - 1,
+            dG = -2 * ((ax1 * ax1) / (a2pt * a2pt * a2pt) + (by1 * by1) / (b2pt * b2pt * b2pt));
+        if (G < 1e-3f) {
+            break;
+        }
+        else {
+            t -= G / dG;
+        }
+    }
+    float
+        x0 = a2 * x1 / (t + a2),
+        y0 = b2 * y1 / (t + b2),
+        dx = x1 - x0,
+        dy = y1 - y0;
+    return sqrtf(dx * dx + dy * dy);
+}
+
+void DistToEllipse(float a, float b, void* points_ptr, void* out_ptr, int N) {
+    Point* points = (Point*)points_ptr;
+    float* out = (float*)out_ptr;
+    for (int i = 0; i < N; i++) {
+        out[i] = distToEllipse(a, b, abs(points[i].x), abs(points[i].y));
+    }
+}
