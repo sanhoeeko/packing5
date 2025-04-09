@@ -204,12 +204,26 @@ class DelaunayBase:
             angle = ut.CArray(function_providing_angles(xyt))
             z_p = ut.CArray(np.zeros((self.num_edges * 2,), dtype=np.complex64))
             Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
-            ker.dll.anisotropic_z_ij_power_p(*self.params, xyt.ptr, angle.ptr, z_p.ptr,
-                                             np.float32(gamma), np.float32(p))
+            ker.dll.anisotropic_z_ij_power_p(*self.params, xyt.ptr, angle.ptr, z_p.ptr, gamma, p)
             ker.dll.sumAnisotropicComplex(*self.params, z_p.ptr, Phi.ptr)
             return Phi.data / self.z_number()
 
         return inner
+
+    def phi_p_ellipse_fitted(self, p: int, xyt: ut.CArray) -> dict:
+        z_p = ut.CArray(np.zeros((self.num_edges * 2,), dtype=np.complex64))
+        Phi = ut.CArray(np.zeros((self.num_rods,), dtype=np.complex64))
+        gammas = ut.CArrayFZeros((self.num_rods,))
+        thetas = ut.CArrayFZeros((self.num_rods,))
+        ker.dll.FittedEllipticPhi_p(*self.params, xyt.ptr, z_p.ptr, gammas.ptr, thetas.ptr, p)
+        ker.dll.sumAnisotropicComplex(*self.params, z_p.ptr, Phi.ptr)
+        phi = Phi.data.copy()
+        phi[np.bitwise_or(gammas.data < 0, gammas.data > self.gamma)] = 0
+        return {
+            'Phi': phi / self.z_number(),
+            'gammas': gammas.data,
+            'thetas': thetas.data,
+        }
 
     def pure_rotation_phi(self, xyt: ut.CArray) -> np.ndarray:
         phi_angle = ut.CArrayFZeros((self.num_rods,))

@@ -18,5 +18,5 @@ def two_order_plot(ax, filename: str, order1: str, order2: str, alpha=0.1):
 
 if __name__ == '__main__':
     fig, ax = plt.subplots()
-    two_order_plot(ax, 'merge-full-0407.h5', 'MeanSegmentDist', 'defect')
+    two_order_plot(ax, 'merge-full-0407.h5', 'S_local', 'EllipticPhi6')
     plt.show()

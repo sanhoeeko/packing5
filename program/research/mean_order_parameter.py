@@ -14,4 +14,4 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 if __name__ == '__main__':
-    batch_analyze('../merge-analysis-0407.h5', 'defect', (0, 20))
+    batch_analyze('merge-analysis-0407.h5', 'MeanSegmentDist', (0, 20))

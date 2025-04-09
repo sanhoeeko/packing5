@@ -94,8 +94,8 @@ class Delaunay(DelaunayBase):
         return np.abs(self.phi_p(4, xyt))
 
     def EllipticPhi6(self, xyt: ut.CArray, gamma: float) -> np.ndarray:
-        return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
-        # return np.abs(self.phi_p_ellipse_template(self.DirectorAngle)(6, gamma, xyt))
+        # return np.abs(self.phi_p_ellipse_template(self.pure_rotation_phi)(6, gamma, xyt))
+        return np.abs(self.phi_p_ellipse_template(self.DirectorAngle)(6, gamma, xyt))
         # return np.abs(self.phi_p_ellipse_template(StaticOrders.Angle)(6, gamma, xyt))
 
     def PureRotationAngle(self, xyt: ut.CArray) -> np.ndarray:
@@ -139,3 +139,8 @@ class Delaunay(DelaunayBase):
         m2 = super().segment_dist_moment(xyt, 2)
         std = np.sqrt(m2 - m1 * m1)
         return std * self.gamma
+
+    def FittedEllipticPhi6(self, xyt: ut.CArray) -> np.ndarray:
+        dic = self.phi_p_ellipse_fitted(6, xyt)
+        print(dic['gammas'])
+        return np.abs(dic['Phi'])

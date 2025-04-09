@@ -36,5 +36,7 @@ DLLEXPORT float RijRatio(void* p_xyt, int N);
 DLLEXPORT int isOutOfBoundary(void* p_xyt, int N, float A, float B);
 DLLEXPORT float CubicMinimum(float a, float b, float c, float d);
 DLLEXPORT void convertXY(int edge_type, float r, float t1, float t2, void* xyxy_ptr);
+DLLEXPORT void FittedEllipticPhi_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+    void* output_complex_ptr, void* out_gamma, void* out_theta, float p);
 
 #endif //PCH_H

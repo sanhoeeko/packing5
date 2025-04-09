@@ -28,7 +28,7 @@ gradient_prop = 'max_gradient_amp'  # mean_gradient_amp | max_gradient_amp | ene
 
 
 class EnergyScanner:
-    alpha = 0.96
+    alpha = 0.88
 
     def __init__(self, ref_state):
         # ref_state: State

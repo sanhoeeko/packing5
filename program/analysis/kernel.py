@@ -27,6 +27,7 @@ class Kernel:
             ('isOutOfBoundary', [ct.c_void_p, ct.c_int, ct.c_float, ct.c_float], ct.c_int),
             ('CubicMinimum', [ct.c_float] * 4, ct.c_float),
             ('convertXY', [ct.c_int] + [ct.c_float] * 3 + [ct.c_void_p], None),
+            ('FittedEllipticPhi_p', [ct.c_int] * 2 + [ct.c_void_p] * 6 + [ct.c_float], None),
         )
 
     def setTypes(self, *tup):
