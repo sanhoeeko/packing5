@@ -10,7 +10,7 @@ def batch_analyze(filename: str):
     db.search_max_gradient()
     # checkMaxGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=3.0)[0][0]
+    e = db.find(gamma=2.3)[0][0]
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
@@ -19,4 +19,4 @@ def batch_analyze(filename: str):
 
 
 if __name__ == '__main__':
-    batch_analyze('../data-20250406.h5')
+    batch_analyze('../data-20250407.h5')

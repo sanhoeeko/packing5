@@ -3,7 +3,8 @@ import sys
 
 from analysis.analysis import calAllOrderParameters
 from analysis.database import Database
-from analysis.post_analysis import RawOrderDatabase
+from analysis.post_analysis import RawOrderDatabase, MergePostDatabase, MeanCIDatabase
+from experiment import run_command
 from h5tools import dataset as dset, h5tools as ht
 from simulation.ensemble import StartEnsemble
 
@@ -36,6 +37,26 @@ def analyze(filename):
     mean_ci_file_name = 'analysis-' + filename
     calAllOrderParameters(Database(filename), 'phi', num_threads=4, averaged=False, out_file=full_file_name)
     RawOrderDatabase(full_file_name).mean_ci(mean_ci_file_name)
+
+
+def batch_analyze(*filenames):
+    # start subprocesses
+    processes = []
+    for filename in filenames:
+        process, log_file = run_command('analyze', filename)
+        processes.append(process)
+
+    # wait for calculation
+    for process in processes:
+        process.wait()
+
+    # merge results
+    MergePostDatabase(RawOrderDatabase, 'merge-full.h5')(
+        *list(filter(lambda x:x.startswith('full-'), os.listdir(os.getcwd())))
+    )
+    MergePostDatabase(MeanCIDatabase, 'merge-analysis.h5')(
+        *list(filter(lambda x:x.startswith('analysis-'), os.listdir(os.getcwd())))
+    )
 
 
 ###################### functions end ##################################################################

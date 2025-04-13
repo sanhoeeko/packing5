@@ -1,9 +1,8 @@
 import itertools
-import os
+import random
 import subprocess
 import sys
 from collections.abc import Iterable
-import random
 
 from h5tools.utils import current_time
 from simulation import utils as ut

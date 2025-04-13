@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 import default
 from h5tools.dataset import *
-from research.two_order_plot import two_order_plot
+from research.two_order_plot import two_order_scatter
 
 
 def _plot_hyperbola(ax, a: float = 1):
@@ -28,6 +28,6 @@ def plot_hyperbola(ax):
 
 if __name__ == '__main__':
     fig, ax = plt.subplots()
-    two_order_plot(ax, 'merge-full-0407.h5', 'S_local', 'S_global', alpha=0.04)
+    two_order_scatter(ax, 'merge-full-0407.h5', 'S_local', 'S_global', alpha=0.04)
     plot_hyperbola(ax)
     plt.show()

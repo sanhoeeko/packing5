@@ -1,10 +1,12 @@
 import numpy as np
+from matplotlib import patches, transforms
+from matplotlib.path import Path
 
 from .art import Figure, ListColor01, add_energy_level_colorbar
 
 
 def plotListOfArray(lst: np.ndarray, labels: tuple[str, str] = None, y_restriction: float = None):
-    colors = ListColor01('cool', len(lst))
+    colors = ListColor01('jet', len(lst))
     with Figure() as f:
         for i in range(len(lst)):
             f.ax.plot(lst[i], color=colors[i], alpha=0.5)
@@ -56,8 +58,63 @@ def scatterCorrelations(x: np.ndarray, y: np.ndarray):
     :param y: (samples, N) array
     """
     assert x.shape == y.shape
-    colors = ListColor01('cool', x.shape[0])
+    colors = ListColor01('jet', x.shape[0])
     with Figure() as f:
         for i in range(x.shape[0]):
             f.ax.scatter(x[i, :], y[i, :], color=colors[i], s=1, alpha=0.1)
         f.region([0, 1], [0, 1])
+
+
+def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrows=1, arrow_size=1, alpha=1, **plot_args):
+    """
+    t: curve parameter
+    x, y: data
+    plot_args: other parameters passed to plt.plot
+    """
+    line, = fig.ax.plot(x, y, alpha=alpha, **plot_args)
+    color = line.get_color()
+
+    # 计算导数场
+    dx_dt = np.gradient(x, t)
+    dy_dt = np.gradient(y, t)
+
+    # 生成分位点（保留边缘间距）
+    t_values = np.quantile(t, np.linspace(0, 1, n_arrows + 2))[1:-1]
+
+    # 创建三角形模版（原始指向右方）
+    triangle_verts = np.array([
+        [0.0, 0.0],  # 顶点
+        [-1.0, -0.5],  # 左下
+        [-1.0, 0.5],  # 左上
+        [0.0, 0.0]  # 闭合
+    ])
+    triangle_codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY]
+    triangle_path = Path(triangle_verts, triangle_codes)
+
+    for t_val in t_values:
+        # 插值获取坐标和方向
+        xi = np.interp(t_val, t, x)
+        yi = np.interp(t_val, t, y)
+        dx = np.interp(t_val, t, dx_dt)
+        dy = np.interp(t_val, t, dy_dt)
+
+        # 计算旋转角度
+        angle = np.degrees(np.arctan2(dy, dx))
+
+        # 创建复合变换
+        transform = transforms.Affine2D().scale(
+            arrow_size,  # 宽度缩放（黄金比例）
+            0.618 * arrow_size  # 高度缩放
+        ).rotate_deg(angle).translate(xi, yi) + fig.ax.transData
+
+        # 添加三角形补丁
+        patch = patches.PathPatch(
+            triangle_path,
+            facecolor=color,
+            edgecolor='none',  # 移除边框
+            transform=transform,
+            zorder=3,  # 确保箭头在曲线上方
+            alpha=alpha
+        )
+        fig.ax.add_patch(patch)
+        return fig

@@ -114,3 +114,7 @@ def apply_struct(func, *args, **kwargs):
         return dict_to_struct_array(dic)
 
     return inner
+
+
+def reference_phi(gamma: float, h: float):
+    return (np.pi + 4 * (gamma - 1)) / (2 * gamma * (2 - h))

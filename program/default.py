@@ -18,3 +18,4 @@ if_affine_when_compress = False
 if_hyperuniform_initialize = False
 enable_legal_check = False
 S_local_background = 0.338
+h_max = 1.2

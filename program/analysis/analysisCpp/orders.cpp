@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "defs.h"
 #include <math.h>
+#include <string.h>
 #include "segdist.h"
 
 /* Iterating over a Delaunay diagram:
