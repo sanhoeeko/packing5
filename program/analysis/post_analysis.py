@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import pandas as pd
 
 from analysis.analysis import averageByReplica
 from analysis.database import DatabaseBase
@@ -89,6 +90,24 @@ class MeanCIDatabase(PostDatabase):
         mean, ci = zip(*y)
         gammas = self.summary['gamma']
         return {self.x_axis_name: x, 'mean': mean, 'ci': ci, 'gammas': gammas}
+
+    def to_csv(self, order_parameter_name: str, filename: str):
+        dic = self.extract_data(order_parameter_name)
+        gammas = dic['gammas']
+        dfs = []
+        for i, gamma in enumerate(gammas):
+            appendix = f'(gamma={gamma:.1f})'
+            x_header = self.x_axis_name + appendix
+            mean_header = 'mean' + appendix
+            ci_header = 'ci' + appendix
+            mat = np.hstack([
+                dic[self.x_axis_name][i].reshape(-1, 1),
+                dic['mean'][i].reshape(-1, 1),
+                dic['ci'][i].reshape(-1, 1),
+            ])
+            dfs.append(pd.DataFrame(mat, columns=[x_header, mean_header, ci_header]))
+        df = pd.concat(dfs, axis=1)
+        df.to_csv(filename)
 
 
 class MeanCIData(PostData):

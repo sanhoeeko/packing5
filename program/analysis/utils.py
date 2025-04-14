@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
+import default
 from analysis.h5tools import invalid_value_of
 
 
@@ -116,5 +117,5 @@ def apply_struct(func, *args, **kwargs):
     return inner
 
 
-def reference_phi(gamma: float, h: float):
+def reference_phi(gamma: float, h: float) -> float:
     return (np.pi + 4 * (gamma - 1)) / (2 * gamma * (2 - h))

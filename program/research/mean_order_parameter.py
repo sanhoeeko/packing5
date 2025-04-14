@@ -6,6 +6,7 @@ from art import curves as art
 
 def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
     db = MeanCIDatabase(filename)
+    # db.to_csv('EllipticPhi6', 'ephi6.csv')
     dic = db.extract_data(order_parameter_name)
     f, t = from_to
     art.plotMeanCurvesWithCI(dic[db.x_axis_name][f:t], dic['mean'][f:t], dic['ci'][f:t], dic['gammas'][f:t],
@@ -14,4 +15,4 @@ def batch_analyze(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 if __name__ == '__main__':
-    batch_analyze('../analysis-data-20250413.h5', 'EllipticPhi6', (0, 20))
+    batch_analyze('merge-analysis-0407.h5', 'EllipticPhi6', (0, 20))
