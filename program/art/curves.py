@@ -65,7 +65,14 @@ def scatterCorrelations(x: np.ndarray, y: np.ndarray):
         f.region([0, 1], [0, 1])
 
 
-def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrows=1, arrow_size=1, alpha=1, **plot_args):
+def normalize01(x: np.ndarray):
+    x0 = np.min(x)
+    x1 = np.max(x)
+    return (x - x0) / (x1 - x0)
+
+
+def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrows=1, arrow_size=1, alpha=1,
+               **plot_args):
     """
     t: curve parameter
     x, y: data
@@ -75,6 +82,7 @@ def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrow
     color = line.get_color()
 
     # 计算导数场
+    t = normalize01(t)
     dx_dt = np.gradient(x, t)
     dy_dt = np.gradient(y, t)
 
@@ -83,11 +91,11 @@ def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrow
 
     # 创建三角形模版（原始指向右方）
     triangle_verts = np.array([
-        [0.0, 0.0],  # 顶点
-        [-1.0, -0.5],  # 左下
-        [-1.0, 0.5],  # 左上
-        [0.0, 0.0]  # 闭合
-    ])
+        [0.5, 0.0],  # 顶点（向右延伸）
+        [-0.5, -0.3],  # 左下方（调整宽度保持黄金比例）
+        [-0.5, 0.3],  # 左上方
+        [0.5, 0.0]  # 闭合路径
+    ]) * 1.618  # 缩放系数补偿
     triangle_codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY]
     triangle_path = Path(triangle_verts, triangle_codes)
 
@@ -103,9 +111,13 @@ def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrow
 
         # 创建复合变换
         transform = transforms.Affine2D().scale(
-            arrow_size,  # 宽度缩放（黄金比例）
-            0.618 * arrow_size  # 高度缩放
-        ).rotate_deg(angle).translate(xi, yi) + fig.ax.transData
+            arrow_size,
+            arrow_size * 0.618
+        ).rotate_deg(
+            angle
+        ).translate(
+            xi, yi  # 此时平移的是重心位置
+        ) + fig.ax.transData
 
         # 添加三角形补丁
         patch = patches.PathPatch(
@@ -117,4 +129,4 @@ def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrow
             alpha=alpha
         )
         fig.ax.add_patch(patch)
-        return fig
+    return fig

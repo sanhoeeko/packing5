@@ -53,6 +53,17 @@ def EllipsePoints(a: float, b: float, d: float) -> np.ndarray:
     return pts
 
 
+def CirclePoints(R: float, d: float) -> np.ndarray:
+    def X(t):
+        return np.array([R * np.cos(t), R * np.sin(t)])
+
+    C = 2 * np.pi * R
+    n = int(np.round(C / d))
+    d_theta = 2 * np.pi / n
+    ts = np.arange(0, 2 * np.pi, d_theta)
+    return X(ts)
+
+
 def DelaunayModuloClip(delaunay: sp.Delaunay, N: int, disks_per_rod: int) -> (ut.CArray, ut.CArray, ut.CArray):
     indices_in = ut.CArray(delaunay.vertex_neighbor_vertices[0])
     edges_in = ut.CArray(delaunay.vertex_neighbor_vertices[1])
@@ -108,7 +119,10 @@ class Voronoi:
         return np.vstack(pts)
 
     def getEllipsePoints(self):
-        return EllipsePoints(self.A + 1 / self.gamma, self.B + 1 / self.gamma, Voronoi.d).T
+        if self.A == self.B:
+            return CirclePoints(self.A + 1 / self.gamma, Voronoi.d).T
+        else:
+            return EllipsePoints(self.A + 1 / self.gamma, self.B + 1 / self.gamma, Voronoi.d).T
 
     def delaunay(self):
         """

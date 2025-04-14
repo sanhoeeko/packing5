@@ -3,9 +3,9 @@ import numpy as np
 
 import default
 from analysis.post_analysis import RawOrderDatabase, MeanCIDatabase
+from analysis.utils import reference_phi
 from art.art import ListColor01, add_energy_level_colorbar, Figure
 from art.curves import arrow_plot
-from analysis.utils import reference_phi
 
 
 def two_order_scatter(ax, filename: str, order1: str, order2: str, alpha=0.1):
@@ -33,13 +33,12 @@ def two_order_stream(filename: str, order1: str, order2: str, alpha=1):
             mean_1, ci_1 = mean_1[:idx], ci_1[:idx]
             mean_2, ci_2 = ensemble[order2]
             mean_2, ci_2 = mean_2[:idx], ci_2[:idx]
-            arrow_plot(fig, ensemble.x_axis[:idx], mean_1, mean_2, arrow_size=0.02, n_arrows=10, alpha=alpha, c=colors[i])
-        fig.ax.set_aspect(1)
-        fig.ax.set_xlim(0, 1)
-        fig.ax.set_ylim(0, 1)
-    add_energy_level_colorbar(fig.ax, colormap, gammas, 'gamma')
+            arrow_plot(fig, ensemble.x_axis[:idx], mean_1, mean_2, arrow_size=0.015, n_arrows=8, alpha=alpha,
+                       c=colors[i])
+        fig.region((0.3, 0.95), (0.3, 0.95))
+        add_energy_level_colorbar(fig.ax, colormap, gammas, 'gamma')
 
 
 if __name__ == '__main__':
-    two_order_stream('merge-analysis-0407.h5', 'S_local', 'EllipticPhi6', alpha=0.5)
+    two_order_stream('merge-analysis-0407.h5', 'S_local', 'EllipticPhi6', alpha=0.8)
     plt.show()
