@@ -1,8 +1,16 @@
 import numpy as np
 from matplotlib import patches, transforms
 from matplotlib.path import Path
+from scipy.signal import savgol_filter
 
 from .art import Figure, ListColor01, add_energy_level_colorbar
+
+
+def Smoother(window_size: int, order: int):
+    def inner(x: np.ndarray):
+        return savgol_filter(x, window_size, order)
+
+    return inner
 
 
 def plotListOfArray(lst: np.ndarray, labels: tuple[str, str] = None, y_restriction: float = None):
@@ -78,13 +86,16 @@ def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrow
     x, y: data
     plot_args: other parameters passed to plt.plot
     """
+    smooth = Smoother(21, 3)
+    x_sm = smooth(x)
+    y_sm = smooth(y)
     line, = fig.ax.plot(x, y, alpha=alpha, **plot_args)
     color = line.get_color()
 
     # 计算导数场
     t = normalize01(t)
-    dx_dt = np.gradient(x, t)
-    dy_dt = np.gradient(y, t)
+    dx_dt = np.gradient(x_sm, t)
+    dy_dt = np.gradient(y_sm, t)
 
     # 生成分位点（保留边缘间距）
     t_values = np.quantile(t, np.linspace(0, 1, n_arrows + 2))[1:-1]

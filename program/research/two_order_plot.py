@@ -1,6 +1,4 @@
-import matplotlib.pyplot as plt
-import numpy as np
-
+import analysis.utils as ut
 import default
 from analysis.post_analysis import RawOrderDatabase, MeanCIDatabase
 from analysis.utils import reference_phi
@@ -27,17 +25,18 @@ def two_order_stream(fig: Figure, filename: str, order1: str, order2: str, alpha
     gammas = db.summary['gamma']
     phi_max = reference_phi(gammas, default.h_max)
     for i, ensemble in enumerate(db):
-        idx = np.where(ensemble.x_axis > phi_max[i])[0][0]
+        idx = ut.first_larger_than(ensemble.x_axis, phi_max[i])
         mean_1, ci_1 = ensemble[order1]
         mean_1, ci_1 = mean_1[:idx], ci_1[:idx]
         mean_2, ci_2 = ensemble[order2]
         mean_2, ci_2 = mean_2[:idx], ci_2[:idx]
-        arrow_plot(fig, ensemble.x_axis[:idx], mean_1, mean_2, arrow_size=0.015, n_arrows=8, alpha=alpha,
-                   c=colors[i])
+        arrow_plot(fig, ensemble.x_axis[:idx], mean_1, mean_2, arrow_size=0.015, n_arrows=8,
+                   alpha=alpha, c=colors[i])
     fig.region(interval, interval)
     add_energy_level_colorbar(fig.ax, colormap, gammas, 'gamma')
 
 
 if __name__ == '__main__':
     with Figure() as fig:
-        two_order_stream(fig, 'merge-analysis-0407.h5', 'S_local', 'S_global', alpha=0.8, interval=(0, 1))
+        two_order_stream(fig, 'merge-analysis-0407.h5', 'S_local', 'defect',
+                         alpha=0.8, interval=(0, 1))

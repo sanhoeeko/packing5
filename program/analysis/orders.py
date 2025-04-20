@@ -78,8 +78,8 @@ class Delaunay(DelaunayBase):
         z = self.z_number()
         body = 1 - self.dist_hull(xyt)
         body_rods = np.sum(body)
-        d = np.bitwise_and(body.astype(bool), z != 6)
-        return (1 - d) / (body_rods / self.num_rods)
+        d = np.bitwise_and(body.astype(bool), z == 6)
+        return d / (body_rods / self.num_rods)
 
     def Phi6Complex(self, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         return self.phi_p(6, xyt)

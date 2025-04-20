@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 import pandas as pd
 
+import analysis.utils as ut
 from analysis.analysis import averageByReplica
 from analysis.database import DatabaseBase
 from analysis.h5tools import struct_array_to_dataframe, add_property_to_hdf5, add_array_to_hdf5, dict_to_analysis_hdf5
@@ -85,11 +86,36 @@ class MeanCIDatabase(PostDatabase):
     def id(self, ensemble_id: str):
         return MeanCIData(self.file[ensemble_id], self.x_axis_name)
 
-    def extract_data(self, order_parameter_name: str) -> dict:
+    def extract_data(self, order_parameter_name: str, truncate_x=None, truncate_h=None) -> dict:
         x, y = zip(*self.orderParameterList(order_parameter_name))
         mean, ci = zip(*y)
-        gammas = self.summary['gamma']
-        return {self.x_axis_name: x, 'mean': mean, 'ci': ci, 'gammas': gammas}
+        gammas = np.array(self.summary['gamma'])
+
+        if truncate_x is None and truncate_h is None:
+            def truncate_list(lst):
+                return lst
+        else:
+            if truncate_h is None:
+                def truncate_list(lst):
+                    res = []
+                    for phi, arr in zip(x, lst):
+                        idx = ut.first_larger_than(phi, truncate_x)
+                        res.append(arr[:idx])
+                    return res
+            elif truncate_x is None:
+                def truncate_list(lst):
+                    res = []
+                    for (phi, gamma, arr) in zip(x, gammas, lst):
+                        truncate_x = ut.reference_phi(gamma, truncate_h)
+                        idx = ut.first_larger_than(phi, truncate_x)
+                        res.append(arr[:idx])
+                    return res
+            else:
+                # Both truncate_x and truncate_h are not None: not allowed
+                raise ValueError
+
+        return {self.x_axis_name: truncate_list(x), 'mean': truncate_list(mean), 'ci': truncate_list(ci),
+                'gammas': gammas}
 
     def to_csv(self, order_parameter_name: str, filename: str):
         dic = self.extract_data(order_parameter_name)

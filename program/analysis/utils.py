@@ -1,8 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
+from typing import Union
 
 import numpy as np
 
-import default
 from analysis.h5tools import invalid_value_of
 
 
@@ -117,5 +117,9 @@ def apply_struct(func, *args, **kwargs):
     return inner
 
 
-def reference_phi(gamma: float, h: float) -> float:
+def first_larger_than(arr: np.ndarray, val) -> int:
+    return np.where(arr > val)[0][0]
+
+
+def reference_phi(gamma: Union[float, np.ndarray], h: float) -> Union[float, np.ndarray]:
     return (np.pi + 4 * (gamma - 1)) / (2 * gamma * (2 - h))
