@@ -36,7 +36,7 @@ def plotMeanCurvesWithCI(x_lst: list[np.ndarray], y_mean_lst: list[np.ndarray], 
     assert len(x_lst) == len(y_mean_lst) == len(y_ci_lst)
 
     colors = ListColor01(colormap, len(y_mean_lst))
-    with Figure() as f:
+    with Figure(figsize=(10, 6)) as f:
         for i, (x, y_mean, y_ci) in enumerate(zip(x_lst, y_mean_lst, y_ci_lst)):
             f.ax.fill_between(x, y_mean - y_ci, y_mean + y_ci, color=colors[i], alpha=0.2)
             f.ax.plot(x, y_mean, color=colors[i])

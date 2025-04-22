@@ -10,9 +10,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 my_colors = ['floralWhite', 'lemonchiffon', 'wheat', 'lightsalmon', 'coral', 'crimson',
              'paleturquoise', 'blue', 'teal', 'seagreen', 'green']
 
-matplotlib.rcParams.update({
-    'font.size': 22
-})
+matplotlib.rcParams.update({'font.size': 20})
 
 
 class Figure:
@@ -20,8 +18,8 @@ class Figure:
     It can be created as a normal object, or at the beginning of a `with` block
     """
 
-    def __init__(self):
-        self.fig, self.ax = plt.subplots()
+    def __init__(self, figsize=None):
+        self.fig, self.ax = plt.subplots() if figsize is None else plt.subplots(figsize=figsize)
 
     def __enter__(self):
         return self

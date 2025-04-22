@@ -69,9 +69,20 @@ def GammaLandscape(simulation: PickledSimulation):
     plt.show()
 
 
+def StarGamma(simulation: PickledSimulation):
+    PhiEs = np.zeros((len(simulation)))
+    for i, state in enumerate(simulation):
+        voro = Voronoi.fromStateDict(state).delaunay()
+        PhiEs[i] = np.mean(voro.EllipticPhi6(ut.CArray(state['xyt']), ut.gamma_star(state['metadata']['gamma'])))
+    Phis = simulation.op('EllipticPhi6')
+    plt.plot(PhiEs)
+    plt.plot(Phis)
+    plt.show()
+
+
 if __name__ == '__main__':
     ut.setWorkingDirectory()
-    db = Database('../data-20250328.h5')
-    e = db.find(gamma=1.6)[0]
-    BestGamma(e.simulation_at(0))
+    db = Database('../data-20250406.h5')
+    e = db.find(gamma=1.1)[0]
+    StarGamma(e.simulation_at(0))
     # GammaLandscape(db[0].simulation_at(0))

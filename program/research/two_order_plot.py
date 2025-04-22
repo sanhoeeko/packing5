@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+
 import analysis.utils as ut
 import default
 from analysis.post_analysis import RawOrderDatabase, MeanCIDatabase
@@ -33,10 +35,12 @@ def two_order_stream(fig: Figure, filename: str, order1: str, order2: str, alpha
         arrow_plot(fig, ensemble.x_axis[:idx], mean_1, mean_2, arrow_size=0.015, n_arrows=8,
                    alpha=alpha, c=colors[i])
     fig.region(interval, interval)
+    plt.xlabel(order1)
+    plt.ylabel(order2)
     add_energy_level_colorbar(fig.ax, colormap, gammas, 'gamma')
 
 
 if __name__ == '__main__':
-    with Figure() as fig:
-        two_order_stream(fig, 'merge-analysis-0407.h5', 'S_local', 'defect',
+    with Figure(figsize=(8, 6)) as fig:
+        two_order_stream(fig, 'merge-analysis-0420.h5', 'EllipticPhi6', 'defect',
                          alpha=0.8, interval=(0, 1))

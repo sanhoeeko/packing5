@@ -123,3 +123,8 @@ def first_larger_than(arr: np.ndarray, val) -> int:
 
 def reference_phi(gamma: Union[float, np.ndarray], h: float) -> Union[float, np.ndarray]:
     return (np.pi + 4 * (gamma - 1)) / (2 * gamma * (2 - h))
+
+
+def gamma_star(gamma: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    # return 1 + (gamma - 1) * 2 / np.sqrt(3)
+    return gamma * np.sqrt(3) / 2

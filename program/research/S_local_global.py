@@ -17,18 +17,15 @@ def _plot_hyperbola(ax, a: float = 1):
 
 
 def plot_hyperbola(ax):
-    plt.rcParams.update({'font.size': 20})
     _plot_hyperbola(ax, a=default.S_local_background)
     ax.set_aspect(1)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    plt.xlabel(r'$S_\text{local}$')
-    plt.ylabel(r'$S_\text{global}$')
     plt.subplots_adjust(left=0.15, right=0.85, top=0.85, bottom=0.15)
 
 
 if __name__ == '__main__':
-    with Figure() as fig:
-        # two_order_scatter(fig.ax, 'merge-full-0407.h5', 'S_local', 'S_global', alpha=0.04)
-        two_order_stream(fig,'merge-analysis-0407.h5', 'S_local', 'S_global', alpha=0.8, interval=(0, 1))
+    with Figure(figsize=(10, 7)) as fig:
+        # two_order_scatter(fig.ax, 'merge-full-0420.h5', 'S_local', 'S_global', alpha=0.04)
+        two_order_stream(fig,'merge-analysis-0420.h5', 'S_local', 'S_global', alpha=0.8, interval=(0, 1))
         plot_hyperbola(fig.ax)
