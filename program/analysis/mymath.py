@@ -2,6 +2,7 @@ import numpy as np
 from dask import delayed, compute
 from scipy import stats
 from scipy.interpolate import CubicSpline
+from scipy.ndimage import gaussian_filter1d
 
 from . import utils as ut
 from .kernel import ker
@@ -107,3 +108,40 @@ def isParticleTooClose(xyt: ut.CArray) -> bool:
 
 def isParticleOutOfBoundary(xyt: ut.CArray, A: float, B: float) -> bool:
     return bool(ker.dll.isOutOfBoundary(xyt.ptr, xyt.data.shape[0], A, B))
+
+
+def bin_and_smooth(x, y, num_bins=100, apply_gaussian=False, sigma=1) -> (np.ndarray, np.ndarray):
+    """
+    Perform binning and averaging with optional Gaussian smoothing.
+
+    Parameters:
+    - x (np.ndarray): The input x-values (non-uniform).
+    - y (np.ndarray): The corresponding y-values.
+    - num_bins (int): Number of bins to divide x into.
+    - apply_gaussian (bool): Whether to apply Gaussian smoothing.
+    - sigma (float): The standard deviation for Gaussian kernel (if smoothing).
+
+    Returns:
+    - x_binned (np.ndarray): The binned x-values (bin centers).
+    - y_binned (np.ndarray): The binned and (optionally) smoothed y-values.
+    """
+    # Define bin edges
+    bins = np.linspace(x.min(), x.max(), num_bins + 1)
+
+    # Digitize x into bins
+    bin_indices = np.digitize(x, bins)
+
+    # Compute bin centers and averages
+    x_binned = [(bins[i] + bins[i + 1]) / 2 for i in range(len(bins) - 1)]
+    y_binned = [y[bin_indices == i].mean() if np.any(bin_indices == i) else np.nan
+                for i in range(1, len(bins))]
+
+    # Remove NaN values from empty bins
+    x_binned = np.array([v for v in x_binned if not np.isnan(v)])
+    y_binned = np.array([v for v in y_binned if not np.isnan(v)])
+
+    # Apply Gaussian smoothing if required
+    if apply_gaussian:
+        y_binned = gaussian_filter1d(y_binned, sigma=sigma)
+
+    return x_binned, y_binned

@@ -1,10 +1,9 @@
-from typing import Union
-
 import numpy as np
 
 from . import mymath as mm, utils as ut
 from .database import Database, PickledEnsemble
 from .h5tools import dict_to_analysis_hdf5, add_array_to_hdf5, add_property_to_hdf5
+from .kernel import ker
 from .mymath import DirtyDataException
 from .orders import OrderParameterList
 
@@ -26,22 +25,37 @@ def OrderParameterFunc(order_parameter_list: list[str], abs_averaged: bool):
     return inner
 
 
-def CorrelationFunc(order_a: str, order_b: str, normal_a: float, normal_b: float, averaged: bool):
+def CorrelationFunc(order_a: str, order_b: str):
     """
     order_a, order_b: order parameter names.
     All means are taken over each simulation separately.
-    :return: mean((a - mean(a)) * (b - mean(b)))
+    args = (abs, xyt)
+    abg = (A_upper_bound, B_upper_bound, gamma) for each state
+    xyt = (N, 3) configuration
+    :return: r, (a - mean(a)) * (b - mean(b)) / (std(a) * std(b))
     """
+    if_seg_dist = False
 
-    def inner(args) -> Union[np.float32, np.ndarray]:
-        fields = OrderParameterFunc([order_a, order_b], False)(args)
-        a_field = fields[order_a]
-        b_field = fields[order_b]
-        cor_field = (a_field - normal_a) * (b_field - normal_b)
-        if averaged:
-            return np.mean(cor_field)
+    def inner(args) -> (np.ndarray, np.ndarray):
+        abg: tuple = args[0]
+        xyt: np.ndarray = args[1]
+        if order_a == order_b:
+            fields = OrderParameterFunc([order_a], False)(args)
+            a_field = b_field = fields[order_a]
         else:
-            return cor_field
+            fields = OrderParameterFunc([order_a, order_b], False)(args)
+            a_field = fields[order_a]
+            b_field = fields[order_b]
+        a_field_c, b_field_c = ut.CArray(a_field), ut.CArray(b_field)
+        mean_a, mean_b = np.mean(a_field), np.mean(b_field)
+        std_a, std_b = np.std(a_field), np.std(b_field)
+        xyt_c = ut.CArray(xyt, dtype=np.float32)
+        N = xyt.shape[0]
+        out_r = ut.CArrayFZeros((N * (N - 1) // 2,))
+        out_corr = ut.CArrayFZeros((N * (N - 1) // 2,))
+        ker.dll.correlation(xyt_c.ptr, a_field_c.ptr, b_field_c.ptr, out_r.ptr, out_corr.ptr, if_seg_dist, N,
+                            abg[2], mean_a, mean_b, std_a, std_b)
+        return out_r.data, out_corr.data
 
     return inner
 
@@ -126,3 +140,44 @@ def calAllOrderParameters(database: Database, x_axis_name: str, averaged=False, 
             database, order_parameters, x_axis_name, averaged, num_threads,
             from_to=(0, e.nth_state), out_file=out_file
         )
+
+
+def CorrelationOverEnsemble(order_a: str, order_b: str):
+    """
+    order_a, order_b: order parameter names.
+    All means are taken over each simulation separately.
+    :return: r, (a - mean(a)) * (b - mean(b)) / (std(a) * std(b))
+    """
+    if_seg_dist = False
+
+    def inner(abg, xyts: list) -> (list[np.ndarray], list[np.ndarray]):
+        a_fields = []
+        b_fields = []
+        for xyt in xyts:
+            if order_a == order_b:
+                fields = OrderParameterFunc([order_a], False)((abg, xyt))
+                a_fields.append(fields[order_a])
+                b_fields.append(fields[order_a])
+            else:
+                fields = OrderParameterFunc([order_a, order_b], False)((abg, xyt))
+                a_fields.append(fields[order_a])
+                b_fields.append(fields[order_b])
+        A = np.array(a_fields)
+        B = np.array(b_fields)
+        mean_a, mean_b = np.mean(A), np.mean(B)
+        std_a, std_b = np.std(A), np.std(B)
+        rs = []
+        corrs = []
+        for xyt, a_field, b_field in zip(xyts, a_fields, b_fields):
+            a_field_c, b_field_c = ut.CArray(a_field), ut.CArray(b_field)
+            xyt_c = ut.CArray(xyt, dtype=np.float32)
+            N = xyt.shape[0]
+            out_r = ut.CArrayFZeros((N * (N - 1) // 2,))
+            out_corr = ut.CArrayFZeros((N * (N - 1) // 2,))
+            ker.dll.correlation(xyt_c.ptr, a_field_c.ptr, b_field_c.ptr, out_r.ptr, out_corr.ptr, if_seg_dist, N,
+                                abg[2], mean_a, mean_b, std_a, std_b)
+            rs.append(out_r.data)
+            corrs.append(out_corr.data)
+        return rs, corrs
+
+    return inner

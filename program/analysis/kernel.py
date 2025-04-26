@@ -28,6 +28,7 @@ class Kernel:
             ('CubicMinimum', [ct.c_float] * 4, ct.c_float),
             ('convertXY', [ct.c_int] + [ct.c_float] * 3 + [ct.c_void_p], None),
             ('FittedEllipticPhi_p', [ct.c_int] * 2 + [ct.c_void_p] * 6 + [ct.c_float], None),
+            ('correlation', [ct.c_void_p] * 5 + [ct.c_int] * 2 + [ct.c_float] * 5, None),
         )
 
     def setTypes(self, *tup):

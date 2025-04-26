@@ -143,6 +143,9 @@ class PickledEnsemble:
             self.configuration[nth_replica]
         )
 
+    def index_at(self, index: int) -> list[dict]:
+        return [e[index] for e in self]
+
     @property
     def normalized_gradient_amp(self):
         """

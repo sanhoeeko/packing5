@@ -38,5 +38,7 @@ DLLEXPORT float CubicMinimum(float a, float b, float c, float d);
 DLLEXPORT void convertXY(int edge_type, float r, float t1, float t2, void* xyxy_ptr);
 DLLEXPORT void FittedEllipticPhi_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_complex_ptr, void* out_gamma, void* out_theta, float p);
+DLLEXPORT void correlation(void* xyt_ptr, void* opA_field_ptr, void* opB_field_ptr, void* out_r_ptr, void* out_corr_ptr, int if_seg_dist,
+    int N, float gamma, float mean_A, float mean_B, float std_A, float std_B);
 
 #endif //PCH_H
