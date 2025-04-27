@@ -26,11 +26,11 @@ def Correlation(e: PickledEnsemble, truncate_x=None, truncate_h=None):
             break
         abg = (sub_ensemble[0]['metadata']['A'], sub_ensemble[0]['metadata']['B'], sub_ensemble[0]['metadata']['gamma'])
         xyts = [dic['xyt'] for dic in sub_ensemble]
-        # r_lst, corr_lst = CorrelationOverEnsemble('EllipticPhi6', 'EllipticPhi6')(abg, xyts)
-        r_lst, corr_lst = ana.AngularCorrelationOverEnsemble(abg, xyts)
+        r_lst, corr_lst = ana.CorrelationOverEnsemble('defect', 'EllipticPhi6')(abg, xyts)
+        # r_lst, corr_lst = ana.AngularCorrelationOverEnsemble(abg, xyts)
         r = np.hstack(r_lst)
         corr = np.hstack(corr_lst)
-        r, corr = mm.bin_and_smooth(r, corr, num_bins=200, apply_gaussian=True, sigma=2)
+        r, corr = mm.bin_and_smooth(r, corr, num_bins=1000, apply_gaussian=True, sigma_x=1)
         rs.append(r)
         corrs.append(corr)
 
@@ -42,6 +42,6 @@ def Correlation(e: PickledEnsemble, truncate_x=None, truncate_h=None):
 
 if __name__ == '__main__':
     db = Database('../data-20250419-2.h5')
-    idx = 19
+    idx = 5
     e = db.find(gamma=1.1 + 0.1 * idx)[0]
     Correlation(e, truncate_h=1.2)

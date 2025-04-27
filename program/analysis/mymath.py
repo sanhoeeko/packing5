@@ -110,7 +110,7 @@ def isParticleOutOfBoundary(xyt: ut.CArray, A: float, B: float) -> bool:
     return bool(ker.dll.isOutOfBoundary(xyt.ptr, xyt.data.shape[0], A, B))
 
 
-def bin_and_smooth(x, y, num_bins=100, apply_gaussian=False, sigma=1) -> (np.ndarray, np.ndarray):
+def bin_and_smooth(x, y, num_bins=100, apply_gaussian=False, sigma_x=1) -> (np.ndarray, np.ndarray):
     """
     Perform binning and averaging with optional Gaussian smoothing.
 
@@ -126,22 +126,23 @@ def bin_and_smooth(x, y, num_bins=100, apply_gaussian=False, sigma=1) -> (np.nda
     - y_binned (np.ndarray): The binned and (optionally) smoothed y-values.
     """
     # Define bin edges
-    bins = np.linspace(x.min(), x.max(), num_bins + 1)
+    bins = np.linspace(x.min(), x.max(), num_bins + 1) + 1e-6  # +1e-6 is for zero x points
 
     # Digitize x into bins
     bin_indices = np.digitize(x, bins)
 
     # Compute bin centers and averages
     x_binned = [(bins[i] + bins[i + 1]) / 2 for i in range(len(bins) - 1)]
-    y_binned = [y[bin_indices == i].mean() if np.any(bin_indices == i) else np.nan
-                for i in range(1, len(bins))]
+    y_binned = [y[bin_indices == i].mean() if np.any(bin_indices == i) else np.nan for i in range(1, len(bins))]
 
     # Remove NaN values from empty bins
-    # x_binned = np.array([v for v in x_binned if not np.isnan(v)])
-    # y_binned = np.array([v for v in y_binned if not np.isnan(v)])
+    valid_mask = ~np.bitwise_or(np.isnan(x_binned), np.isnan(y_binned))
+    x_binned = np.array(x_binned)[valid_mask]
+    y_binned = np.array(y_binned)[valid_mask]
 
     # Apply Gaussian smoothing if required
     if apply_gaussian:
+        sigma = sigma_x / ((x.max() - x.min()) / num_bins)
         y_binned = gaussian_filter1d(y_binned, sigma=sigma)
 
     return x_binned, y_binned

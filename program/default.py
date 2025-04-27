@@ -16,6 +16,7 @@ terminal_phi = 3.2
 if_cal_energy = True
 if_affine_when_compress = False
 if_hyperuniform_initialize = False
+if_parallel_initialize = True
 enable_legal_check = False
 S_local_background = 0.338
 h_max = 1.2

@@ -114,6 +114,8 @@ class Simulator(ut.HasMeta):
                         self.state.initAsDisksWithPhi(0.8)
                     else:
                         self.state.initAsHardRods()
+                    if default.if_parallel_initialize:
+                        self.state.xyt.data[:, 2] = 0
                     if self.state.legal_pure():
                         print(f"[{self.id}] Successfully initialized.")
                         break
