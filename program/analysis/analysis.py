@@ -51,8 +51,8 @@ def CorrelationFunc(order_a: str, order_b: str):
         std_a, std_b = np.std(a_field), np.std(b_field)
         xyt_c = ut.CArray(xyt, dtype=np.float32)
         N = xyt.shape[0]
-        out_r = ut.CArrayFZeros((N * (N - 1) // 2,))
-        out_corr = ut.CArrayFZeros((N * (N - 1) // 2,))
+        out_r = ut.CArrayFZeros((N * (N + 1) // 2,))
+        out_corr = ut.CArrayFZeros((N * (N + 1) // 2,))
         ker.dll.correlation(xyt_c.ptr, a_field_c.ptr, b_field_c.ptr, out_r.ptr, out_corr.ptr, if_seg_dist, N,
                             abg[2], mean_a, mean_b, std_a, std_b)
         return out_r.data, out_corr.data
@@ -172,8 +172,8 @@ def CorrelationOverEnsemble(order_a: str, order_b: str):
             a_field_c, b_field_c = ut.CArray(a_field), ut.CArray(b_field)
             xyt_c = ut.CArray(xyt, dtype=np.float32)
             N = xyt.shape[0]
-            out_r = ut.CArrayFZeros((N * (N - 1) // 2,))
-            out_corr = ut.CArrayFZeros((N * (N - 1) // 2,))
+            out_r = ut.CArrayFZeros((N * (N + 1) // 2,))
+            out_corr = ut.CArrayFZeros((N * (N + 1) // 2,))
             ker.dll.correlation(xyt_c.ptr, a_field_c.ptr, b_field_c.ptr, out_r.ptr, out_corr.ptr, if_seg_dist, N,
                                 abg[2], mean_a, mean_b, std_a, std_b)
             rs.append(out_r.data)
@@ -181,3 +181,24 @@ def CorrelationOverEnsemble(order_a: str, order_b: str):
         return rs, corrs
 
     return inner
+
+
+def AngularCorrelationOverEnsemble(abg, xyts: list) -> (list[np.ndarray], list[np.ndarray]):
+    """
+    order_a, order_b: order parameter names.
+    All means are taken over each simulation separately.
+    :return: r, <cos(θi-θj)>
+    """
+    if_seg_dist = False
+
+    rs = []
+    corrs = []
+    for xyt in xyts:
+        xyt_c = ut.CArray(xyt, dtype=np.float32)
+        N = xyt.shape[0]
+        out_r = ut.CArrayFZeros((N * (N + 1) // 2,))
+        out_corr = ut.CArrayFZeros((N * (N + 1) // 2,))
+        ker.dll.angularCorrelation(xyt_c.ptr, out_r.ptr, out_corr.ptr, if_seg_dist, N, abg[2])
+        rs.append(out_r.data)
+        corrs.append(out_corr.data)
+    return rs, corrs

@@ -29,6 +29,7 @@ class Kernel:
             ('convertXY', [ct.c_int] + [ct.c_float] * 3 + [ct.c_void_p], None),
             ('FittedEllipticPhi_p', [ct.c_int] * 2 + [ct.c_void_p] * 6 + [ct.c_float], None),
             ('correlation', [ct.c_void_p] * 5 + [ct.c_int] * 2 + [ct.c_float] * 5, None),
+            ('angularCorrelation', [ct.c_void_p] * 3 + [ct.c_int] * 2 + [ct.c_float], None),
         )
 
     def setTypes(self, *tup):

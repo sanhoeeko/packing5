@@ -36,15 +36,43 @@ void correlation(void* xyt_ptr, void* opA_field_ptr, void* opB_field_ptr, void* 
     float r = 1 - 1 / gamma;
     float coef = 0.5 / (mean_A * mean_B);
     // float coef = 0.5 / (std_A * std_B);
-    vector<float> rs; rs.reserve(N * (N - 1) / 2);
-    vector<float> corr; corr.reserve(N * (N - 1) / 2);
+    vector<float> rs; rs.reserve(N * (N + 1) / 2);
+    vector<float> corr; corr.reserve(N * (N + 1) / 2);
 
     for (int i = 0; i < N; i++) {
+        rs.push_back(0);
+        corr.push_back(2 * coef * (A_field[i] - mean_A) * (B_field[i] - mean_B));
         for (int j = i + 1; j < N; j++) {
             float dist = if_seg_dist? segment_dist(q[i], q[j], r) : point_dist(q[i], q[j]);
             rs.push_back(dist);
             corr.push_back(coef * ((A_field[i] - mean_A) * (B_field[j] - mean_B) 
                 + (A_field[j] - mean_A) * (B_field[i] - mean_B)));
+        }
+    }
+    vector<size_t> indices = argsort(rs);
+    for (int i = 0; i < rs.size(); i++) {
+        out_r[i] = rs[indices[i]];
+        out_corr[i] = corr[indices[i]];
+    }
+}
+
+void angularCorrelation(void* xyt_ptr, void* out_r_ptr, void* out_corr_ptr, int if_seg_dist, int N, float gamma)
+{
+    xyt3f* q = (xyt3f*)xyt_ptr;
+    float* out_r = (float*)out_r_ptr;
+    float* out_corr = (float*)out_corr_ptr;
+
+    float r = 1 - 1 / gamma;
+    vector<float> rs; rs.reserve(N * (N + 1) / 2);
+    vector<float> corr; corr.reserve(N * (N + 1) / 2);
+
+    for (int i = 0; i < N; i++) {
+        rs.push_back(0);
+        corr.push_back(1);
+        for (int j = i + 1; j < N; j++) {
+            float dist = if_seg_dist ? segment_dist(q[i], q[j], r) : point_dist(q[i], q[j]);
+            rs.push_back(dist);
+            corr.push_back(cosf(2 * (q[i].t - q[j].t)));
         }
     }
     vector<size_t> indices = argsort(rs);

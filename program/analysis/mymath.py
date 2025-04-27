@@ -137,8 +137,8 @@ def bin_and_smooth(x, y, num_bins=100, apply_gaussian=False, sigma=1) -> (np.nda
                 for i in range(1, len(bins))]
 
     # Remove NaN values from empty bins
-    x_binned = np.array([v for v in x_binned if not np.isnan(v)])
-    y_binned = np.array([v for v in y_binned if not np.isnan(v)])
+    # x_binned = np.array([v for v in x_binned if not np.isnan(v)])
+    # y_binned = np.array([v for v in y_binned if not np.isnan(v)])
 
     # Apply Gaussian smoothing if required
     if apply_gaussian:
