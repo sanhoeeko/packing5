@@ -1,10 +1,16 @@
 #include"pch.h"
 #include"defs.h"
+#include<math.h>
 
-inline static float modpi_2(float x) {
-    const float a = 2 / pi;
+inline static float modpi(float x) {
+    const float a = 1 / pi;
     float y = x * a;
-    return y - floor(y);
+    return (y - floor(y));  // return in [0,1)
+}
+
+inline static float angle_by_lines(float theta1, float theta2) {
+    float delta = abs(modpi(theta1) - modpi(theta2));
+    return std::min(delta, 1 - delta);  // return in [0,1/2]
 }
 
 void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
@@ -15,7 +21,7 @@ void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr
     int* z_number = (int*)z_number_ptr;             // length: num_edges
     xyt3f* q = (xyt3f*)xyt_ptr;                     // length: num_rods
     int* output = (int*)output_ptr;                 // length: n_angles
-    float d_theta = 1.0 / n_angles;   // Note that modpi_2 returns y in [0,1)
+    float d_theta = 0.5 / n_angles;
 
     int id1 = 0;
     for (int j = 0; j < num_edges; j++) {
@@ -24,9 +30,9 @@ void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr
             id1++;
         }
         int id2 = edges[j];
-        if (z_number[id1] == 5 && z_number[id2] == 7 || z_number[id1] == 7 && z_number[id2] == 5) {
-            float angle = modpi_2(q[id1].t - q[id2].t);     // angle in [0, 1) (mapped from [0, pi/2))
-            int interval_index = (int)floor(angle / d_theta);
+        if ((z_number[id1] == 5 && z_number[id2] == 7) || (z_number[id1] == 7 && z_number[id2] == 5)) {
+            float angle = angle_by_lines(q[id1].t, q[id2].t);     // angle in [0, 1/2] (mapped from [0, pi/2])
+            int interval_index = angle >= 0.5f ? n_angles - 1 : (int)(angle / d_theta);
             output[interval_index]++;
         }
     }

@@ -1,6 +1,7 @@
 """
 analysis.database: Data Access Layer
 """
+import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 
 import h5py
@@ -246,11 +247,23 @@ class PickledSimulation:
         for i in range(self.n):
             yield self[i]
 
-    def op(self, order_parameter_name: str) -> np.ndarray:
+    def op(self, order_parameter_name: str, num_threads=1) -> np.ndarray:
         """
         :return: numpy array of order parameter
         """
-        return np.vectorize(self.op_at(order_parameter_name))(range(len(self)))
+        if num_threads != 1:
+            with multiprocessing.Pool(processes=num_threads) as pool:
+                result = pool.map(self.op_at_wrapper, [(order_parameter_name, i) for i in range(len(self))])
+            return np.array(result)
+        else:
+            return np.vectorize(self.op_at(order_parameter_name))(range(len(self)))
+
+    def op_at_wrapper(self, args):
+        """
+        Wrapper function to unpack arguments for parallel processing.
+        """
+        order_parameter_name, index = args
+        return self.op_at(order_parameter_name)(index)
 
     def op_at(self, order_parameter_name: str):
         def inner(index: int):

@@ -144,3 +144,26 @@ class Delaunay(DelaunayBase):
         dic = self.phi_p_ellipse_fitted(6, xyt)
         print(dic['gammas'])
         return np.abs(dic['Phi'])
+
+    def isolatedDefect(self, xyt: ut.CArray) -> np.ndarray:
+        """
+        :return: N(isolated defects) / N(internal)
+        """
+        z = self.z_number()
+        body = 1 - self.dist_hull(xyt)
+        defect = np.bitwise_and(body.astype(bool), z != 6)
+        isolated_defect = np.bitwise_and(self.is_isolated_defect().astype(bool), defect)
+        return isolated_defect / np.sum(body) * self.num_rods
+
+    def isolatedDefectRatio(self, xyt: ut.CArray) -> np.ndarray:
+        """
+        :return: N(isolated defects) / N(defects)
+        """
+        z = self.z_number()
+        body = 1 - self.dist_hull(xyt)
+        defect = np.bitwise_and(body.astype(bool), z != 6)
+        isolated_defect = np.bitwise_and(self.is_isolated_defect().astype(bool), defect)
+        return isolated_defect / np.sum(defect) * self.num_rods
+
+    def winding2(self, xyt: ut.CArray) -> np.ndarray:
+        return super().orientation_winding_angle(xyt) / np.pi

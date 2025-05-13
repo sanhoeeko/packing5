@@ -15,7 +15,8 @@ from .delaunay_art import showTypedDelaunay
 style_dict = {
     'angle': ['Angle', 'DirectorAngle', 'PureRotationAngle'],
     'voronoi': ['z_number'],
-    'pm1': ['S_global', 'CrystalNematicAngle']
+    'pm1': ['S_global', 'CrystalNematicAngle'],
+    'defect_pm2': ['winding2'],
 }
 
 
@@ -56,6 +57,7 @@ def selectCmapAndNorm(style: str):
             'default': ('viridis', None),
             'angle': ('hsv', mcolors.Normalize(vmin=0, vmax=np.pi)),
             'pm1': ('bwr', mcolors.Normalize(vmin=-1, vmax=1)),
+            'defect_pm2': ('Spectral', mcolors.Normalize(vmin=-2, vmax=2)),
             'voronoi': (mcolors.ListedColormap(art.my_colors), mcolors.Normalize(vmin=0, vmax=len(art.my_colors)))
         }[style]
     except KeyError:

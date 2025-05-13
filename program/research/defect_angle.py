@@ -1,5 +1,6 @@
 import multiprocessing
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import analysis.utils as ut
@@ -46,6 +47,9 @@ if __name__ == '__main__':
     # Define gamma values from 1.1 to 3.0 in steps of 0.1.
     gammas = np.arange(1.1, 3.1, 0.1)
 
+    # fot test
+    gammas = [1.6]
+
     # To store the result for each gamma; each entry is a vector of length 90.
     results_by_gamma = []
 
@@ -71,3 +75,7 @@ if __name__ == '__main__':
 
     # Save final matrix
     np.save('defect_angle_dist.npy', final_matrix)
+
+    # for test
+    plt.plot(final_matrix.T)
+    plt.show()

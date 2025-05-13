@@ -266,9 +266,9 @@ class DelaunayBase:
         t_mul_2 = 2 * xyt.data[:, 2]
         ux = ut.CArray(np.cos(t_mul_2))
         uy = ut.CArray(np.sin(t_mul_2))
-        sum_ux = ux.copy()
+        sum_ux = ux.copy()  # Add the centering rod itself
         sum_uy = uy.copy()
-        ker.dll.symmetricSum(*self.params, ux.ptr, sum_ux.ptr)
+        ker.dll.symmetricSum(*self.params, ux.ptr, sum_ux.ptr)  # Add neighbors
         ker.dll.symmetricSum(*self.params, uy.ptr, sum_uy.ptr)
         return sum_ux, sum_uy
 
@@ -277,3 +277,13 @@ class DelaunayBase:
 
     def segment_dist_moment(self, xyt: ut.CArray, moment: int) -> np.float32:
         return ker.dll.segment_dist_moment(*self.params, xyt.ptr, self.gamma, moment)
+
+    def is_isolated_defect(self) -> np.ndarray:
+        z = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
+        ker.dll.is_isolated_defect(*self.params, z.ptr)
+        return z.data
+
+    def orientation_winding_angle(self, xyt: ut.CArray) -> np.ndarray:
+        theta = ut.CArrayFZeros((self.num_rods,))
+        ker.dll.windingAngle(*self.params, xyt.ptr, theta.ptr)
+        return theta.data

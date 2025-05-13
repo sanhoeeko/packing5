@@ -3,6 +3,8 @@
 #include <math.h>
 #include <string.h>
 #include "segdist.h"
+#include <vector>
+#include <algorithm>
 
 /* Iterating over a Delaunay diagram:
 
@@ -26,7 +28,7 @@ void neighbors(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
 {
     int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
-    int* output = (int*)output_ptr;                 // length: num_edges * 2
+    int* output = (int*)output_ptr;                 // length: num_rods * 2
     int id1 = 0;
     for (int j = 0; j < num_edges; j++) {
         while (j == *indices && id1 < num_rods) {
@@ -327,4 +329,88 @@ void FittedEllipticPhi_p(int num_edges, int num_rods, void* indices_ptr, void* e
     }
     delete[] param;
     delete[] gt;
+}
+
+void is_isolated_defect(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr)
+{
+    int* indices = (int*)indices_ptr;               // length: num_rods
+    int* edges = (int*)edges_ptr;                   // length: num_edges
+    int* output = (int*)output_ptr;                 // length: num_rods
+
+    // Calculate z_number
+    int* z = new int[2 * num_rods]();
+    int id1 = 0;
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            indices++;
+            id1++;
+        }
+        int id2 = edges[j];
+        z[id1]++;
+        z[id2]++;
+    }
+    for (int i = 0; i < num_rods; i++) {
+        if (z[i] != 6) output[i] = 1;
+    }
+
+    // Identify isolated defects based on z_number
+    id1 = 0;
+    indices = (int*)indices_ptr;
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            indices++;
+            id1++;
+        }
+        int id2 = edges[j];
+        if (z[id1] != 6 && z[id2] != 6 && z[id1] != z[id2]) {
+            output[id1] = output[id2] = 0;
+        }
+    }
+    delete[] z;
+}
+
+inline static float mod2pi(float x) {
+    const float a = 1 / (2 * pi);
+    float y = x * a;
+    return (2 * pi) * (y - floor(y));
+}
+
+void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr, void* output_ptr)
+{
+    int* indices = (int*)indices_ptr;               // length: num_rods
+    int* edges = (int*)edges_ptr;                   // length: num_edges
+    xyt3f* q = (xyt3f*)configuration_ptr;           // length: num_rods
+    float* output = (float*)output_ptr;             // length: num_rods
+
+    struct AnglePair {
+        float positional_angle, orientational_angle;
+    };
+
+    int id1 = 0;
+    vector<AnglePair> angle_pairs;
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            // calculate the winding angle
+            std::sort(angle_pairs.begin(), angle_pairs.end(),
+                [](const AnglePair& a, const AnglePair& b) {
+                    return a.positional_angle < b.positional_angle;  // positional angle from low to high
+                });
+            int z = angle_pairs.size();
+            float current_theta = angle_pairs[z - 1].orientational_angle;
+            float total_angle = 0;
+            for (int i = 0; i < z; i++) {
+                float angle_diff = mod2pi(angle_pairs[i].orientational_angle - current_theta + pi) - pi;
+                total_angle += angle_diff;
+                current_theta = angle_pairs[i].orientational_angle;
+            }
+            output[id1] = total_angle / 2;
+            // refresh and next
+            indices++;
+            id1++;
+            angle_pairs.clear();
+        }
+        int id2 = edges[j];
+        float positional_angle = atan2f(q[id2].y - q[id1].y,q[id2].x - q[id1].x);
+        angle_pairs.push_back({ positional_angle, q[id2].t * 2 });  // Note that the orientation angle is multiplied by 2
+    }
 }
