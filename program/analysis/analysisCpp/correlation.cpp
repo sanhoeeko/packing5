@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <math.h>
 
 template<typename T>
 std::vector<size_t> argsort(const std::vector<T>& vec) {

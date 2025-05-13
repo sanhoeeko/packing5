@@ -246,9 +246,6 @@ class PickledSimulation:
         for i in range(self.n):
             yield self[i]
 
-    def voronoi(self, idx):
-        return Voronoi.fromStateDict(self[idx])
-
     def op(self, order_parameter_name: str) -> np.ndarray:
         """
         :return: numpy array of order parameter
@@ -276,6 +273,9 @@ class PickledSimulation:
         xyt4[:, :3] = self.xyt[idx, :, :]
         return State(self.metadata['N'], self.metadata['n'], self.metadata['d'], info['A'], info['B'],
                      configuration=xyt4)
+
+    def voronoi_at(self, idx):
+        return Voronoi.fromStateDict(self[idx])
 
     def energyCurve(self):
         """

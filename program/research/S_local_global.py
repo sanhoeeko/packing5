@@ -27,5 +27,5 @@ def plot_hyperbola(ax):
 if __name__ == '__main__':
     with Figure(figsize=(10, 7)) as fig:
         # two_order_scatter(fig.ax, 'merge-full-0420.h5', 'S_local', 'S_global', alpha=0.04)
-        two_order_stream(fig,'merge-analysis-0420.h5', 'S_local', 'S_global', alpha=0.8, interval=(0, 1))
+        two_order_stream(fig,'../analysis-data-20250430.h5', 'S_local', 'S_global', alpha=0.8, interval=(0, 1))
         plot_hyperbola(fig.ax)

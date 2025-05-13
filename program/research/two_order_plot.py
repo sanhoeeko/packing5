@@ -42,5 +42,5 @@ def two_order_stream(fig: Figure, filename: str, order1: str, order2: str, alpha
 
 if __name__ == '__main__':
     with Figure(figsize=(8, 6)) as fig:
-        two_order_stream(fig, 'merge-analysis-0420.h5', 'EllipticPhi6', 'defect',
+        two_order_stream(fig, '../analysis-data-20250430.h5', 'S_local', 'defect',
                          alpha=0.8, interval=(0, 1))

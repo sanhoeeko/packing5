@@ -30,6 +30,7 @@ class Kernel:
             ('FittedEllipticPhi_p', [ct.c_int] * 2 + [ct.c_void_p] * 6 + [ct.c_float], None),
             ('correlation', [ct.c_void_p] * 5 + [ct.c_int] * 2 + [ct.c_float] * 5, None),
             ('angularCorrelation', [ct.c_void_p] * 3 + [ct.c_int] * 2 + [ct.c_float], None),
+            ('Angle57Dist', [ct.c_int] * 2 + [ct.c_void_p] * 2 + [ct.c_int] + [ct.c_void_p] * 3, None),
         )
 
     def setTypes(self, *tup):

@@ -125,6 +125,18 @@ def reference_phi(gamma: Union[float, np.ndarray], h: float) -> Union[float, np.
     return (np.pi + 4 * (gamma - 1)) / (2 * gamma * (2 - h))
 
 
+def indexInterval(phis: np.ndarray, gamma: float, phi_c: float = None, upper_h: float = None) -> (int, int):
+    if phi_c is None:
+        lower_index = 0
+    else:
+        lower_index = first_larger_than(phis, phi_c)
+    if upper_h is None:
+        upper_index = len(phis)
+    else:
+        upper_index = first_larger_than(phis, reference_phi(gamma, upper_h))
+    return lower_index, upper_index
+
+
 def gamma_star(gamma: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     # return 1 + (gamma - 1) * 2 / np.sqrt(3)
     return gamma * np.sqrt(3) / 2
