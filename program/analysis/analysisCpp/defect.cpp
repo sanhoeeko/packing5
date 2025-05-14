@@ -9,8 +9,8 @@ inline static float modpi(float x) {
 }
 
 inline static float angle_by_lines(float theta1, float theta2) {
-    float delta = abs(modpi(theta1) - modpi(theta2));
-    return std::min(delta, 1 - delta);  // return in [0,1/2]
+    float delta = modpi(theta1 - theta2 + pi / 2);
+    return abs(delta - 0.5f);  // return in [0,1/2]
 }
 
 void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 
@@ -30,7 +30,8 @@ void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr
             id1++;
         }
         int id2 = edges[j];
-        if ((z_number[id1] == 5 && z_number[id2] == 7) || (z_number[id1] == 7 && z_number[id2] == 5)) {
+        // not only for 5 and 7, but also for 4 and 8, etc
+        if ((z_number[id1] < 6 && z_number[id2] > 6) || (z_number[id1] > 6 && z_number[id2] < 6)) {
             float angle = angle_by_lines(q[id1].t, q[id2].t);     // angle in [0, 1/2] (mapped from [0, pi/2])
             int interval_index = angle >= 0.5f ? n_angles - 1 : (int)(angle / d_theta);
             output[interval_index]++;

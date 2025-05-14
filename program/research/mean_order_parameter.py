@@ -1,3 +1,5 @@
+import pickle as pkl
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -17,20 +19,27 @@ def read_op(filename: str, order_parameter_name: str, from_to: tuple):
     plt.show()
 
 
-def calculate_op(filename: str, order_parameter_name: str, from_to: tuple):
-    db = Database(filename)
-    for gamma in [1.1, 1.6, 2.1, 2.6]:
+def calculate_op(filenames: list[str], order_parameter_name: str, from_to: tuple):
+    op_gamma = []
+    for gamma in np.arange(1.1, 3, 0.2):
         ops = []
-        e = db.find(gamma=gamma)[0]
-        for j in range(5):
-            simu = e[j]
-            op_single = simu.op(order_parameter_name, num_threads=4)
-            ops.append(op_single)
+        for filename in filenames:
+            db = Database(filename)
+            e = db.find(gamma=gamma)[0]
+            for j in range(5):
+                simu = e[j]
+                op_single = simu.op(order_parameter_name, upper_h=1.2, num_threads=4)
+                ops.append(op_single)
         op = sum(ops) / len(ops)
-        plt.plot(e[0].state_info['phi'], op)
-    plt.show()
+        op_gamma.append(op)
+    with open(f'{order_parameter_name}.pkl', 'wb') as f:
+        pkl.dump(op_gamma, f)
+    # plt.plot(e[0].state_info['phi'], op)
+    # plt.show()
 
 
 if __name__ == '__main__':
-    # read_op('../analysis-data-20250430.h5', 'defect', (0, 20))
-    calculate_op('../data-20250420.h5', 'isolatedDefect', (0, 20))
+    # read_op('../analysis-data-20250428.h5', 'defect', (0, 20))
+    calculate_op(
+        ['../data-20250420.h5', ],
+        'isolatedDefect', (0, 20))

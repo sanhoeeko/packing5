@@ -48,7 +48,7 @@ if __name__ == '__main__':
     gammas = np.arange(1.1, 3.1, 0.1)
 
     # fot test
-    gammas = [1.6]
+    gammas = [2.7]
 
     # To store the result for each gamma; each entry is a vector of length 90.
     results_by_gamma = []

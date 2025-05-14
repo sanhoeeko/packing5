@@ -57,7 +57,7 @@ def selectCmapAndNorm(style: str):
             'default': ('viridis', None),
             'angle': ('hsv', mcolors.Normalize(vmin=0, vmax=np.pi)),
             'pm1': ('bwr', mcolors.Normalize(vmin=-1, vmax=1)),
-            'defect_pm2': ('Spectral', mcolors.Normalize(vmin=-2, vmax=2)),
+            'defect_pm2': ('Spectral', mcolors.Normalize(vmin=-3, vmax=3)),
             'voronoi': (mcolors.ListedColormap(art.my_colors), mcolors.Normalize(vmin=0, vmax=len(art.my_colors)))
         }[style]
     except KeyError:
