@@ -132,7 +132,11 @@ class RenderState:
                 )
             )
         if external_option is None:
-            self.handle.colorbar(col, setup.name)
+            if setup.style == 'voronoi':
+                cmap, norm = selectCmapAndNorm(setup.style)
+                art.add_energy_level_colorbar(self.handle.ax, cmap, np.arange(11), 'neighbors', digits=0)
+            else:
+                self.handle.colorbar(col, setup.name)
         if external_option == 'typed delaunay':
             delaunay = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay()
             showTypedDelaunay(self.handle, delaunay, xyt)

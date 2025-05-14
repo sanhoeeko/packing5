@@ -32,7 +32,7 @@ class Kernel:
             ('angularCorrelation', [ct.c_void_p] * 3 + [ct.c_int] * 2 + [ct.c_float], None),
             ('Angle57Dist', [ct.c_int] * 2 + [ct.c_void_p] * 2 + [ct.c_int] + [ct.c_void_p] * 3, None),
             ('is_isolated_defect', [ct.c_int] * 2 + [ct.c_void_p] * 3, None),
-            ('windingAngle', [ct.c_int] * 2 + [ct.c_void_p] * 4, None),
+            ('windingAngle', [ct.c_int] * 2 + [ct.c_void_p] * 5, None),
         )
 
     def setTypes(self, *tup):

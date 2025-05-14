@@ -283,7 +283,7 @@ class DelaunayBase:
         ker.dll.is_isolated_defect(*self.params, z.ptr)
         return z.data
 
-    def orientation_winding_angle(self, xyt: ut.CArray) -> np.ndarray:
+    def orientation_winding_angle(self, xyt: ut.CArray, angles: ut.CArray) -> np.ndarray:
         theta = ut.CArrayFZeros((self.num_rods,))
-        ker.dll.windingAngle(*self.params, xyt.ptr, theta.ptr)
+        ker.dll.windingAngle(*self.params, xyt.ptr, angles.ptr, theta.ptr)
         return theta.data

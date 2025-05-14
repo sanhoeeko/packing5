@@ -9,12 +9,12 @@ def batch_analyze(filename: str):
     db.search_max_gradient()
     # checkMaxGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=2.0)[0][0]
+    e = db.find(gamma=1.4)[0][0]
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('S_local')).show()
+    InteractiveViewer(e, RenderSetup('z_number')).show()
 
 
 if __name__ == '__main__':
-    batch_analyze('../data-20250420-3.h5')
+    batch_analyze('../data-20250420.h5')

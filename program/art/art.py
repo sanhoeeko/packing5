@@ -115,14 +115,14 @@ def ListColor01(color_map_name: str, length: int):
     return plt.get_cmap(color_map_name)(np.linspace(0, 1, length))
 
 
-def add_energy_level_colorbar(ax, colormap: str, labels: np.ndarray, title: str, orientation='vertical'):
+def add_energy_level_colorbar(ax, colormap: str, labels: np.ndarray, title: str, orientation='vertical', digits=2):
     """
     # [By Bing AI] example:
     fig, ax = plt.subplots()
     add_energy_level_colorbar(ax, 'viridis', ['E0', 'E1', 'E2', 'E3', 'E4', 'E5'], orientation='vertical')
     plt.show()
     """
-    formatted_labels = [f'{label:.2f}' for label in labels]
+    formatted_labels = [str(round(label, digits)) for label in labels]
     levels = len(labels)
     cmap = plt.get_cmap(colormap, levels)
 

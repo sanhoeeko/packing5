@@ -369,17 +369,19 @@ void is_isolated_defect(int num_edges, int num_rods, void* indices_ptr, void* ed
     delete[] z;
 }
 
-inline static float mod2pi(float x) {
-    const float a = 1 / (2 * pi);
+inline static float modpi(float x) {
+    const float a = 1 / pi;
     float y = x * a;
-    return (2 * pi) * (y - floor(y));
+    return pi * (y - floor(y));
 }
 
-void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr, void* output_ptr)
+void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr, 
+    void* angle_ptr, void* output_ptr)
 {
     int* indices = (int*)indices_ptr;               // length: num_rods
     int* edges = (int*)edges_ptr;                   // length: num_edges
     xyt3f* q = (xyt3f*)configuration_ptr;           // length: num_rods
+    float* angle = (float*)angle_ptr;               // length: num_rods
     float* output = (float*)output_ptr;             // length: num_rods
 
     struct AnglePair {
@@ -399,11 +401,11 @@ void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_pt
             float current_theta = angle_pairs[z - 1].orientational_angle;
             float total_angle = 0;
             for (int i = 0; i < z; i++) {
-                float angle_diff = mod2pi(angle_pairs[i].orientational_angle - current_theta + pi) - pi;
+                float angle_diff = modpi(angle_pairs[i].orientational_angle - current_theta + pi / 2) - pi / 2;
                 total_angle += angle_diff;
                 current_theta = angle_pairs[i].orientational_angle;
             }
-            output[id1] = total_angle / 2;
+            output[id1] = total_angle;
             // refresh and next
             indices++;
             id1++;
@@ -411,6 +413,6 @@ void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_pt
         }
         int id2 = edges[j];
         float positional_angle = atan2f(q[id2].y - q[id1].y,q[id2].x - q[id1].x);
-        angle_pairs.push_back({ positional_angle, q[id2].t * 2 });  // Note that the orientation angle is multiplied by 2
+        angle_pairs.push_back({ positional_angle, angle[id2]});
     }
 }

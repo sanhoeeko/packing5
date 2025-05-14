@@ -118,7 +118,7 @@ class Delaunay(DelaunayBase):
         """
         sum_ux, sum_uy = self.Q_tensor(xyt)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return np.arctan2(sum_uy.data, sum_ux.data + S)
+        return np.arctan2(sum_uy.data, sum_ux.data + S) % np.pi
 
     def CrystalNematicAngle(self, xyt: ut.CArray) -> np.ndarray:
         phi = self.PureRotationAngle(xyt)
@@ -166,4 +166,5 @@ class Delaunay(DelaunayBase):
         return isolated_defect / np.sum(defect) * self.num_rods
 
     def winding2(self, xyt: ut.CArray) -> np.ndarray:
-        return super().orientation_winding_angle(xyt) / np.pi
+        angles = ut.CArray(self.DirectorAngle(xyt))
+        return super().orientation_winding_angle(xyt, angles) / np.pi

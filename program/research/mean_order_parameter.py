@@ -39,7 +39,7 @@ def calculate_op(filenames: list[str], order_parameter_name: str, from_to: tuple
 
 
 if __name__ == '__main__':
-    # read_op('../analysis-data-20250428.h5', 'defect', (0, 20))
-    calculate_op(
-        ['../data-20250420.h5', ],
-        'isolatedDefect', (0, 20))
+    read_op('../analysis-data-20250514.h5', 'S_local', (0, 20))
+    # calculate_op(
+    #     ['../data-20250420.h5', ],
+    #     'isolatedDefect', (0, 20))
