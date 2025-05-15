@@ -9,11 +9,11 @@ def batch_analyze(filename: str):
     db.search_max_gradient()
     # checkMaxGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=1.4)[0][0]
+    e = db.find(gamma=1.1)[0][0]
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('z_number')).show()
+    InteractiveViewer(e, RenderSetup('director-6')).setMarkerSetup(True).show()
 
 
 if __name__ == '__main__':

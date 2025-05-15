@@ -5,6 +5,7 @@ import numpy as np
 import scipy.spatial as sp
 from matplotlib import pyplot as plt
 
+import analysis.utils as ut
 from analysis.analysis import OrderParameterFunc
 from analysis.database import PickledSimulation
 from analysis.voronoi import Voronoi
@@ -24,6 +25,8 @@ def get_style(order_parameter_name: str) -> str:
     for k, v_list in style_dict.items():
         if order_parameter_name in v_list:
             return k
+    if order_parameter_name.startswith('director-'):
+        return 'angle'
     return 'default'
 
 
@@ -147,6 +150,17 @@ class RenderState:
             self.handle.ax.triplot(xy[:, 0], xy[:, 1], delaunay.simplices.copy())
         return self
 
+    def drawMarkers(self, xyt: np.ndarray, metadata: dict, setup: RenderSetup = None):
+        if setup is None: return
+        marker_list = ['+', '1', '', 'v', 's']
+        xyt_c = ut.CArray(xyt)
+        winding_number_2 = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay().winding2(xyt_c)
+        for i in range(metadata['N']):
+            if winding_number_2[i] != 0:
+                x, y = xyt[i, 0:2]
+                self.handle.ax.scatter(x, y, marker=marker_list[winding_number_2[i] + 2], color='black')
+        return self
+
 
 class InteractiveViewer:
     def __init__(self, data: PickledSimulation, setup: RenderSetup):
@@ -156,6 +170,11 @@ class InteractiveViewer:
         self.handle.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.renderer = RenderState(self.handle)
         self.setup = setup
+        self.marker_setup = None
+
+    def setMarkerSetup(self, setup: RenderSetup):
+        self.marker_setup = setup
+        return self
 
     def on_key_press(self, event):
         if event.key == 'left':
@@ -176,6 +195,7 @@ class InteractiveViewer:
         dic = self.simu[self.index]
         self.renderer.drawBoundary(dic['metadata']['A'], dic['metadata']['B'])
         self.renderer.drawParticles(dic['xyt'], dic['metadata'], self.setup)
+        self.renderer.drawMarkers(dic['xyt'], dic['metadata'], self.marker_setup)
         plt.draw()
 
     def show(self):

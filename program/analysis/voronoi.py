@@ -255,7 +255,7 @@ class DelaunayBase:
         ker.dll.symmetricSum(*self.params, c.ptr, S.ptr)
         return S.data / self.z_number()
 
-    def Q_tensor(self, xyt: ut.CArray) -> (ut.CArray, ut.CArray):
+    def Q_tensor(self, angles: np.ndarray) -> (ut.CArray, ut.CArray):
         """
         Q = ∑ 2(u @ u.T - 1) = [ ∑ cos 2t, ∑ sin 2t; ∑ sin 2t, -∑ cos 2t]
         The sum (can be weighted) is taken over neighbors.
@@ -263,7 +263,7 @@ class DelaunayBase:
         sum_ux[i] = ∑[j] cos 2t[i,j]
         sum_uy[i] = ∑[j] sin 2t[i,j]
         """
-        t_mul_2 = 2 * xyt.data[:, 2]
+        t_mul_2 = 2 * angles
         ux = ut.CArray(np.cos(t_mul_2))
         uy = ut.CArray(np.sin(t_mul_2))
         sum_ux = ux.copy()  # Add the centering rod itself

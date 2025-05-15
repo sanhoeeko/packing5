@@ -38,6 +38,9 @@ def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, ab
         return getattr(StaticOrders, name)(xyt)
     elif name.startswith('Elliptic'):
         return getattr(voro, name)(ut.CArray(xyt), abg[2])
+    elif name.startswith('director-'):
+        order = int(name.split('-')[1])
+        return voro.n_order_director(order)(ut.CArray(xyt))
     else:
         return getattr(voro, name)(ut.CArray(xyt))
 
@@ -108,22 +111,47 @@ class Delaunay(DelaunayBase):
         """
         Use the director as the eigenvector of Q-tensor, then S_local is the eigenvalue.
         """
-        sum_ux, sum_uy = self.Q_tensor(xyt)
+        sum_ux, sum_uy = self.Q_tensor(xyt.data[:, 2])
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
         return S.data / (self.z_number() + 1)
 
-    def DirectorAngle(self, xyt: ut.CArray) -> np.ndarray:
+    def director_raw(self, angles: np.ndarray) -> np.ndarray:
         """
         Calculate the director as the eigenvector of Q-tensor.
         """
-        sum_ux, sum_uy = self.Q_tensor(xyt)
+        sum_ux, sum_uy = self.Q_tensor(angles)
         S = np.sqrt(sum_ux.data ** 2 + sum_uy.data ** 2)
-        return np.arctan2(sum_uy.data, sum_ux.data + S) % np.pi
+        return np.arctan2(sum_uy.data, sum_ux.data + S)
+
+    def DirectorAngle(self, xyt: ut.CArray) -> np.ndarray:
+        """
+        Order parameter corresponding to the eigenvector of Q-tensor.
+        """
+        return self.director_raw(xyt.data[:, 2]) % np.pi
 
     def CrystalNematicAngle(self, xyt: ut.CArray) -> np.ndarray:
         phi = self.PureRotationAngle(xyt)
         theta = self.DirectorAngle(xyt)
         return np.cos(2 * (theta - phi))
+
+    def n_order_director(self, order: int):
+        """
+        Call this by "director-x", where x is an integer.
+        """
+        if order == 0:
+            def inner(xyt: ut.CArray) -> np.ndarray:
+                return xyt.data[:, 2]
+        elif order == 1:
+            def inner(xyt: ut.CArray) -> np.ndarray:
+                return self.DirectorAngle(xyt)
+        else:
+            def inner(xyt: ut.CArray) -> np.ndarray:
+                n = self.DirectorAngle(xyt)
+                for i in range(1, order):
+                    n = self.director_raw(n)
+                return n % np.pi
+
+        return inner
 
     def MeanSegmentDist(self, xyt: ut.CArray) -> float:
         """
@@ -165,6 +193,7 @@ class Delaunay(DelaunayBase):
         isolated_defect = np.bitwise_and(self.is_isolated_defect().astype(bool), defect)
         return isolated_defect / np.sum(defect) * self.num_rods
 
-    def winding2(self, xyt: ut.CArray) -> np.ndarray:
-        angles = ut.CArray(self.DirectorAngle(xyt))
-        return super().orientation_winding_angle(xyt, angles) / np.pi
+    def winding2(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        angles = ut.CArray(self.n_order_director(6)(xyt))
+        wd2 = super().orientation_winding_angle(xyt, angles) / np.pi
+        return np.round(wd2).astype(np.int32)
