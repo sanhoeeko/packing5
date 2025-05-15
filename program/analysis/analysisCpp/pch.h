@@ -46,7 +46,5 @@ DLLEXPORT void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void*
 DLLEXPORT void is_isolated_defect(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr);
 DLLEXPORT void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* angle_ptr, void* output_ptr);
-DLLEXPORT void windingAngleNextNearest(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
-    void* angle_ptr, void* output_ptr);
 
 #endif //PCH_H

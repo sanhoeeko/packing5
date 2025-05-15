@@ -194,6 +194,6 @@ class Delaunay(DelaunayBase):
         return isolated_defect / np.sum(defect) * self.num_rods
 
     def winding2(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
-        angles = ut.CArray(self.n_order_director(6)(xyt))
+        angles = ut.CArray(self.n_order_director(2)(xyt))
         wd2 = super().winding_angle(xyt, angles) / np.pi
         return np.round(wd2).astype(np.int32)
