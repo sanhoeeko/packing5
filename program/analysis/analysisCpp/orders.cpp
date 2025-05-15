@@ -3,8 +3,6 @@
 #include <math.h>
 #include <string.h>
 #include "segdist.h"
-#include <vector>
-#include <algorithm>
 
 /* Iterating over a Delaunay diagram:
 
@@ -367,52 +365,4 @@ void is_isolated_defect(int num_edges, int num_rods, void* indices_ptr, void* ed
         }
     }
     delete[] z;
-}
-
-inline static float modpi(float x) {
-    const float a = 1 / pi;
-    float y = x * a;
-    return pi * (y - floor(y));
-}
-
-void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr, 
-    void* angle_ptr, void* output_ptr)
-{
-    int* indices = (int*)indices_ptr;               // length: num_rods
-    int* edges = (int*)edges_ptr;                   // length: num_edges
-    xyt3f* q = (xyt3f*)configuration_ptr;           // length: num_rods
-    float* angle = (float*)angle_ptr;               // length: num_rods
-    float* output = (float*)output_ptr;             // length: num_rods
-
-    struct AnglePair {
-        float positional_angle, orientational_angle;
-    };
-
-    int id1 = 0;
-    vector<AnglePair> angle_pairs;
-    for (int j = 0; j < num_edges; j++) {
-        while (j == *indices && id1 < num_rods) {
-            // calculate the winding angle
-            std::sort(angle_pairs.begin(), angle_pairs.end(),
-                [](const AnglePair& a, const AnglePair& b) {
-                    return a.positional_angle < b.positional_angle;  // positional angle from low to high
-                });
-            int z = angle_pairs.size();
-            float current_theta = angle_pairs[z - 1].orientational_angle;
-            float total_angle = 0;
-            for (int i = 0; i < z; i++) {
-                float angle_diff = modpi(angle_pairs[i].orientational_angle - current_theta + pi / 2) - pi / 2;
-                total_angle += angle_diff;
-                current_theta = angle_pairs[i].orientational_angle;
-            }
-            output[id1] = total_angle;
-            // refresh and next
-            indices++;
-            id1++;
-            angle_pairs.clear();
-        }
-        int id2 = edges[j];
-        float positional_angle = atan2f(q[id2].y - q[id1].y,q[id2].x - q[id1].x);
-        angle_pairs.push_back({ positional_angle, angle[id2]});
-    }
 }

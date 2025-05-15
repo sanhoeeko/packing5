@@ -195,5 +195,5 @@ class Delaunay(DelaunayBase):
 
     def winding2(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         angles = ut.CArray(self.n_order_director(6)(xyt))
-        wd2 = super().orientation_winding_angle(xyt, angles) / np.pi
+        wd2 = super().winding_angle(xyt, angles) / np.pi
         return np.round(wd2).astype(np.int32)
