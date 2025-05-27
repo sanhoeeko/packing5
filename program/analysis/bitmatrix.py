@@ -25,3 +25,6 @@ class BitMatrix:
         res = ut.CArray(np.zeros((self.num_bytes, 2), dtype=np.int32))
         n_edges = ker.dll.bitmap_to_pairs(self.arr.ptr, res.ptr, self.rows)
         return res.data[:n_edges, :]
+
+    def count(self) -> int:
+        return int(ker.dll.bitmap_count(self.arr.ptr, self.num_bytes))

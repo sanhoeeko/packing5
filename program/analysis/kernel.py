@@ -36,6 +36,7 @@ class Kernel:
             ('bitmap_from_delaunay', [ct.c_int] * 2 + [ct.c_void_p] * 3, None),
             ('bitmap_subtract', [ct.c_void_p] * 3 + [ct.c_int], None),
             ('bitmap_to_pairs', [ct.c_void_p] * 2 + [ct.c_int], ct.c_int),
+            ('bitmap_count', [ct.c_void_p, ct.c_int], ct.c_int),
         )
 
     def setTypes(self, *tup):

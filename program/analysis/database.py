@@ -304,9 +304,41 @@ class PickledSimulation:
     def maxGradientCurve(self) -> np.ndarray:
         return self.max_gradient_curve
 
-    def stateDistance(self) -> np.ndarray:
+    def indexInterval(self, phi_c: float = None, upper_h: float = None):
+        return ut.indexInterval(self.state_info['phi'], self.metadata['gamma'], phi_c, upper_h)
+
+    def propertyInterval(self, name: str, phi_c=None, upper_h=None):
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        return self.state_info[name][from_:to_]
+
+    def stateDistance(self, phi_c=None, upper_h=None) -> np.ndarray:
         """
         :return: 1d array, showing how much the state variates during compression.
         """
-        diff_xyt = np.diff(self.xyt, axis=0)
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        diff_xyt = np.diff(self.xyt[from_:to_, :, :], axis=0)
         return np.linalg.norm(diff_xyt, axis=(1, 2)) / np.sqrt(self.metadata['N'])
+
+    def delaunayAt(self, index: int):
+        from .voronoi import Voronoi
+        return Voronoi.fromStateDict(self[index]).delaunay()
+
+    def bondCreation(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+        """
+        :return: 1d integer array, number of new bonds compared with the previous state
+        """
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        res = np.zeros((to_ - from_ - 1,), dtype=int)
+
+        if num_threads != 1:
+            with multiprocessing.Pool(processes=num_threads) as pool:
+                delaunays = pool.map(self.delaunayAt, range(from_, to_))
+        else:
+            dics = [dic for dic in self][from_:to_]
+            delaunays = [Voronoi.fromStateDict(dic).delaunay() for dic in dics]
+
+        for i in range(from_, to_):
+            delaunays[i].check()
+        for i in range(from_, to_ - 1):
+            res[i] = delaunays[i + 1].difference(delaunays[i]).count()
+        return res

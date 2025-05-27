@@ -209,7 +209,7 @@ class InteractiveViewer:
         if self.index > 0:
             pairs = Voronoi.fromStateDict(dic).delaunay().difference(
                 Voronoi.fromStateDict(self.simu[self.index - 1]).delaunay()
-            )
+            ).toPairs()
             self.renderer.drawBonds(dic['xyt'], pairs)
         plt.draw()
 

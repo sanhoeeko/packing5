@@ -37,6 +37,10 @@ class CArray:
     def copy(self) -> 'CArray':
         return CArray(self.data.copy())
 
+    def check(self):
+        # to fix some bugs in multiprocess (Maybe in which `CArray`s are incorrectly copied)
+        self.ptr = self.data.ctypes.data
+
 
 def CArrayF(arr: np.ndarray):
     return CArray(arr, np.float32)

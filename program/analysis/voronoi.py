@@ -156,6 +156,12 @@ class DelaunayBase:
     def params(self):
         return self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr
 
+    def check(self):
+        # to fix some bugs in multiprocess (Maybe in which `CArray`s are incorrectly copied)
+        self.indices.check()
+        self.edges.check()
+        return self
+
     def adjacency_matrix(self) -> BitMatrix:
         bm = BitMatrix(self.num_rods)
         ker.dll.bitmap_from_delaunay(*self.params, bm.arr.ptr)
@@ -169,8 +175,7 @@ class DelaunayBase:
             V[t+1].difference(V[t]) -> created edges
             V[t].difference(V[t+1]) -> destroyed edges
         """
-        diff = self.adjacency_matrix() - o.adjacency_matrix()
-        return diff.toPairs()
+        return self.adjacency_matrix() - o.adjacency_matrix()
 
     @property
     def edge_types(self) -> np.ndarray[np.int32]:
@@ -191,10 +196,21 @@ class DelaunayBase:
                 i += 1
             yield i, j, ty[k]
 
-    def z_number(self, arg=None) -> np.ndarray[np.int32]:
+    def z_number(self, args=None) -> np.ndarray[np.int32]:
         z = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
         ker.dll.neighbors(*self.params, z.ptr)
         return z.data
+
+    def raw_total_topological_charge(self, args=None) -> int:
+        return 2 * self.num_edges - 6 * self.num_rods
+
+    def total_topological_charge(self, xyt: ut.CArray) -> int:
+        """
+        `2 * self.num_edges - 6 * self.num_rods` will result in a large negative number because boundary effect.
+        So this function only count total topological charge of internal particles.
+        """
+        internal = 1 - self.dist_hull(xyt)
+        return np.dot(self.z_number(), internal) - 6 * np.sum(internal)
 
     def convex_hull(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         hull = ut.CArray(np.zeros((self.num_rods,), np.int32))
@@ -206,6 +222,9 @@ class DelaunayBase:
         return hull.data
 
     def dist_hull(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        """
+        :return: binary array: 0 for internal, 1 for marginal
+        """
         min_dist = 2
         return (self.dist_to_ellipse(xyt) < min_dist).astype(np.int32)
 
