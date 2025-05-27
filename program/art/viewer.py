@@ -161,6 +161,16 @@ class RenderState:
                 self.handle.ax.scatter(x, y, marker=marker_list[winding_number_2[i] + 2], color='black')
         return self
 
+    def drawBonds(self, xyt: np.ndarray, edges: np.ndarray):
+        """
+        edges: (n, 2) integer array (treated as list of pairs).
+        """
+        assert edges.shape[1] == 2
+        for s, e in edges:
+            x1, y1 = xyt[s, :2]
+            x2, y2 = xyt[e, :2]
+            self.handle.ax.plot([x1, x2], [y1, y2], color='black')
+
 
 class InteractiveViewer:
     def __init__(self, data: PickledSimulation, setup: RenderSetup):
@@ -196,6 +206,11 @@ class InteractiveViewer:
         self.renderer.drawBoundary(dic['metadata']['A'], dic['metadata']['B'])
         self.renderer.drawParticles(dic['xyt'], dic['metadata'], self.setup)
         self.renderer.drawMarkers(dic['xyt'], dic['metadata'], self.marker_setup)
+        if self.index > 0:
+            pairs = Voronoi.fromStateDict(dic).delaunay().difference(
+                Voronoi.fromStateDict(self.simu[self.index - 1]).delaunay()
+            )
+            self.renderer.drawBonds(dic['xyt'], pairs)
         plt.draw()
 
     def show(self):

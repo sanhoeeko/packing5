@@ -46,5 +46,8 @@ DLLEXPORT void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void*
 DLLEXPORT void is_isolated_defect(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr);
 DLLEXPORT void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* angle_ptr, void* output_ptr);
+DLLEXPORT void bitmap_from_delaunay(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* dst_ptr);
+DLLEXPORT void bitmap_subtract(void* a_ptr, void* b_ptr, void* dst_ptr, int num_bytes);
+DLLEXPORT int bitmap_to_pairs(void* src_ptr, void* dst_ptr, int num_rods);
 
 #endif //PCH_H

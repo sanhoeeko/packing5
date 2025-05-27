@@ -3,6 +3,7 @@ import scipy.spatial as sp
 from scipy.special import ellipe as EllipticE
 
 from . import utils as ut
+from .bitmatrix import BitMatrix
 from .kernel import ker
 
 
@@ -154,6 +155,22 @@ class DelaunayBase:
     @property
     def params(self):
         return self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr
+
+    def adjacency_matrix(self) -> BitMatrix:
+        bm = BitMatrix(self.num_rods)
+        ker.dll.bitmap_from_delaunay(*self.params, bm.arr.ptr)
+        return bm
+
+    def difference(self, o: 'DelaunayBase'):
+        """
+        :return: (n_edges, 2) matrix.
+        Each pair of integers represents a new edge which does not present in [o: 'DelaunayBase'].
+        Examples:
+            V[t+1].difference(V[t]) -> created edges
+            V[t].difference(V[t+1]) -> destroyed edges
+        """
+        diff = self.adjacency_matrix() - o.adjacency_matrix()
+        return diff.toPairs()
 
     @property
     def edge_types(self) -> np.ndarray[np.int32]:
