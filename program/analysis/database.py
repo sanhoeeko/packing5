@@ -357,6 +357,7 @@ class PickledSimulation:
             dics = [dic for dic in self][from_:to_]
             delaunays = [Voronoi.fromStateDict(dic).delaunay() for dic in dics]
 
+        delaunays = [None] * from_ + delaunays  # shift the index
         for i in range(from_, to_):
             delaunays[i].check()
         for i in range(from_, to_ - 1):
