@@ -150,9 +150,8 @@ class RenderState:
             self.handle.ax.triplot(xy[:, 0], xy[:, 1], delaunay.simplices.copy())
         return self
 
-    def drawMarkers(self, xyt: np.ndarray, metadata: dict, setup: RenderSetup = None):
-        if setup is None: return
-        marker_list = ['+', '1', '', 'v', 's']
+    def drawMarkers(self, xyt: np.ndarray, metadata: dict):
+        marker_list = ['+', '1', '', r'$\perp$', 's']
         xyt_c = ut.CArray(xyt)
         winding_number_2 = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay().winding2(xyt_c)
         for i in range(metadata['N']):
@@ -180,10 +179,13 @@ class InteractiveViewer:
         self.handle.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.renderer = RenderState(self.handle)
         self.setup = setup
-        self.marker_setup = None
+        self.marker_setup = []
 
-    def setMarkerSetup(self, setup: RenderSetup):
-        self.marker_setup = setup
+    def setMarkerSetup(self, setup: str):
+        """
+        :param setup: string of tags separated by blanks. Example: "lc-defect new-bonds"
+        """
+        self.marker_setup = setup.split(' ')
         return self
 
     def on_key_press(self, event):
@@ -205,14 +207,30 @@ class InteractiveViewer:
         dic = self.simu[self.index]
         self.renderer.drawBoundary(dic['metadata']['A'], dic['metadata']['B'])
         self.renderer.drawParticles(dic['xyt'], dic['metadata'], self.setup)
-        self.renderer.drawMarkers(dic['xyt'], dic['metadata'], self.marker_setup)
-        if self.index > 0:
-            pairs = Voronoi.fromStateDict(dic).delaunay().difference(
-                Voronoi.fromStateDict(self.simu[self.index - 1]).delaunay()
-            ).toPairs()
-            self.renderer.drawBonds(dic['xyt'], pairs)
+        if 'lc-defect' in self.marker_setup:
+            self.renderer.drawMarkers(dic['xyt'], dic['metadata'])
+        if 'new-bonds' in self.marker_setup:
+            if self.index > 0:
+                pairs = getDefectTracks(dic, self.simu[self.index - 1])
+                # testDefectEvents(dic, self.simu[self.index - 1])
+                self.renderer.drawBonds(dic['xyt'], pairs)
         plt.draw()
 
     def show(self):
         self.redraw()
         plt.show()
+
+
+def getDefectTracks(current_state_dic: dict, previous_state_dic: dict) -> np.ndarray[np.int32]:
+    return Voronoi.fromStateDict(current_state_dic).delaunay().difference(
+        Voronoi.fromStateDict(previous_state_dic).delaunay()
+    ).toPairs()
+
+
+def testDefectEvents(current_state_dic: dict, previous_state_dic: dict):
+    d1 = Voronoi.fromStateDict(current_state_dic).delaunay()
+    d0 = Voronoi.fromStateDict(previous_state_dic).delaunay()
+    xyt_1 = ut.CArray(current_state_dic['xyt'])
+    xyt_0 = ut.CArray(previous_state_dic['xyt'])
+    events = d1.events_compared_with(d0, xyt_1, xyt_0)
+    print(events)

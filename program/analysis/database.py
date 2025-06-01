@@ -342,3 +342,31 @@ class PickledSimulation:
         for i in range(from_, to_ - 1):
             res[i] = delaunays[i + 1].difference(delaunays[i]).count()
         return res
+
+    def eventStat(self, max_track_length: int, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+        """
+        :return: 1d integer array, number of ...
+        """
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        res = np.zeros((max_track_length,), dtype=int)
+
+        if num_threads != 1:
+            with multiprocessing.Pool(processes=num_threads) as pool:
+                delaunays = pool.map(self.delaunayAt, range(from_, to_))
+        else:
+            dics = [dic for dic in self][from_:to_]
+            delaunays = [Voronoi.fromStateDict(dic).delaunay() for dic in dics]
+
+        for i in range(from_, to_):
+            delaunays[i].check()
+        for i in range(from_, to_ - 1):
+            xyt_1 = ut.CArray(self[i]['xyt'])
+            xyt_0 = ut.CArray(self[i + 1]['xyt'])
+            events = delaunays[i + 1].events_compared_with(delaunays[i], xyt_1, xyt_0)
+            for event in events:
+                track_length = event[0] // 2 + event[0] % 2  # = ceil(event[0]/2)
+                if track_length >= max_track_length:
+                    res[-1] += 1
+                else:
+                    res[track_length] += 1
+        return res

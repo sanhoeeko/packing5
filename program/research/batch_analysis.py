@@ -9,11 +9,11 @@ def batch_analyze(filename: str):
     db.search_max_gradient()
     # checkMaxGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=1.2)[0][4]
+    e = db.find(gamma=1.2)[0][3]
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('z_number')).setMarkerSetup(None).show()
+    InteractiveViewer(e, RenderSetup('z_number')).setMarkerSetup('new-bonds').show()
 
 
 if __name__ == '__main__':

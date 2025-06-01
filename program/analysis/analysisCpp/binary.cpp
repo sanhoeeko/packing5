@@ -1,7 +1,10 @@
 #include "pch.h"
 #include <vector>
+#include <unordered_map>
 #include <cstdint>
 #include <immintrin.h>
+
+using namespace std;
 
 struct BitmapRef {
     uint8_t* data;
@@ -18,6 +21,174 @@ struct BitmapRef {
         int pos = i * bytes_per_row * 8 + j;
         int byte_idx = pos / 8;
         data[byte_idx] |= (uint8_t)1 << (pos % 8);
+    }
+
+    // Row-wise OR operation: returns vector of row indices that contain at least one 1
+    std::vector<int> row_wise_or() const {
+        const int rows = num_bytes / bytes_per_row;
+        std::vector<int> result;
+        result.reserve(rows);  // Reserve worst-case space
+
+        for (int r = 0; r < rows; ++r) {
+            uint8_t* row_start = data + r * bytes_per_row;
+            bool row_has_one = false;
+            int bytes_processed = 0;
+
+            // Process 32-byte chunks with AVX2
+            while (bytes_processed + 32 <= bytes_per_row) {
+                __m256i vec = _mm256_loadu_si256(
+                    reinterpret_cast<const __m256i*>(row_start + bytes_processed));
+
+                if (!_mm256_testz_si256(vec, vec)) {
+                    row_has_one = true;
+                    break;  // Short-circuit on first non-zero chunk
+                }
+                bytes_processed += 32;
+            }
+            // Process remaining bytes if needed
+            if (!row_has_one) {
+                for (int i = bytes_processed; i < bytes_per_row; ++i) {
+                    if (row_start[i] != 0) {
+                        row_has_one = true;
+                        break;
+                    }
+                }
+            }
+            // If row has at least one 1, record the row index
+            if (row_has_one) {
+                result.push_back(r);
+            }
+        }
+        return result;
+    }
+
+    // Find connected components in the subset of nodes defined by indices
+    std::vector<std::vector<int>> cluster(const std::vector<int>& indices) const {
+        const int n = indices.size();
+        if (n == 0) return {};
+
+        // Create mapping from original index to compressed index
+        std::unordered_map<int, int> index_map;
+        for (int i = 0; i < n; i++) {
+            index_map[indices[i]] = i;
+        }
+
+        // Initialize Union-Find data structure
+        std::vector<int> parent(n);
+        std::vector<int> rank(n, 0);
+        for (int i = 0; i < n; i++) {
+            parent[i] = i;
+        }
+
+        // Find with path compression
+        auto find = [&](int x) {
+            while (parent[x] != x) {
+                parent[x] = parent[parent[x]];  // Path compression
+                x = parent[x];
+            }
+            return x;
+            };
+
+        // Union by rank
+        auto union_sets = [&](int x, int y) {
+            x = find(x);
+            y = find(y);
+            if (x == y) return;
+
+            if (rank[x] < rank[y]) {
+                parent[x] = y;
+            }
+            else if (rank[x] > rank[y]) {
+                parent[y] = x;
+            }
+            else {
+                parent[y] = x;
+                rank[x]++;
+            }
+            };
+
+        // Precompute a bitmask for the indices set
+        std::vector<uint8_t> in_indices(bytes_per_row, 0);
+        for (int idx : indices) {
+            int byte_idx = idx / 8;
+            int bit_offset = idx % 8;
+            in_indices[byte_idx] |= (1 << bit_offset);
+        }
+
+        // Process relationships in batches using SIMD
+        for (int i = 0; i < n; i++) {
+            int orig_i = indices[i];
+            const uint8_t* row = data + orig_i * bytes_per_row;
+
+            // Process 32-byte chunks
+            int byte_idx = 0;
+            for (; byte_idx + 32 <= bytes_per_row; byte_idx += 32) {
+                __m256i row_chunk = _mm256_loadu_si256(
+                    reinterpret_cast<const __m256i*>(row + byte_idx));
+                __m256i indices_chunk = _mm256_loadu_si256(
+                    reinterpret_cast<const __m256i*>(in_indices.data() + byte_idx));
+                __m256i connected = _mm256_and_si256(row_chunk, indices_chunk);
+
+                if (_mm256_testz_si256(connected, connected)) {
+                    continue;  // No connections in this chunk
+                }
+
+                // Process each byte in the chunk
+                uint8_t* connected_bytes = reinterpret_cast<uint8_t*>(&connected);
+                for (int j = 0; j < 32; j++) {
+                    uint8_t byte_val = connected_bytes[j];
+                    if (!byte_val) continue;
+
+                    int base_col = (byte_idx + j) * 8;
+                    for (int bit = 0; bit < 8; bit++) {
+                        if (byte_val & (1 << bit)) {
+                            int orig_j = base_col + bit;
+                            if (auto it = index_map.find(orig_j); it != index_map.end()) {
+                                int compressed_j = it->second;
+                                if (i != compressed_j) {  // Avoid self-loop
+                                    union_sets(i, compressed_j);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Process remaining bytes
+            for (; byte_idx < bytes_per_row; byte_idx++) {
+                uint8_t byte_val = row[byte_idx] & in_indices[byte_idx];
+                if (!byte_val) continue;
+
+                int base_col = byte_idx * 8;
+                for (int bit = 0; bit < 8; bit++) {
+                    if (byte_val & (1 << bit)) {
+                        int orig_j = base_col + bit;
+                        if (auto it = index_map.find(orig_j); it != index_map.end()) {
+                            int compressed_j = it->second;
+                            if (i != compressed_j) {  // Avoid self-loop
+                                union_sets(i, compressed_j);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Group nodes by their root parent
+        std::unordered_map<int, std::vector<int>> clusters;
+        for (int i = 0; i < n; i++) {
+            int root = find(i);
+            clusters[root].push_back(indices[i]);  // Store original index
+        }
+
+        // Convert to result format
+        std::vector<std::vector<int>> result;
+        result.reserve(clusters.size());
+        for (auto& [root, nodes] : clusters) {
+            result.push_back(std::move(nodes));
+        }
+
+        return result;
     }
 };
 
@@ -88,4 +259,43 @@ int bitmap_to_pairs(void* src_ptr, void* dst_ptr, int num_rods) {
         }
     }
     return moving_dst - dst;
+}
+
+struct DefectEvent {
+    int related_particles;
+    int previous_negative_charge = 0, previous_positive_charge = 0;
+    int current_negative_charge = 0, current_positive_charge = 0;
+
+    DefectEvent(vector<int>& particles, int* previous_z, int* current_z) {
+        related_particles = particles.size();
+        int charge;
+        for (int id : particles) {
+            charge = previous_z[id] - 6;
+            if (charge < 0) previous_negative_charge -= charge;
+            else if (charge > 0) previous_positive_charge += charge;
+            charge = current_z[id] - 6;
+            if (charge < 0) current_negative_charge -= charge;
+            else if (charge > 0) current_positive_charge += charge;
+        }
+    }
+};
+
+vector<DefectEvent> clusterByFullGraph(BitmapRef& current_bonds, BitmapRef& new_bonds, int* previous_z, int* current_z) {
+    vector<int> indices = new_bonds.row_wise_or();
+    vector<vector<int>> clusters = current_bonds.cluster(indices);
+    vector<DefectEvent> events;
+    for(auto& cluster : clusters) {
+        events.emplace_back(cluster, previous_z, current_z);
+    }
+    return events;
+}
+
+int FindEventsInBitmap(int num_rods, void* current_bonds_ptr, void* new_bonds_ptr, void* previous_z, void* current_z, 
+    void* dst_ptr) 
+{
+    BitmapRef current_bonds = BitmapRef((uint8_t*)current_bonds_ptr, num_rods);
+    BitmapRef new_bonds = BitmapRef((uint8_t*)new_bonds_ptr, num_rods);
+    vector<DefectEvent> events = clusterByFullGraph(current_bonds, new_bonds, (int*)previous_z, (int*)current_z);
+    memcpy(dst_ptr, events.data(), events.size() * sizeof(DefectEvent));
+    return events.size();
 }

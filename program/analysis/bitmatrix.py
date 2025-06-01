@@ -8,6 +8,9 @@ class BitMatrix:
     min_bits = 256
 
     def __init__(self, rows: int):
+        """
+        :param rows: number of rods
+        """
         assert rows * rows % BitMatrix.min_bits == 0, f"The number of bits must be a multiple of {BitMatrix.min_bits}"
         self.rows = rows
         self.num_bytes = rows * rows // 8
@@ -28,3 +31,23 @@ class BitMatrix:
 
     def count(self) -> int:
         return int(ker.dll.bitmap_count(self.arr.ptr, self.num_bytes))
+
+
+def detectEvents(previous_bonds: BitMatrix, current_bonds: BitMatrix, previous_z: ut.CArray,
+                 current_z: ut.CArray) -> ut.CArray:
+    """
+    :return: (num_events, 5) CArray, columns are defined by:
+    struct DefectEvent {
+        int related_particles;
+        int previous_negative_charge = 0, previous_positive_charge = 0;
+        int current_negative_charge = 0, current_positive_charge = 0;
+    }
+    """
+    new_bonds = current_bonds - previous_bonds
+    max_events = new_bonds.count()
+    events = ut.CArray(np.zeros((max_events, 5), dtype=np.int32))
+    num_events = ker.dll.FindEventsInBitmap(new_bonds.rows, current_bonds.arr.ptr, new_bonds.arr.ptr, previous_z.ptr,
+                                            current_z.ptr, events.ptr)
+    assert num_events <= max_events
+    events = events[:num_events]
+    return events

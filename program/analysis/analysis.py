@@ -1,3 +1,7 @@
+import pickle as pkl
+from typing import Callable
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 from . import mymath as mm, utils as ut
@@ -202,3 +206,44 @@ def AngularCorrelationOverEnsemble(abg, xyts: list) -> (list[np.ndarray], list[n
         rs.append(out_r.data)
         corrs.append(out_corr.data)
     return rs, corrs
+
+
+def GeneralCalculation(filenames: list[str], calculation: Callable, save=False, test=True, output_name='data',
+                       aggregate_method='sum', horizontal_axis: np.ndarray = None):
+    """
+    :param calculation: calculation(simu: PickledSimulation) -> np.ndarray
+    :param save: True => save a pickle | False => visualization right now
+    :param test: True => small amount of data | False => all data
+    :param aggregate_method: sum | average
+    """
+    op_gamma = []
+    gammas = [1.1] if test else np.arange(1.1, 3, 0.1)
+    ensembles_per_file = 1 if test else 5
+    db0 = Database(filenames[0])
+    for gamma in gammas:
+        ops = []
+        for filename in filenames:
+            db = Database(filename)
+            e = db.find(gamma=gamma)[0]
+            for j in range(ensembles_per_file):
+                ops.append(calculation(e[j]))
+        if aggregate_method == 'sum':
+            op = sum(ops)
+        elif aggregate_method == 'average':
+            op = sum(ops) / len(ops)
+        else:
+            raise ValueError("Unknown aggregate method!")
+        op_gamma.append(op)
+    if save:
+        with open(f'{output_name}.pkl', 'wb') as f:
+            pkl.dump(op_gamma, f)
+    else:
+        for op, gamma in zip(op_gamma, gammas):
+            s = db0.find(gamma=gamma)[0][0]
+            if horizontal_axis is None:
+                x_axis = s.propertyInterval('phi', upper_h=1.2)[-len(op):]
+                plt.scatter(x_axis, op)
+            else:
+                x_axis = horizontal_axis
+                plt.scatter(x_axis, op[-len(x_axis):])
+            plt.show()

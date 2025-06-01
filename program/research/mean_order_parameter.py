@@ -1,10 +1,7 @@
-import pickle as pkl
-
 import matplotlib.pyplot as plt
-import numpy as np
 
-import analysis.utils as ut
-from analysis.database import Database
+from analysis.analysis import GeneralCalculation
+from analysis.database import PickledSimulation
 from analysis.post_analysis import MeanCIDatabase
 from art import curves as art
 
@@ -21,30 +18,10 @@ def read_op(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 def calculate_op(filenames: list[str], order_parameter_name: str, save=False, test=True):
-    op_gamma = []
-    gammas = [1.1] if test else np.arange(1.1, 3, 0.1)
-    ensembles_per_file = 1 if test else 5
-    db0 = Database(filenames[0])
-    for gamma in gammas:
-        ops = []
-        for filename in filenames:
-            db = Database(filename)
-            e = db.find(gamma=gamma)[0]
-            for j in range(ensembles_per_file):
-                simu = e[j]
-                op_single = simu.op(order_parameter_name, upper_h=1.2, num_threads=4)
-                ops.append(op_single)
-        op = sum(ops) / len(ops)
-        op_gamma.append(op)
-    if save:
-        with open(f'{order_parameter_name}.pkl', 'wb') as f:
-            pkl.dump(op_gamma, f)
-    else:
-        for op, gamma in zip(op_gamma, gammas):
-            s = db0.find(gamma=gamma)[0][0]
-            _, upper_index = ut.indexInterval(s.state_info['phi'], s.metadata['gamma'], None, upper_h=1.2)
-            plt.plot(s.state_info['phi'][:upper_index], op)
-            plt.show()
+    def calculation(simu: PickledSimulation):
+        return simu.op(order_parameter_name, upper_h=1.2, num_threads=4)
+
+    GeneralCalculation(filenames, calculation, save, test, output_name=order_parameter_name, aggregate_method='average')
 
 
 if __name__ == '__main__':
