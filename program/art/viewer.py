@@ -160,7 +160,7 @@ class RenderState:
                 self.handle.ax.scatter(x, y, marker=marker_list[winding_number_2[i] + 2], color='black')
         return self
 
-    def drawBonds(self, xyt: np.ndarray, edges: np.ndarray):
+    def drawBonds(self, xyt: np.ndarray, edges: np.ndarray, color='black'):
         """
         edges: (n, 2) integer array (treated as list of pairs).
         """
@@ -168,7 +168,7 @@ class RenderState:
         for s, e in edges:
             x1, y1 = xyt[s, :2]
             x2, y2 = xyt[e, :2]
-            self.handle.ax.plot([x1, x2], [y1, y2], color='black')
+            self.handle.ax.plot([x1, x2], [y1, y2], color=color)
 
 
 class InteractiveViewer:
@@ -211,9 +211,13 @@ class InteractiveViewer:
             self.renderer.drawMarkers(dic['xyt'], dic['metadata'])
         if 'new-bonds' in self.marker_setup:
             if self.index > 0:
-                pairs = getDefectTracks(dic, self.simu[self.index - 1])
                 # testDefectEvents(dic, self.simu[self.index - 1])
+                pairs = getDefectTracks(dic, self.simu[self.index - 1])
                 self.renderer.drawBonds(dic['xyt'], pairs)
+        if 'old-bonds' in self.marker_setup:
+            if self.index > 0:
+                pairs = getDefectTracksNegative(dic, self.simu[self.index - 1])
+                self.renderer.drawBonds(dic['xyt'], pairs, color='red')
         plt.draw()
 
     def show(self):
@@ -224,6 +228,12 @@ class InteractiveViewer:
 def getDefectTracks(current_state_dic: dict, previous_state_dic: dict) -> np.ndarray[np.int32]:
     return Voronoi.fromStateDict(current_state_dic).delaunay().difference(
         Voronoi.fromStateDict(previous_state_dic).delaunay()
+    ).toPairs()
+
+
+def getDefectTracksNegative(current_state_dic: dict, previous_state_dic: dict) -> np.ndarray[np.int32]:
+    return Voronoi.fromStateDict(previous_state_dic).delaunay().difference(
+        Voronoi.fromStateDict(current_state_dic).delaunay()
     ).toPairs()
 
 

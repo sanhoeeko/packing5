@@ -13,7 +13,7 @@ def batch_analyze(filename: str):
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('z_number')).setMarkerSetup('new-bonds').show()
+    InteractiveViewer(e, RenderSetup('z_number')).setMarkerSetup('new-bonds old-bonds').show()
 
 
 if __name__ == '__main__':

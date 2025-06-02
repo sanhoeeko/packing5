@@ -33,7 +33,7 @@ def test_stable_defect_number(filenames: list[str], save=False, test=True):
     def calculation(simu: PickledSimulation):
         return simu.stableDefects(num_threads=4, phi_c=0.86, upper_h=1.2)
 
-    GeneralCalculation(filenames, calculation, save, test, 'event_size', 'average')
+    GeneralCalculation(filenames, calculation, save, test, 'stable_defects', 'average')
 
 
 if __name__ == '__main__':

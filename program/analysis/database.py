@@ -377,6 +377,6 @@ class PickledSimulation:
 
         res = np.zeros((to_ - from_ - 1,), dtype=int)
         for i in range(len(delaunays) - 1):
-            mask = np.bitwise_and(zs[i + 1] - zs[i] == 0, zs[i] == 6, bodies[i])
+            mask = np.bitwise_and(zs[i + 1] - zs[i] == 0, zs[i] != 6, bodies[i])
             res[i] = np.sum(mask)
         return res
