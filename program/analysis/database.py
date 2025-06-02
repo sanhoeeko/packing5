@@ -323,51 +323,60 @@ class PickledSimulation:
         from .voronoi import Voronoi
         return Voronoi.fromStateDict(self[index]).delaunay()
 
-    def bondCreation(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
-        """
-        :return: 1d integer array, number of new bonds compared with the previous state
-        """
-        from_, to_ = self.indexInterval(phi_c, upper_h)
-        res = np.zeros((to_ - from_ - 1,), dtype=int)
-
+    def get_delaunay_list(self, from_: int, to_: int, num_threads: int) -> list:
         if num_threads != 1:
+            import multiprocessing
             with multiprocessing.Pool(processes=num_threads) as pool:
                 delaunays = pool.map(self.delaunayAt, range(from_, to_))
         else:
             dics = [dic for dic in self][from_:to_]
             delaunays = [Voronoi.fromStateDict(dic).delaunay() for dic in dics]
+        for d in delaunays:
+            d.check()
+        return delaunays
 
-        for i in range(from_, to_):
-            delaunays[i].check()
-        for i in range(from_, to_ - 1):
+    def bondCreation(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        delaunays = self.get_delaunay_list(from_, to_, num_threads)
+        res = np.zeros((to_ - from_ - 1,), dtype=int)
+        for i in range(len(delaunays) - 1):
             res[i] = delaunays[i + 1].difference(delaunays[i]).count()
         return res
 
     def eventStat(self, max_track_length: int, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
-        """
-        :return: 1d integer array, number of ...
-        """
         from_, to_ = self.indexInterval(phi_c, upper_h)
-        res = np.zeros((max_track_length,), dtype=int)
-
-        if num_threads != 1:
-            with multiprocessing.Pool(processes=num_threads) as pool:
-                delaunays = pool.map(self.delaunayAt, range(from_, to_))
-        else:
-            dics = [dic for dic in self][from_:to_]
-            delaunays = [Voronoi.fromStateDict(dic).delaunay() for dic in dics]
-
+        delaunays = self.get_delaunay_list(from_, to_, num_threads)
         delaunays = [None] * from_ + delaunays  # shift the index
-        for i in range(from_, to_):
-            delaunays[i].check()
+        res = np.zeros((max_track_length,), dtype=int)
         for i in range(from_, to_ - 1):
             xyt_1 = ut.CArray(self[i]['xyt'])
             xyt_0 = ut.CArray(self[i + 1]['xyt'])
-            events = delaunays[i + 1].events_compared_with(delaunays[i], xyt_1, xyt_0)
+            events = delaunays[i + 1].events_compared_with(
+                delaunays[i], xyt_1, xyt_0
+            )
             for event in events:
-                track_length = event[0] // 2 + event[0] % 2  # = ceil(event[0]/2)
-                if track_length >= max_track_length:
-                    res[-1] += 1
-                else:
-                    res[track_length] += 1
+                track_length = (event[0] + 1) // 2  # => ceil(event[0]/2)
+                idx = min(track_length, max_track_length - 1)
+                res[idx] += 1
+        return res
+
+    def stableDefects(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+        """
+        :return: count of stable defects, defined by
+            unchanged topological charge && topological defect && internal position
+        """
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        delaunays = self.get_delaunay_list(from_, to_, num_threads)
+        zs = [delaunay.z_number() for delaunay in delaunays]
+
+        none_delaunays = [None] * from_ + delaunays  # shift the index
+        bodies = []
+        for i in range(from_, to_ - 1):
+            xyt_c = ut.CArray(self[i]['xyt'])
+            bodies.append((1 - none_delaunays[i].dist_hull(xyt_c)).astype(bool))
+
+        res = np.zeros((to_ - from_ - 1,), dtype=int)
+        for i in range(len(delaunays) - 1):
+            mask = np.bitwise_and(zs[i + 1] - zs[i] == 0, zs[i] == 6, bodies[i])
+            res[i] = np.sum(mask)
         return res

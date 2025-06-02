@@ -111,7 +111,10 @@ class Capsule(patches.Patch):
         return scale + trans
 
 
-def ListColor01(color_map_name: str, length: int):
+def ListColor01(color_map_name: str, length: int) -> np.ndarray:
+    """
+    :return: (length, 4) array of RGBA values of colors.
+    """
     return plt.get_cmap(color_map_name)(np.linspace(0, 1, length))
 
 

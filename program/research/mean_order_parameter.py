@@ -28,4 +28,4 @@ if __name__ == '__main__':
     # read_op('../analysis-data-20250514.h5', 'S_local', (0, 20))
     calculate_op(
         ['../data-20250419.h5', ],
-        'total_topological_charge')
+        'defect_number')

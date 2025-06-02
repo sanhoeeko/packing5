@@ -121,6 +121,20 @@ def apply_struct(func, *args, **kwargs):
     return inner
 
 
+def filenamesFromTxt(txt_filename: str) -> list[str]:
+    """
+    :param txt_filename: txt file that records all data files' names
+    :return: list of data files' names
+    """
+    with open(txt_filename, 'r') as f:
+        lst = f.readlines()
+    res = []
+    for s in lst:
+        s_strip = s.strip()
+        if len(s_strip) > 0: res.append(s_strip)
+    return res
+
+
 def first_larger_than(arr: np.ndarray, val) -> int:
     return np.where(arr > val)[0][0]
 
