@@ -90,7 +90,7 @@ class Database(DatabaseBase):
 
     def find(self, **kwargs) -> list['PickledEnsemble']:
         df = self.subSummary(**kwargs)
-        print(df)
+        print(df.to_string())
         ensemble_names = df['id']
         return [self.id(name) for name in ensemble_names]
 
@@ -304,9 +304,79 @@ class PickledSimulation:
     def maxGradientCurve(self) -> np.ndarray:
         return self.max_gradient_curve
 
-    def stateDistance(self) -> np.ndarray:
+    def indexInterval(self, phi_c: float = None, upper_h: float = None):
+        return ut.indexInterval(self.state_info['phi'], self.metadata['gamma'], phi_c, upper_h)
+
+    def propertyInterval(self, name: str, phi_c=None, upper_h=None):
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        return self.state_info[name][from_:to_]
+
+    def stateDistance(self, phi_c=None, upper_h=None) -> np.ndarray:
         """
         :return: 1d array, showing how much the state variates during compression.
         """
-        diff_xyt = np.diff(self.xyt, axis=0)
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        diff_xyt = np.diff(self.xyt[from_:to_, :, :], axis=0)
         return np.linalg.norm(diff_xyt, axis=(1, 2)) / np.sqrt(self.metadata['N'])
+
+    def delaunayAt(self, index: int):
+        from .voronoi import Voronoi
+        return Voronoi.fromStateDict(self[index]).delaunay()
+
+    def get_delaunay_list(self, from_: int, to_: int, num_threads: int) -> list:
+        if num_threads != 1:
+            import multiprocessing
+            with multiprocessing.Pool(processes=num_threads) as pool:
+                delaunays = pool.map(self.delaunayAt, range(from_, to_))
+        else:
+            dics = [dic for dic in self][from_:to_]
+            delaunays = [Voronoi.fromStateDict(dic).delaunay() for dic in dics]
+        for d in delaunays:
+            d.check()
+        return delaunays
+
+    def bondCreation(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        delaunays = self.get_delaunay_list(from_, to_, num_threads)
+        res = np.zeros((to_ - from_ - 1,), dtype=int)
+        for i in range(len(delaunays) - 1):
+            res[i] = delaunays[i + 1].difference(delaunays[i]).count()
+        return res
+
+    def eventStat(self, max_track_length: int, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        delaunays = self.get_delaunay_list(from_, to_, num_threads)
+        delaunays = [None] * from_ + delaunays  # shift the index
+        res = np.zeros((max_track_length,), dtype=int)
+        for i in range(from_, to_ - 1):
+            xyt_1 = ut.CArray(self[i]['xyt'])
+            xyt_0 = ut.CArray(self[i + 1]['xyt'])
+            events = delaunays[i + 1].events_compared_with(
+                delaunays[i], xyt_1, xyt_0
+            )
+            for event in events:
+                track_length = (event[0] + 1) // 2  # => ceil(event[0]/2)
+                idx = min(track_length, max_track_length - 1)
+                res[idx] += 1
+        return res
+
+    def stableDefects(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+        """
+        :return: count of stable defects, defined by
+            unchanged topological charge && topological defect && internal position
+        """
+        from_, to_ = self.indexInterval(phi_c, upper_h)
+        delaunays = self.get_delaunay_list(from_, to_, num_threads)
+        zs = [delaunay.z_number() for delaunay in delaunays]
+
+        none_delaunays = [None] * from_ + delaunays  # shift the index
+        bodies = []
+        for i in range(from_, to_ - 1):
+            xyt_c = ut.CArray(self[i]['xyt'])
+            bodies.append((1 - none_delaunays[i].dist_hull(xyt_c)).astype(bool))
+
+        res = np.zeros((to_ - from_ - 1,), dtype=int)
+        for i in range(len(delaunays) - 1):
+            mask = np.bitwise_and(zs[i + 1] - zs[i] == 0, zs[i] != 6, bodies[i])
+            res[i] = np.sum(mask)
+        return res

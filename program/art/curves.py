@@ -6,13 +6,6 @@ from scipy.signal import savgol_filter
 from .art import Figure, ListColor01, add_energy_level_colorbar
 
 
-def Smoother(window_size: int, order: int):
-    def inner(x: np.ndarray):
-        return savgol_filter(x, window_size, order)
-
-    return inner
-
-
 def plotListOfArray(lst: np.ndarray, labels: tuple[str, str] = None, y_restriction: float = None):
     colors = ListColor01('jet', len(lst))
     with Figure() as f:
@@ -86,6 +79,13 @@ def arrow_plot(fig: Figure, t: np.ndarray, x: np.ndarray, y: np.ndarray, n_arrow
     x, y: data
     plot_args: other parameters passed to plt.plot
     """
+
+    def Smoother(window_size: int, order: int):
+        def inner(x: np.ndarray):
+            return savgol_filter(x, window_size, order)
+
+        return inner
+
     smooth = Smoother(21, 3)
     x_sm = smooth(x)
     y_sm = smooth(y)

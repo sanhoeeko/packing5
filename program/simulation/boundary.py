@@ -55,5 +55,11 @@ def NoCompress():
 
 
 def RatioCompress(ratio: float):
+    # a[n] = a[0] * (1-r)^n
     q = 1 - ratio
     return lambda t, x: q * x
+
+
+def UniformCompress(dx: float):
+    # a[n] = a[0] * (1-r*n)
+    return lambda t, x: x - dx

@@ -71,17 +71,29 @@ def CreateEnsemble(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B, pote
     )
 
 
+def get_uniform_compress_delta(ratio, N, n, d, phi0, Gamma0):
+    gamma = 1 + (n - 1) * d / 2
+    B = np.sqrt(N * (np.pi + 4 * (gamma - 1)) / (np.pi * Gamma0 * phi0)) / gamma
+    A = Gamma0 * B
+    return ratio * A, ratio * B
+
+
 def StartEnsemble(replica: int, N: int, n: int, d: float, phi0: float, Gamma0: float):
     from recipe import InitRecipe
     InitRecipe()
-
     radial_func = pot.PowerFunc(2.5)
     potential = pot.RodPotential(n, d, radial_func)
-    compress_func_A = boundary.NoCompress()
-    compress_func_B = boundary.RatioCompress(default.compress_rate)
-    ensemble = CreateEnsemble(int(N), int(n), float(d), float(phi0), float(Gamma0),
-                              compress_func_A, compress_func_B, potential)
-    ensemble.setReplica(int(replica))
+
+    if default.if_keep_boundary_aspect:
+        da, db = get_uniform_compress_delta(default.uniform_compress_rate, N, n, d, phi0, Gamma0)
+        compress_func_A = boundary.UniformCompress(da)
+        compress_func_B = boundary.UniformCompress(db)
+    else:
+        compress_func_A = boundary.NoCompress()
+        compress_func_B = boundary.RatioCompress(default.compress_rate)
+
+    ensemble = CreateEnsemble(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B, potential)
+    ensemble.setReplica(replica)
     ensemble.execute()
 
 

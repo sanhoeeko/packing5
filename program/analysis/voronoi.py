@@ -3,6 +3,7 @@ import scipy.spatial as sp
 from scipy.special import ellipe as EllipticE
 
 from . import utils as ut
+from .bitmatrix import BitMatrix, detectEvents
 from .kernel import ker
 
 
@@ -155,6 +156,36 @@ class DelaunayBase:
     def params(self):
         return self.num_edges, self.num_rods, self.indices.ptr, self.edges.ptr
 
+    def check(self):
+        # to fix some bugs in multiprocess (Maybe in which `CArray`s are incorrectly copied)
+        self.indices.check()
+        self.edges.check()
+        return self
+
+    def adjacency_matrix(self) -> BitMatrix:
+        bm = BitMatrix(self.num_rods)
+        ker.dll.bitmap_from_delaunay(*self.params, bm.arr.ptr)
+        return bm
+
+    def difference(self, o: 'DelaunayBase'):
+        """
+        :return: (n_edges, 2) matrix.
+        Each pair of integers represents a new edge which does not present in [o: 'DelaunayBase'].
+        Examples:
+            V[t+1].difference(V[t]) -> created edges
+            V[t].difference(V[t+1]) -> destroyed edges
+        """
+        return self.adjacency_matrix() - o.adjacency_matrix()
+
+    def events_compared_with(self, o: 'DelaunayBase', xyt_self: ut.CArray, xyt_o: ut.CArray) -> ut.CArray:
+        z1_c = self.z_number_c()
+        z1_c.data[self.dist_hull(xyt_self) == 1] = 6
+        z0_c = o.z_number_c()
+        z0_c.data[self.dist_hull(xyt_o) == 1] = 6
+        b1 = self.adjacency_matrix()
+        b0 = o.adjacency_matrix()
+        return detectEvents(b0, b1, z0_c, z1_c)
+
     @property
     def edge_types(self) -> np.ndarray[np.int32]:
         """
@@ -174,21 +205,29 @@ class DelaunayBase:
                 i += 1
             yield i, j, ty[k]
 
-    def z_number(self, arg=None) -> np.ndarray[np.int32]:
+    def z_number_c(self, args=None) -> ut.CArray:
         z = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
         ker.dll.neighbors(*self.params, z.ptr)
-        return z.data
+        return z
 
-    def convex_hull(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
-        hull = ut.CArray(np.zeros((self.num_rods,), np.int32))
-        centers = xyt.data[:, 0:2]
-        r = 1 - 1 / self.gamma
-        u = np.hstack([np.cos(xyt.data[:, 2:3]), np.sin(xyt.data[:, 2:3])])
-        xy = ut.CArray(np.vstack([centers - r * u, centers + r * u]), np.float32)
-        ker.dll.ConvexHull(xy.ptr, hull.ptr, self.num_rods * 2, self.num_rods)
-        return hull.data
+    def z_number(self, args=None) -> np.ndarray[np.int32]:
+        return self.z_number_c(args).data
+
+    def raw_total_topological_charge(self, args=None) -> int:
+        return 2 * self.num_edges - 6 * self.num_rods
+
+    def total_topological_charge(self, xyt: ut.CArray) -> int:
+        """
+        `2 * self.num_edges - 6 * self.num_rods` will result in a large negative number because boundary effect.
+        So this function only count total topological charge of internal particles.
+        """
+        internal = 1 - self.dist_hull(xyt)
+        return np.dot(self.z_number(), internal) - 6 * np.sum(internal)
 
     def dist_hull(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        """
+        :return: binary array: 0 for internal, 1 for marginal
+        """
         min_dist = 2
         return (self.dist_to_ellipse(xyt) < min_dist).astype(np.int32)
 
