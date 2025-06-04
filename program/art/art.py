@@ -25,6 +25,7 @@ class Figure:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        plt.tight_layout()
         plt.show()
 
     def clear(self):

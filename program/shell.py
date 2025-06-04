@@ -15,7 +15,7 @@ def start_ensemble(replica, N, n, d, phi0, Gamma0):
     """
     This function has type check. Parameters may be strings.
     """
-    StartEnsemble(replica, N, n, d, phi0, Gamma0)
+    StartEnsemble(int(replica), int(N), int(n), float(d), float(phi0), float(Gamma0))
 
 
 def pack_and_compress():

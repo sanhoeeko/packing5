@@ -90,7 +90,7 @@ class Database(DatabaseBase):
 
     def find(self, **kwargs) -> list['PickledEnsemble']:
         df = self.subSummary(**kwargs)
-        print(df)
+        print(df.to_string())
         ensemble_names = df['id']
         return [self.id(name) for name in ensemble_names]
 
