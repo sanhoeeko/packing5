@@ -2,8 +2,12 @@
 #include "potential.h"
 #include "functional.h"
 #include "array.h"
-#include <math.h>
 #include "segdist.h"
+#include <math.h>
+#include <vector>
+#include <omp.h>
+
+using namespace std;
 
 float modpi(float x)
 {

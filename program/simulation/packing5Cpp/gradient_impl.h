@@ -77,10 +77,18 @@ void collisionDetectPP(Rod* shape, xyt* particles, int* grid, ge* Gij, int lines
 
 template<HowToCalGradient how, bool need_energy>
 void collisionDetectPW(Rod* shape, xyt* particles, EllipticBoundary* b, ge* Gij, int lines, int cols, int N) {
-	for (int p = 0; p < N; p++) {
-		if (b->maybeCollide(particles[p])) {
+	if (b->if_a_less_than_b == 0) {
+		for (int p = 0; p < N; p++) {
 			int pm = p * cores;
-			Gij[pm] += b->collide<how, need_energy>(shape, particles[p]);
+			Gij[pm] += b->collide<how, need_energy, false>(shape, particles[p]);
+		}
+	}
+	else {
+		for (int p = 0; p < N; p++) {
+			if (b->maybeCollide(particles[p])) {
+				int pm = p * cores;
+				Gij[pm] += b->collide<how, need_energy, true>(shape, particles[p]);
+			}
 		}
 	}
 }

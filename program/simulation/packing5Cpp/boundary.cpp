@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "boundary.h"
 
+#define _sign(__x) (__x >= 0)
+
 EllipticBoundary::EllipticBoundary(float a, float b)
 {
 	setBoundary(a, b);
@@ -8,13 +10,19 @@ EllipticBoundary::EllipticBoundary(float a, float b)
 
 void EllipticBoundary::setBoundary(float a, float b)
 {
+	const float eps = 1e-9;
 	this->a = a; this->b = b;
 
 	// derived
 	a2 = a * a; b2 = b * b;
 	inv_inner_a2 = 1 / ((a - 2) * (a - 2));
 	inv_inner_b2 = 1 / ((b - 2) * (b - 2));
-	if_a_less_than_b = a < b;
+	if (abs(a - b) < eps) {
+		if_a_less_than_b = 0;
+	}
+	else {
+		if_a_less_than_b = a < b ? 1 : -1;
+	}
 }
 
 bool EllipticBoundary::maybeCollide(const xyt& q)
@@ -47,7 +55,7 @@ void EllipticBoundary::solveNearestPointOnEllipse(float x1, float y1, float& x0,
 	*/
 	// float t_prolate = -b2 + b * y1;
 	// float t_oblate = -a2 + a * x1;
-	float t = if_a_less_than_b ? (-a2 + a * x1) : (-b2 + b * y1);
+	float t = _sign(if_a_less_than_b) ? (-a2 + a * x1) : (-b2 + b * y1);
 
 	for (int i = 0; i < 16; i++) {
 		// Newton root finding. There is always `Ga * Ga + Gb * Gb - 1 > 0`.
