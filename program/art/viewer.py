@@ -41,7 +41,7 @@ class RenderSetup:
             self.func = None
         else:
             def func(x):
-                arr = OrderParameterFunc([order_parameter_name], False)(x)
+                arr = OrderParameterFunc([order_parameter_name], 'None')(x)
                 return arr[order_parameter_name]
 
             self.func = func

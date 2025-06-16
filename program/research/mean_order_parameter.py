@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 
+from analysis import utils as ut
 from analysis.analysis import GeneralCalculation
 from analysis.database import PickledSimulation
 from analysis.post_analysis import MeanCIDatabase
@@ -18,8 +19,10 @@ def read_op(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 def calculate_op(filenames: list[str], order_parameter_name: str, save=False, test=True):
+    option = 'only internal'
+
     def calculation(simu: PickledSimulation):
-        return simu.op(order_parameter_name, upper_h=1.2, num_threads=4)
+        return simu.op(order_parameter_name, upper_h=1.2, num_threads=4, option=option)  # TODO: add upper_phi
 
     GeneralCalculation(filenames, calculation, save, test, output_name=order_parameter_name, aggregate_method='average')
 
@@ -27,5 +30,6 @@ def calculate_op(filenames: list[str], order_parameter_name: str, save=False, te
 if __name__ == '__main__':
     # read_op('../analysis-data-20250514.h5', 'S_local', (0, 20))
     calculate_op(
-        ['../data-20250419.h5', ],
-        'defect_number')
+        # filenames=['../data-20250419.h5', ],
+        filenames=ut.filenamesFromTxt('all-data-files.txt'),
+        order_parameter_name='S_local')

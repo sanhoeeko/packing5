@@ -12,19 +12,32 @@ from .mymath import DirtyDataException
 from .orders import OrderParameterList
 
 
-def OrderParameterFunc(order_parameter_list: list[str], abs_averaged: bool):
+def OrderParameterFunc(order_parameter_list: list[str], option: str = 'None'):
     """
     parameters of inner function:
-    abg = (A_upper_bound, B_upper_bound, gamma) for each state
-    xyt = (N, 3) configuration
+        abg = (A_upper_bound, B_upper_bound, gamma) for each state
+        xyt = (N, 3) configuration
+    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal'
     :return: a function object for `Database.apply`
     """
+    assert type(option) is str
 
     def inner(args) -> np.ndarray:
         abg: tuple = args[0]
         xyt: np.ndarray = args[1]
         Xi = OrderParameterList(order_parameter_list)(xyt, abg)
-        return ut.apply_struct(np.mean)(Xi) if abs_averaged else Xi
+        if option == 'abs averaged':
+            return ut.apply_struct(np.mean)(Xi)
+        if option in ['only boundary', 'only internal']:
+            N = xyt.shape[0]
+            phi = ut.phi(N, abg[2], abg[0], abg[1])
+            mask = ut.InternalMask(phi, abg[0], abg[1], xyt)
+            if option == 'only boundary':
+                mask = ~mask
+            N_valid = np.sum(mask)
+            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
+        else:
+            return Xi
 
     return inner
 
@@ -44,10 +57,10 @@ def CorrelationFunc(order_a: str, order_b: str):
         abg: tuple = args[0]
         xyt: np.ndarray = args[1]
         if order_a == order_b:
-            fields = OrderParameterFunc([order_a], False)(args)
+            fields = OrderParameterFunc([order_a], 'None')(args)
             a_field = b_field = fields[order_a]
         else:
-            fields = OrderParameterFunc([order_a, order_b], False)(args)
+            fields = OrderParameterFunc([order_a, order_b], 'None')(args)
             a_field = fields[order_a]
             b_field = fields[order_b]
         a_field_c, b_field_c = ut.CArray(a_field), ut.CArray(b_field)
@@ -74,7 +87,7 @@ def orderParameterCurve(ensemble: PickledEnsemble, order_parameter_names: list[s
         x_tensor = ensemble.property(x_axis_name)
     else:
         x_tensor = ensemble.property(x_axis_name)[:, :, from_to[0]:from_to[1]]
-    y_tensor = ensemble.apply(OrderParameterFunc(order_parameter_names, True),
+    y_tensor = ensemble.apply(OrderParameterFunc(order_parameter_names, 'abs averaged'),
                               num_threads=num_threads, from_to_nth_data=from_to)
     return x_tensor, y_tensor
 
@@ -159,11 +172,11 @@ def CorrelationOverEnsemble(order_a: str, order_b: str):
         b_fields = []
         for xyt in xyts:
             if order_a == order_b:
-                fields = OrderParameterFunc([order_a], False)((abg, xyt))
+                fields = OrderParameterFunc([order_a], 'None')((abg, xyt))
                 a_fields.append(fields[order_a])
                 b_fields.append(fields[order_a])
             else:
-                fields = OrderParameterFunc([order_a, order_b], False)((abg, xyt))
+                fields = OrderParameterFunc([order_a, order_b], 'None')((abg, xyt))
                 a_fields.append(fields[order_a])
                 b_fields.append(fields[order_b])
         A = np.array(a_fields)

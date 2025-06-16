@@ -20,13 +20,13 @@ struct EllipticBoundary {
 };
 
 template<HowToCalGradient how, bool need_energy, bool elliptic>
-ge EllipticBoundary::collide(Rod* shape, const xyt& q)  // TODO: add circle boundary support
+ge EllipticBoundary::collide(Rod* shape, const xyt& q)
 {
 	const float h_min = -0.01;
 	float x0, y0, absx0, absy0;
 
 	// q.x,	q.y cannot be both zero because of the `maybeCollide` guard. 
-	if constexpr (elliptic) {
+	if constexpr (!elliptic) {
 		// For circular boundary
 		float r = sqrt(q.x * q.x + q.y * q.y);
 		if (r < a - 1) return { 0,0,0,0 };

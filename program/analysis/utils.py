@@ -3,6 +3,7 @@ from typing import Union
 
 import numpy as np
 
+import default
 from analysis.h5tools import invalid_value_of
 
 
@@ -158,3 +159,22 @@ def indexInterval(phis: np.ndarray, gamma: float, phi_c: float = None, upper_h: 
 def gamma_star(gamma: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     # return 1 + (gamma - 1) * 2 / np.sqrt(3)
     return gamma * np.sqrt(3) / 2
+
+
+def phi(N: int, gamma: float, A: float, B: float):
+    return N / (np.pi * A * B) * (np.pi + 4 * (gamma - 1)) / gamma ** 2
+
+
+def InternalMask(phi: float, A: float, B: float, xyt: np.ndarray) -> np.ndarray[bool]:
+    ratio = (default.phi_c - phi) / (default.phi_c - default.phi_0)
+    if ratio <= 0:
+        return np.zeros(xyt.shape[0], dtype=bool)
+    b = B * ratio
+    r = xyt[:, 0] ** 2 / A ** 2 + xyt[:, 1] ** 2 / b ** 2
+    return r < 1
+
+
+def mask_structured_array(structured_arr: np.ndarray, mask: np.ndarray[bool]):
+    zero_record = np.zeros((), dtype=structured_arr.dtype)
+    structured_arr[~mask] = zero_record
+    return structured_arr

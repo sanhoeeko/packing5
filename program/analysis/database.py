@@ -15,7 +15,6 @@ ut.setWorkingDirectory()
 from simulation.state import State
 
 from .h5tools import extract_metadata, struct_array_to_dataframe, filter_dataframe
-from .orders import general_order_parameter
 from .voronoi import Voronoi
 
 
@@ -247,34 +246,37 @@ class PickledSimulation:
         for i in range(self.n):
             yield self[i]
 
-    def op(self, order_parameter_name: str, num_threads=1, upper_h: float = None) -> np.ndarray:
+    def op(self, order_parameter_name: str, num_threads=1, upper_h: float = None, option='None') -> np.ndarray:
         """
         :return: numpy array of order parameter
         """
         _, upper_index = ut.indexInterval(self.state_info['phi'], self.metadata['gamma'], None, upper_h)
         if num_threads != 1:
             with multiprocessing.Pool(processes=num_threads) as pool:
-                result = pool.map(self.op_at_wrapper, [(order_parameter_name, i) for i in range(upper_index)])
+                result = pool.map(self.op_at_wrapper, [(order_parameter_name, i, option) for i in range(upper_index)])
             return np.array(result)
         else:
-            return np.vectorize(self.op_at(order_parameter_name))(range(upper_index))
+            return np.vectorize(self.op_at(order_parameter_name, option))(range(upper_index))
 
     def op_at_wrapper(self, args):
         """
         Wrapper function to unpack arguments for parallel processing.
         """
-        order_parameter_name, index = args
-        return self.op_at(order_parameter_name)(index)
+        order_parameter_name, index, option = args
+        return self.op_at(order_parameter_name, option)(index)
 
-    def op_at(self, order_parameter_name: str):
+    def op_at(self, order_parameter_name: str, option='None'):
+        from .analysis import OrderParameterFunc
+
         def inner(index: int):
             state = self[index]
-            voro = Voronoi.fromStateDict(state).delaunay()
-            if voro is None: return np.float32(np.nan)
-            return np.mean(general_order_parameter(
-                order_parameter_name, state['xyt'], voro,
-                (state['metadata']['A'], state['metadata']['B'], state['metadata']['gamma'])
-            ))
+            result_struct_array = OrderParameterFunc([order_parameter_name], option)(
+                (
+                    (state['metadata']['A'], state['metadata']['B'], state['metadata']['gamma']),
+                    state['xyt'],
+                )
+            )
+            return result_struct_array[order_parameter_name]
 
         return inner
 

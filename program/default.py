@@ -22,3 +22,5 @@ if_keep_boundary_aspect = True
 enable_legal_check = False
 S_local_background = 0.338
 h_max = 1.2
+phi_0 = 0.4
+phi_c = 0.85

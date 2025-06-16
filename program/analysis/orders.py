@@ -1,6 +1,6 @@
-import tracemalloc
+# import tracemalloc
 
-tracemalloc.start()
+# tracemalloc.start()
 import numpy as np
 
 from . import utils as ut
@@ -29,7 +29,7 @@ class StaticOrders:
         return xyt[:, 2] % np.pi
 
 
-def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, abg: tuple = None):
+def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, abg: tuple = None) -> np.ndarray:
     """
     :return: a numpy array of shape (N,), N = particle number.
     parameter `name` and `xyt` are necessary.
