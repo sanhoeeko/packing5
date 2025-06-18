@@ -28,13 +28,20 @@ class StaticOrders:
     def Angle(xyt: np.ndarray):
         return xyt[:, 2] % np.pi
 
+    @staticmethod
+    def AngleDist(xyt: np.ndarray):
+        n_angles = 180
+        t = xyt[:, 2] % np.pi
+        hist, bins = np.histogram(t, bins=n_angles, range=(0, np.pi))
+        return hist  # bins are easy to calculate
+
 
 def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, abg: tuple = None) -> np.ndarray:
     """
     :return: a numpy array of shape (N,), N = particle number.
     parameter `name` and `xyt` are necessary.
     """
-    if name in ['S_global', 'S_x', 'Angle']:
+    if name in ['S_global', 'S_x', 'Angle', 'AngleDist']:
         return getattr(StaticOrders, name)(xyt)
     elif name.startswith('Elliptic'):
         return getattr(voro, name)(ut.CArray(xyt), abg[2])

@@ -263,7 +263,10 @@ class PickledSimulation:
         Wrapper function to unpack arguments for parallel processing.
         """
         order_parameter_name, index, option = args
-        return self.op_at(order_parameter_name, option)(index)
+        if order_parameter_name in ['AngleDist']:
+            return self.irregular_op_at(order_parameter_name, option)(index)
+        else:
+            return self.op_at(order_parameter_name, option)(index)
 
     def op_at(self, order_parameter_name: str, option='None'):
         from .analysis import OrderParameterFunc
@@ -277,6 +280,18 @@ class PickledSimulation:
                 )
             )
             return result_struct_array[order_parameter_name]
+
+        return inner
+
+    def irregular_op_at(self, order_parameter_name: str, option='None'):
+        from .orders import StaticOrders
+
+        if order_parameter_name == 'AngleDist':
+            def inner(index: int):
+                state = self[index]
+                return StaticOrders.AngleDist(state['xyt'])
+        else:
+            raise NotImplementedError
 
         return inner
 

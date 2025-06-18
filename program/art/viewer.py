@@ -57,7 +57,7 @@ def selectCmapAndNorm(style: str):
             'single color': (mcolors.LinearSegmentedColormap.from_list("single_color_cmap",
                                                                        [(0, single_color), (1, single_color)]),
                              mcolors.Normalize(vmin=0, vmax=1)),
-            'default': ('viridis', None),
+            'default': ('jet', None),
             'angle': ('hsv', mcolors.Normalize(vmin=0, vmax=np.pi)),
             'pm1': ('bwr', mcolors.Normalize(vmin=-1, vmax=1)),
             'defect_pm2': ('Spectral', mcolors.Normalize(vmin=-3, vmax=3)),
