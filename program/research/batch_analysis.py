@@ -13,7 +13,7 @@ def batch_analyze(filename: str):
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('S_local')).setMarkerSetup('').show()
+    InteractiveViewer(e, RenderSetup('FarthestSegmentDist')).setMarkerSetup('').show()
 
 
 if __name__ == '__main__':

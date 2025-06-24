@@ -23,6 +23,24 @@ void sumOverWeights(int num_edges, int num_rods, void* indices_ptr, void* edges_
     }
 }
 
+void symmetricSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* a_ptr, void* output_ptr)
+{
+    int* indices = (int*)indices_ptr;               // length: num_rods
+    int* edges = (int*)edges_ptr;                   // length: num_edges
+    float* a = (float*)a_ptr;                       // length: num_rods
+    float* output = (float*)output_ptr;             // length: num_rods
+    int id1 = 0;
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            indices++;
+            id1++;
+        }
+        int id2 = edges[j];
+        output[id1] += a[id2];
+        output[id2] += a[id1];
+    }
+}
+
 void complexSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* complex_ptr, void* output_ptr)
 {
     /*
@@ -43,6 +61,26 @@ void complexSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
         output[2 * id1 + 1] += cplx[2 * j + 1];
         output[2 * id2] += cplx[2 * j];
         output[2 * id2 + 1] += cplx[2 * j + 1];
+    }
+}
+
+void symmetricMax(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* a_ptr, void* output_ptr)
+{
+    // assume that original data [a] satisfies a > 0
+    // and [output] has been set to zero in Python
+    int* indices = (int*)indices_ptr;               // length: num_rods
+    int* edges = (int*)edges_ptr;                   // length: num_edges
+    float* a = (float*)a_ptr;                       // length: num_rods
+    float* output = (float*)output_ptr;             // length: num_rods
+    int id1 = 0;
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            indices++;
+            id1++;
+        }
+        int id2 = edges[j];
+        output[id1] = a[j] > output[id1] ? a[j] : output[id1];
+        output[id2] = a[j] > output[id2] ? a[j] : output[id2];
     }
 }
 

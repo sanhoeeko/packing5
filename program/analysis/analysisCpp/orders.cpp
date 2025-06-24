@@ -77,24 +77,6 @@ void orientation_diff_ij(int num_edges, int num_rods, void* indices_ptr, void* e
     }
 }
 
-void symmetricSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* a_ptr, void* output_ptr)
-{
-    int* indices = (int*)indices_ptr;               // length: num_rods
-    int* edges = (int*)edges_ptr;                   // length: num_edges
-    float* a = (float*)a_ptr;                       // length: num_rods
-    float* output = (float*)output_ptr;             // length: num_rods
-    int id1 = 0;
-    for (int j = 0; j < num_edges; j++) {
-        while (j == *indices && id1 < num_rods) {
-            indices++;
-            id1++;
-        }
-        int id2 = edges[j];
-        output[id1] += a[id2];
-        output[id2] += a[id1];
-    }
-}
-
 void pure_rotation_direction_phi(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_ptr)
 {

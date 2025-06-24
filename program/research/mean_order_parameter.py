@@ -19,7 +19,7 @@ def read_op(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 def calculate_op(filenames: list[str], order_parameter_name: str, save=False, test=True, aggregate_method='average'):
-    option = 'None'
+    option = 'only boundary'
 
     def calculation(simu: PickledSimulation):
         return simu.op(order_parameter_name, upper_h=1.2, num_threads=4, option=option)  # TODO: add upper_phi
@@ -31,6 +31,6 @@ def calculate_op(filenames: list[str], order_parameter_name: str, save=False, te
 if __name__ == '__main__':
     # read_op('../analysis-data-20250514.h5', 'S_local', (0, 20))
     calculate_op(
-        filenames=['../data-20250419.h5', ],
-        # filenames=ut.filenamesFromTxt('all-data-files.txt'),
-        order_parameter_name='AngleDist', test=False, save=True, aggregate_method='sum')
+        # filenames=['../data-20250419.h5', ],
+        filenames=ut.filenamesFromTxt('all-data-files.txt'),
+        order_parameter_name='S_local', test=False, save=True, aggregate_method='average')

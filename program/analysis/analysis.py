@@ -4,20 +4,22 @@ from typing import Callable
 import matplotlib.pyplot as plt
 import numpy as np
 
+import default
 from . import mymath as mm, utils as ut
 from .database import Database, PickledEnsemble
 from .h5tools import dict_to_analysis_hdf5, add_array_to_hdf5, add_property_to_hdf5
 from .kernel import ker
 from .mymath import DirtyDataException
 from .orders import OrderParameterList
+from .voronoi import Voronoi
 
 
-def OrderParameterFunc(order_parameter_list: list[str], option: str = 'None'):
+def OrderParameterFunc(order_parameter_list: list[str], option='None'):
     """
     parameters of inner function:
         abg = (A_upper_bound, B_upper_bound, gamma) for each state
         xyt = (N, 3) configuration
-    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal'
+    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal' | 'only dense'
     :return: a function object for `Database.apply`
     """
     assert type(option) is str
@@ -28,12 +30,20 @@ def OrderParameterFunc(order_parameter_list: list[str], option: str = 'None'):
         Xi = OrderParameterList(order_parameter_list)(xyt, abg)
         if option == 'abs averaged':
             return ut.apply_struct(np.mean)(Xi)
-        if option in ['only boundary', 'only internal']:
+        elif option in ['only boundary', 'only internal']:
             N = xyt.shape[0]
             phi = ut.phi(N, abg[2], abg[0], abg[1])
-            mask = ut.InternalMask(phi, abg[0], abg[1], xyt)
+            mask = ut.InternalMask2(phi, abg[0], abg[1], xyt)
             if option == 'only boundary':
                 mask = ~mask
+            N_valid = np.sum(mask)
+            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
+        elif option == 'only dense':
+            # slow, because it calls Voronoi twice
+            xyt_c = ut.CArray(xyt, dtype=np.float32)
+            voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
+            max_segdist = voro.FarthestSegmentDist(xyt_c)
+            mask = max_segdist < default.segdist_for_dense
             N_valid = np.sum(mask)
             return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
         else:
@@ -230,7 +240,7 @@ def GeneralCalculation(filenames: list[str], calculation: Callable, save=False, 
     :param aggregate_method: sum | average
     """
     op_gamma = []
-    gammas = [1.1] if test else np.arange(1.1, 3, 0.1)
+    gammas = [1.2] if test else np.arange(1.1, 3, 0.1)
     ensembles_per_file = 1 if test else 5
     db0 = Database(filenames[0])
     for gamma in gammas:

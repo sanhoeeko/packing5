@@ -24,3 +24,4 @@ S_local_background = 0.338
 h_max = 1.2
 phi_0 = 0.4
 phi_c = 0.85
+segdist_for_dense = 2.02

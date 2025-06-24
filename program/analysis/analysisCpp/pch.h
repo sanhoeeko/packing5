@@ -19,6 +19,8 @@ DLLEXPORT void symmetricSum(int num_edges, int num_rods, void* indices_ptr, void
     void* a_ptr, void* output_ptr);
 DLLEXPORT void complexSum(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     void* complex_ptr, void* output_ptr);
+DLLEXPORT void symmetricMax(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
+    void* a_ptr, void* output_ptr);
 DLLEXPORT void z_ij_power_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_complex_ptr, float p);
 DLLEXPORT void orientation_diff_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, 

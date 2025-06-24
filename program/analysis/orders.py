@@ -209,3 +209,6 @@ class Delaunay(DelaunayBase):
         angles = ut.CArray(self.n_order_director(2)(xyt))
         wd2 = super().winding_angle(xyt, angles) / np.pi
         return np.round(wd2).astype(np.int32)
+
+    def FarthestSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
+        return self.farthest_segment_dist(xyt) * self.gamma

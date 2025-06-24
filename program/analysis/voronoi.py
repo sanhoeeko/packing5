@@ -331,3 +331,10 @@ class DelaunayBase:
         theta = ut.CArrayFZeros((self.num_rods,))
         ker.dll.windingAngleNextNearest(*self.params, xyt.ptr, angles.ptr, theta.ptr)
         return theta.data
+
+    def farthest_segment_dist(self, xyt: ut.CArray) -> np.ndarray:
+        seg_dist = ut.CArrayFZeros((self.num_edges,))
+        max_dist = ut.CArrayFZeros((self.num_rods,))
+        ker.dll.SegmentDistForBonds(*self.params, xyt.ptr, seg_dist.ptr, self.gamma)
+        ker.dll.symmetricMax(*self.params, seg_dist.ptr, max_dist.ptr)
+        return max_dist.data

@@ -174,6 +174,11 @@ def InternalMask(phi: float, A: float, B: float, xyt: np.ndarray) -> np.ndarray[
     return r < 1
 
 
+def InternalMask2(phi: float, A: float, B: float, xyt: np.ndarray) -> np.ndarray[bool]:
+    ratio = 1 / 3  # boundary_Y / total_Y
+    return xyt[:, 1] < B * (1 - ratio)
+
+
 def mask_structured_array(structured_arr: np.ndarray, mask: np.ndarray[bool]):
     zero_record = np.zeros((), dtype=structured_arr.dtype)
     structured_arr[~mask] = zero_record
