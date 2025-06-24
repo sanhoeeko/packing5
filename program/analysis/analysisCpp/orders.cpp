@@ -206,6 +206,27 @@ float segment_dist_moment(int num_edges, int num_rods, void* indices_ptr, void* 
     return total_rij / num_edges;
 }
 
+void SegmentDistForBonds(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+    void* output_ptr, float gamma)
+{
+    float R = 1 - 1 / gamma;
+    int* indices = (int*)indices_ptr;
+    int* edges = (int*)edges_ptr;
+    xyt3f* q = (xyt3f*)configuration_ptr;
+    float* output = (float*)output_ptr;         // length: num_edges
+
+    int id1 = 0;
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            indices++;
+            id1++;
+        }
+        int id2 = edges[j];
+        float l = SegDist(R, q[id1].x, q[id1].y, q[id1].t, q[id2].x, q[id2].y, q[id2].t);
+        output[j] = l;
+    }
+}
+
 void FittedEllipticPhi_p(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* output_complex_ptr, void* out_gamma, void* out_theta, float p) 
     /*

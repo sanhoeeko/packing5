@@ -32,6 +32,8 @@ DLLEXPORT void sumAnisotropicComplex(int num_edges, int num_rods, void* indices_
 DLLEXPORT float mean_r_ij(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr);
 DLLEXPORT float segment_dist_moment(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     float gamma, int moment);
+DLLEXPORT void SegmentDistForBonds(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+    void* output_ptr, float gamma);
 DLLEXPORT float RijRatio(void* p_xyt, int N);
 DLLEXPORT int isOutOfBoundary(void* p_xyt, int N, float A, float B);
 DLLEXPORT float CubicMinimum(float a, float b, float c, float d);
