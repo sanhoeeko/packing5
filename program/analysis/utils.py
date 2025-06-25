@@ -175,8 +175,13 @@ def InternalMask(phi: float, A: float, B: float, xyt: np.ndarray) -> np.ndarray[
 
 
 def InternalMask2(phi: float, A: float, B: float, xyt: np.ndarray) -> np.ndarray[bool]:
-    ratio = 1 / 3  # boundary_Y / total_Y
-    return xyt[:, 1] < B * (1 - ratio)
+    u_ratio = 1 / 6  # boundary_Y / total_Y
+    d_ratio = 1 / 3
+    lr_ratio = 1 / 2  # boundary_X / total_X
+    return ~np.bitwise_and(
+        np.abs(xyt[:, 1]) > B * (1 - d_ratio), np.abs(xyt[:, 1]) < B * (1 - u_ratio),
+        np.abs(xyt[:, 0]) < A * (1 - lr_ratio)
+    )
 
 
 def mask_structured_array(structured_arr: np.ndarray, mask: np.ndarray[bool]):

@@ -360,21 +360,19 @@ class PickledSimulation:
             res[i] = delaunays[i + 1].difference(delaunays[i]).count()
         return res
 
-    def eventStat(self, max_track_length: int, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:
+    def eventStat(self, max_track_length: int, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray[np.int32]:
         from_, to_ = self.indexInterval(phi_c, upper_h)
         delaunays = self.get_delaunay_list(from_, to_, num_threads)
         delaunays = [None] * from_ + delaunays  # shift the index
-        res = np.zeros((max_track_length,), dtype=int)
+        res = np.zeros((max_track_length, to_ - from_ - 1), dtype=np.int32)
         for i in range(from_, to_ - 1):
             xyt_1 = ut.CArray(self[i]['xyt'])
             xyt_0 = ut.CArray(self[i + 1]['xyt'])
-            events = delaunays[i + 1].events_compared_with(
-                delaunays[i], xyt_1, xyt_0
-            )
+            events = delaunays[i + 1].events_compared_with(delaunays[i], xyt_1, xyt_0)
             for event in events:
                 track_length = (event[0] + 1) // 2  # => ceil(event[0]/2)
                 idx = min(track_length, max_track_length - 1)
-                res[idx] += 1
+                res[idx, i - from_] += 1
         return res
 
     def stableDefects(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:

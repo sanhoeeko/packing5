@@ -19,7 +19,8 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None'):
     parameters of inner function:
         abg = (A_upper_bound, B_upper_bound, gamma) for each state
         xyt = (N, 3) configuration
-    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal' | 'only dense'
+    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal' |
+            'only sparse' | 'only dense' | 'only super-dense'
     :return: a function object for `Database.apply`
     """
     assert type(option) is str
@@ -38,12 +39,18 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None'):
                 mask = ~mask
             N_valid = np.sum(mask)
             return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
-        elif option == 'only dense':
+        elif option in ['only sparse', 'only dense', 'only super-dense']:
             # slow, because it calls Voronoi twice
             xyt_c = ut.CArray(xyt, dtype=np.float32)
             voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
             max_segdist = voro.FarthestSegmentDist(xyt_c)
-            mask = max_segdist < default.segdist_for_dense
+            if option == 'only sparse':
+                mask = max_segdist > default.segdist_for_sparse
+            elif option == 'only dense':
+                mask = np.bitwise_and(max_segdist >= default.segdist_for_dense,
+                                      max_segdist <= default.segdist_for_sparse)
+            else:
+                mask = max_segdist < default.segdist_for_dense
             N_valid = np.sum(mask)
             return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
         else:
@@ -240,7 +247,7 @@ def GeneralCalculation(filenames: list[str], calculation: Callable, save=False, 
     :param aggregate_method: sum | average
     """
     op_gamma = []
-    gammas = [1.2] if test else np.arange(1.1, 3, 0.1)
+    gammas = [1.6] if test else np.arange(1.1, 3, 0.1)
     ensembles_per_file = 1 if test else 5
     db0 = Database(filenames[0])
     for gamma in gammas:

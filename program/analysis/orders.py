@@ -3,6 +3,7 @@
 # tracemalloc.start()
 import numpy as np
 
+import default
 from . import utils as ut
 from .voronoi import Voronoi, DelaunayBase
 
@@ -212,3 +213,6 @@ class Delaunay(DelaunayBase):
 
     def FarthestSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
         return self.farthest_segment_dist(xyt) * self.gamma
+
+    def dense(self, xyt: ut.CArray) -> np.ndarray:
+        return (self.FarthestSegmentDist(xyt) < default.segdist_for_dense).astype(np.float32)
