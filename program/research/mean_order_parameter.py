@@ -19,7 +19,7 @@ def read_op(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 def calculate_op(filenames: list[str], order_parameter_name: str, save=False, test=True, aggregate_method='average'):
-    option = 'only dense'
+    option = 'dense 1|2'
 
     def calculation(simu: PickledSimulation):
         return simu.op(order_parameter_name, upper_h=1.2, num_threads=4, option=option)  # TODO: add upper_phi
@@ -33,4 +33,4 @@ if __name__ == '__main__':
     calculate_op(
         filenames=['../data-20250419.h5', ],
         # filenames=ut.filenamesFromTxt('all-data-files.txt'),
-        order_parameter_name='S_local', test=True, save=False, aggregate_method='average')
+        order_parameter_name='defect', test=True, save=False, aggregate_method='average')

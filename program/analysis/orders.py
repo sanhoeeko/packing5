@@ -166,7 +166,7 @@ class Delaunay(DelaunayBase):
 
         return inner
 
-    def MeanSegmentDist(self, xyt: ut.CArray) -> float:
+    def GlobalMeanSegmentDist(self, xyt: ut.CArray) -> float:
         """
         :return: mean segment distance normalized in [0, 2]
         """
@@ -214,5 +214,36 @@ class Delaunay(DelaunayBase):
     def FarthestSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
         return self.farthest_segment_dist(xyt) * self.gamma
 
-    def dense(self, xyt: ut.CArray) -> np.ndarray:
-        return (self.FarthestSegmentDist(xyt) < default.segdist_for_dense).astype(np.float32)
+    def MeanSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
+        return self.mean_segment_dist(xyt) * self.gamma
+
+    def dense(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        dist = self.FarthestSegmentDist(xyt)
+        res = np.zeros((self.num_rods,), dtype=np.int32)
+        super_dense = dist < default.segdist_for_dense
+        dense = np.bitwise_and(dist <= default.segdist_for_sparse, dist >= default.segdist_for_dense)
+        res[super_dense] = 2
+        res[dense] = 1
+        return res
+
+    def dense_ratio(self, xyt: ut.CArray) -> float:
+        return np.sum(self.dense(xyt) != 0) / self.num_rods
+
+    def dense_over_theoretical_dense(self, xyt: ut.CArray) -> float:
+        phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
+        if phi < default.phi_c:
+            r = (phi - default.phi_0) / (default.phi_c - default.phi_0) * (default.phi_c / phi)
+        else:
+            r = 1
+        dist = self.FarthestSegmentDist(xyt)
+        dense = dist < default.segdist_for_sparse
+        return np.sum(dense) / (self.num_rods * r)
+
+    def super_dense_over_dense(self, xyt: ut.CArray) -> float:
+        dist = self.FarthestSegmentDist(xyt)
+        dense = dist < default.segdist_for_sparse
+        super_dense = dist < default.segdist_for_dense
+        return np.sum(super_dense) / np.sum(dense)
+
+    def super_dense_ratio(self, xyt: ut.CArray) -> float:
+        return np.sum(self.FarthestSegmentDist(xyt) < default.segdist_for_dense) / self.num_rods
