@@ -19,7 +19,11 @@ def read_op(filename: str, order_parameter_name: str, from_to: tuple):
 
 
 def calculate_op(filenames: list[str], order_parameter_name: str, save=False, test=True, aggregate_method='average'):
-    option = 'y rank'
+    """
+    definition of the window ("dense" region):
+    see `utils.py` InternalMask2
+    """
+    option = 'only boundary'
 
     def calculation(simu: PickledSimulation):
         return simu.op(order_parameter_name, upper_phi=0.84, num_threads=4, option=option)

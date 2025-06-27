@@ -56,5 +56,6 @@ DLLEXPORT int bitmap_to_pairs(void* src_ptr, void* dst_ptr, int num_rods);
 DLLEXPORT int bitmap_count(void* data_ptr, int num_bytes);
 DLLEXPORT int FindEventsInBitmap(int num_rods, void* current_bonds_ptr, void* new_bonds_ptr, void* previous_z, void* current_z,
     void* dst_ptr);
+DLLEXPORT void vote(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* values_ptr, void* output_ptr, int max_value);
 
 #endif //PCH_H

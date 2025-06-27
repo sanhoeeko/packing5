@@ -144,17 +144,30 @@ def reference_phi(gamma: Union[float, np.ndarray], h: float) -> Union[float, np.
     return (np.pi + 4 * (gamma - 1)) / (2 * gamma * (2 - h))
 
 
-def indexInterval(phis: np.ndarray, gamma: float, phi_c: float = None, upper_h: float = None) -> (int, int):
+def indexInterval(phis: np.ndarray, gamma: float, phi_c: float = None, upper_h: float = None,
+                  upper_phi: float = None) -> (int, int):
     if phi_c is None:
         lower_index = 0
     else:
         lower_index = first_larger_than(phis, phi_c)
-    if upper_h is None:
+    if upper_h is None and upper_phi is None:
         upper_index = len(phis)
     else:
-        upper_index = first_larger_than(phis, reference_phi(gamma, upper_h))
+        if upper_h is not None and upper_phi is not None:
+            raise ValueError
+        elif upper_phi is None:
+            upper_index = first_larger_than(phis, reference_phi(gamma, upper_h))
+        else:
+            upper_index = first_larger_than(phis, upper_phi)
     return lower_index, upper_index
 
+
+def clipArray(arr: np.ndarray, val=0):
+    """
+    :return: remove zeros of nans at the end of the array
+    """
+    idx = np.where(arr == val)[0][0]
+    return arr[:idx, ...]
 
 def gamma_star(gamma: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     # return 1 + (gamma - 1) * 2 / np.sqrt(3)
@@ -188,3 +201,11 @@ def mask_structured_array(structured_arr: np.ndarray, mask: np.ndarray[bool]):
     zero_record = np.zeros((), dtype=structured_arr.dtype)
     structured_arr[~mask] = zero_record
     return structured_arr
+
+
+def r_phi(phi: float):
+    if phi < default.phi_c:
+        r = (phi - default.phi_0) / (default.phi_c - default.phi_0) * (default.phi_c / phi)
+    else:
+        r = 1
+    return r

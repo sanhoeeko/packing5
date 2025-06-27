@@ -19,7 +19,7 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None'):
     parameters of inner function:
         abg = (A_upper_bound, B_upper_bound, gamma) for each state
         xyt = (N, 3) configuration
-    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal' |
+    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal' | 'dist rank' | 'y rank'
             'dense 0' | 'dense 0|1' | ... <0 for sparse, 1 for dense, 2 for super-dense>
     :return: a function object for `Database.apply`
     """
@@ -36,6 +36,24 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None'):
             phi = ut.phi(N, abg[2], abg[0], abg[1])
             mask = ut.InternalMask2(phi, abg[0], abg[1], xyt)
             if option == 'only boundary':
+                mask = ~mask
+            N_valid = np.sum(mask)
+            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
+        elif option == 'dist rank':
+            # slow, because it calls Voronoi twice
+            xyt_c = ut.CArray(xyt, dtype=np.float32)
+            voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
+            mask = voro.SegmentDistRankMask(xyt_c)
+            N_valid = np.sum(mask)
+            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
+        elif option in ['y rank', '~y rank']:
+            N = xyt.shape[0]
+            phi = ut.phi(N, abg[2], abg[0], abg[1])
+            r = ut.r_phi(phi)
+            abs_y = np.abs(xyt[:, 1])
+            critical_abs_y = np.sort(abs_y)[::-1][int(round(r * N))]
+            mask = abs_y >= critical_abs_y
+            if option == '~y rank':
                 mask = ~mask
             N_valid = np.sum(mask)
             return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
@@ -247,7 +265,7 @@ def GeneralCalculation(filenames: list[str], calculation: Callable, save=False, 
     :param aggregate_method: sum | average
     """
     op_gamma = []
-    gammas = [1.2] if test else np.arange(1.1, 3, 0.1)
+    gammas = [1.1] if test else np.arange(1.1, 3, 0.1)
     ensembles_per_file = 1 if test else 5
     db0 = Database(filenames[0])
     for gamma in gammas:
@@ -271,7 +289,7 @@ def GeneralCalculation(filenames: list[str], calculation: Callable, save=False, 
         for op, gamma in zip(op_gamma, gammas):
             s = db0.find(gamma=gamma)[0][0]
             if horizontal_axis is None:
-                x_axis = s.propertyInterval('phi', upper_h=1.2)[-len(op):]
+                x_axis = s.propertyInterval('phi', upper_h=1.2)[:len(op)]
                 plt.scatter(x_axis, op)
             else:
                 x_axis = horizontal_axis

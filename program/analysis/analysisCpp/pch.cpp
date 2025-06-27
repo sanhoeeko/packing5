@@ -221,3 +221,41 @@ void DistToEllipse(float a, float b, void* points_ptr, void* out_ptr, int N) {
         out[i] = distToEllipse(a, b, abs(points[i].x), abs(points[i].y));
     }
 }
+
+/*
+    Require: values are positive integers
+*/
+void vote(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* values_ptr, void* output_ptr, int max_value)
+{
+    int* indices = (int*)indices_ptr;               // length: num_rods
+    int* edges = (int*)edges_ptr;                   // length: num_edges
+    int* values = (int*)values_ptr;                 // length: num_rods
+    int* output = (int*)output_ptr;                 // length: num_rods
+    int cols = max_value + 1;
+    int* count = new int[cols * num_rods]();
+    int id1 = 0;
+    // count
+    for (int j = 0; j < num_edges; j++) {
+        while (j == *indices && id1 < num_rods) {
+            indices++;
+            id1++;
+        }
+        int id2 = edges[j];
+        count[id1 * cols + values[id2]]++;
+        count[id2 * cols + values[id1]]++;
+    }
+    // sort (smaller value has higher piority)
+    for (int i = 0; i < num_rods; i++) {
+        int max_v = -1;
+        int max_count = 0;
+        for (int v = 0; v <= max_value; v++) {
+            if (count[i * cols + v] > max_count) {
+                max_count = count[i * cols + v];
+                max_v = v;
+            }
+        }
+        output[i] = max_v;
+    }
+    // clear
+    delete[] count;
+}

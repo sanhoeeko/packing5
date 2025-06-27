@@ -339,9 +339,22 @@ class DelaunayBase:
         ker.dll.symmetricMax(*self.params, seg_dist.ptr, max_dist.ptr)
         return max_dist.data
 
-    def mean_segment_dist(self, xyt: ut.CArray) -> np.ndarray:
-        seg_dist = ut.CArrayFZeros((self.num_edges,))
-        mean_dist = ut.CArrayFZeros((self.num_rods,))
-        ker.dll.SegmentDistForBonds(*self.params, xyt.ptr, seg_dist.ptr, self.gamma)
-        ker.dll.symmetricSum(*self.params, seg_dist.ptr, mean_dist.ptr)
-        return mean_dist.data / self.z_number()
+    def vote(self, raw_res: ut.CArray) -> ut.CArray:
+        res = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
+        ker.dll.vote(*self.params, raw_res.ptr, res.ptr, 2)
+        return res
+
+    def VoteN(self, n: int, x: np.ndarray[np.int32]) -> np.ndarray:
+        y = ut.CArray(x)
+        for i in range(n):
+            y = self.vote(y)
+        return y.data
+
+    def segment_dist_rank_mask(self, xyt: ut.CArray, ratio: float) -> np.ndarray:
+        if ratio == 1:
+            return np.ones((self.num_rods,), dtype=bool)
+        dist = self.farthest_segment_dist(xyt)
+        sorted_dist = np.sort(dist)
+        idx = int(round(self.num_rods * ratio))
+        critical_value = sorted_dist[idx]
+        return dist <= critical_value

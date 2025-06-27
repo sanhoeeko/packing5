@@ -214,10 +214,7 @@ class Delaunay(DelaunayBase):
     def FarthestSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
         return self.farthest_segment_dist(xyt) * self.gamma
 
-    def MeanSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
-        return self.mean_segment_dist(xyt) * self.gamma
-
-    def dense(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+    def raw_dense(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         dist = self.FarthestSegmentDist(xyt)
         res = np.zeros((self.num_rods,), dtype=np.int32)
         super_dense = dist < default.segdist_for_dense
@@ -226,17 +223,30 @@ class Delaunay(DelaunayBase):
         res[dense] = 1
         return res
 
-    def dense_ratio(self, xyt: ut.CArray) -> float:
-        return np.sum(self.dense(xyt) != 0) / self.num_rods
+    def raw_dense_1(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        dist = self.FarthestSegmentDist(xyt)
+        res = np.zeros((self.num_rods,), dtype=np.int32)
+        res[dist <= default.segdist_for_sparse] = 1
+        return res
+
+    def dense(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        return self.VoteN(1, self.raw_dense(xyt))
+
+    def dense_1(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        return self.VoteN(3, self.raw_dense_1(xyt))
 
     def dense_over_theoretical_dense(self, xyt: ut.CArray) -> float:
         phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
-        if phi < default.phi_c:
-            r = (phi - default.phi_0) / (default.phi_c - default.phi_0) * (default.phi_c / phi)
-        else:
-            r = 1
+        r = ut.r_phi(phi)
         dist = self.FarthestSegmentDist(xyt)
         dense = dist < default.segdist_for_sparse
+        return np.sum(dense) / (self.num_rods * r)
+
+    def super_dense_over_theoretical_dense(self, xyt: ut.CArray) -> float:
+        phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
+        r = ut.r_phi(phi)
+        dist = self.FarthestSegmentDist(xyt)
+        dense = dist < default.segdist_for_dense
         return np.sum(dense) / (self.num_rods * r)
 
     def super_dense_over_dense(self, xyt: ut.CArray) -> float:
@@ -245,5 +255,12 @@ class Delaunay(DelaunayBase):
         super_dense = dist < default.segdist_for_dense
         return np.sum(super_dense) / np.sum(dense)
 
+    def dense_ratio(self, xyt: ut.CArray) -> float:
+        return np.sum(self.dense(xyt) != 0) / self.num_rods
+
     def super_dense_ratio(self, xyt: ut.CArray) -> float:
         return np.sum(self.FarthestSegmentDist(xyt) < default.segdist_for_dense) / self.num_rods
+
+    def SegmentDistRankMask(self, xyt: ut.CArray) -> np.ndarray:
+        phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
+        return self.segment_dist_rank_mask(xyt, ut.r_phi(phi))
