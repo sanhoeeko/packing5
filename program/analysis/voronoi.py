@@ -355,6 +355,6 @@ class DelaunayBase:
             return np.ones((self.num_rods,), dtype=bool)
         dist = self.farthest_segment_dist(xyt)
         sorted_dist = np.sort(dist)
-        idx = int(round(self.num_rods * ratio))
+        idx = min(int(round(self.num_rods * ratio)), self.num_rods - 1)
         critical_value = sorted_dist[idx]
         return dist <= critical_value

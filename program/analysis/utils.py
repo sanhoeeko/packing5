@@ -169,6 +169,7 @@ def clipArray(arr: np.ndarray, val=0):
     idx = np.where(arr == val)[0][0]
     return arr[:idx, ...]
 
+
 def gamma_star(gamma: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     # return 1 + (gamma - 1) * 2 / np.sqrt(3)
     return gamma * np.sqrt(3) / 2
@@ -209,3 +210,22 @@ def r_phi(phi: float):
     else:
         r = 1
     return r
+
+
+def y_rank(N: int, phi: float, xyt: np.ndarray):
+    r = r_phi(phi)
+    abs_y = np.abs(xyt[:, 1])
+    idx = min(int(round(r * N)), N - 1)
+    critical_abs_y = np.sort(abs_y)[::-1][idx]
+    mask = abs_y >= critical_abs_y
+    return mask
+
+
+def y_rank_2(N: int, phi: float, A: float, xyt: np.ndarray):
+    r = r_phi(phi)
+    x, y = xyt[:, 0], xyt[:, 1]
+    abs_y = np.abs(y) / np.sqrt(A ** 2 - x ** 2) + 0.01
+    idx = min(int(round(r * N)), N - 1)
+    critical_abs_y = np.sort(abs_y)[::-1][idx]
+    mask = abs_y >= critical_abs_y
+    return mask

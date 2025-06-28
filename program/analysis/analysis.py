@@ -49,10 +49,8 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None'):
         elif option in ['y rank', '~y rank']:
             N = xyt.shape[0]
             phi = ut.phi(N, abg[2], abg[0], abg[1])
-            r = ut.r_phi(phi)
-            abs_y = np.abs(xyt[:, 1])
-            critical_abs_y = np.sort(abs_y)[::-1][int(round(r * N))]
-            mask = abs_y >= critical_abs_y
+            # mask = ut.y_rank(N, phi, xyt)
+            mask = ut.y_rank_2(N, phi, abg[0], xyt)
             if option == '~y rank':
                 mask = ~mask
             N_valid = np.sum(mask)
