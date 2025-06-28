@@ -21,7 +21,7 @@ from .voronoi import Voronoi
 class DatabaseBase:
     def __init__(self, file_name: str):
         self.file_name = file_name
-        self.file = h5py.File(self.file_name, 'r')
+        self.file = h5py.File(self.file_name, 'r', locking=False, libver='latest')
         self._summary_table_array = extract_metadata(self.file_name)
         self.ids = self._summary_table_array['id'].tolist()
         self.summary = self.process_summary(struct_array_to_dataframe(self._summary_table_array))

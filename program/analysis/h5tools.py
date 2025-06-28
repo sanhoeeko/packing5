@@ -45,7 +45,7 @@ def add_property_to_hdf5(file_name: str, key: str, value):
 def read_hdf5_groups_to_dicts(file_path: str) -> (dict, dict[dict]):
     data_dict = {}
     group_dict = {}
-    with h5py.File(file_path, 'r') as file:
+    with h5py.File(file_path, 'r', locking=False, libver='latest') as file:
         for dataset_name in file:
             if hasattr(file[dataset_name], 'keys'):
                 # if it is a group
@@ -67,7 +67,7 @@ def extract_metadata(file_path: str) -> np.ndarray:
     metadata_list = []
 
     # Open the HDF5 file
-    with h5py.File(file_path, 'r') as f:
+    with h5py.File(file_path, 'r', locking=False, libver='latest') as f:
         # Iterate through all groups in the file
         def collect_metadata(name, obj):
             if isinstance(obj, h5py.Group):

@@ -12,7 +12,7 @@ from h5tools.merge import group_similar_ids
 class PostDatabase(DatabaseBase):
     def __init__(self, file_name: str):
         self.file_name = file_name
-        self.file = h5py.File(self.file_name, 'r')
+        self.file = h5py.File(self.file_name, 'r', locking=False, libver='latest')
         self.x_axis_name = self.file.attrs['x_axis_name']
         self._summary_table_array = self.file['summary_table'][:]
         self.ids = self._summary_table_array['id'].tolist()

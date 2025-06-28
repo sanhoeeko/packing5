@@ -7,7 +7,7 @@ import numpy as np
 
 def read_hdf5_to_dict(file_path: str) -> dict:
     data_dict = {}
-    with h5py.File(file_path, 'r') as file:
+    with h5py.File(file_path, 'r', locking=False, libver='latest') as file:
         for dataset_name in file:
             data_dict[dataset_name] = file[dataset_name][:]
     return data_dict
@@ -49,7 +49,7 @@ def write_dict_to_hdf5(file_path: str, data: dict):
 
 def read_metadata_from_hdf5(hdf5_filename: str) -> dict:
     metadata = {}
-    with h5py.File(hdf5_filename, 'r') as f:
+    with h5py.File(hdf5_filename, 'r', locking=False, libver='latest') as f:
         for key, value in f.attrs.items():
             metadata[key] = value
     return metadata
@@ -112,7 +112,7 @@ def stack_h5_datasets(ensemble_id: str, truncate=False):
     with h5py.File(output_file, 'w') as f_out:
         # Copy datasets and add a new dimension
         for file in files:
-            with h5py.File(file, 'r') as f:
+            with h5py.File(file, 'r', locking=False, libver='latest') as f:
                 for key, data in f.items():
                     if key not in f_out:
                         # Initialize dataset with a new dimension
@@ -140,7 +140,7 @@ def stack_h5_datasets(ensemble_id: str, truncate=False):
                         f_out[key] = out_data
 
         # Copy all attributes from the first file to the new file
-        with h5py.File(files[0], 'r') as f_first:
+        with h5py.File(files[0], 'r', locking=False, libver='latest') as f_first:
             for key, value in f_first.attrs.items():
                 f_out.attrs[key] = value
 
@@ -163,7 +163,7 @@ def pack_h5_files(files: list[str], output_filename: str):
     with h5py.File(output_filename, 'w') as f_out:
         for file in files:
             group_name = file.split('.')[0]
-            with h5py.File(file, 'r') as f_in:
+            with h5py.File(file, 'r', locking=False, libver='latest') as f_in:
                 # Create a group in the output file named after the original file path
                 group = f_out.create_group(group_name)
                 for name, obj in f_in.items():
@@ -205,7 +205,7 @@ def compress_hdf5_file(input_file: str, output_file: str, compression='gzip', co
     assert input_file != output_file, "Please using different file names."
 
     # Open the existing HDF5 file
-    with h5py.File(input_file, 'r') as f_in:
+    with h5py.File(input_file, 'r', locking=False, libver='latest') as f_in:
         # Create a new compressed HDF5 file
         with h5py.File(output_file, 'w') as f_out:
             copy_attrs(f_in, f_out)
