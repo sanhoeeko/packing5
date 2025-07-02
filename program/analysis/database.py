@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from . import utils as ut, mymath as mm
+from .mask import parse_mask_expr
 
 ut.setWorkingDirectory()
 
@@ -270,12 +271,27 @@ class PickledSimulation:
         else:
             return self.op_at(order_parameter_name, option)(index)
 
-    def op_at(self, order_parameter_name: str, option='None'):
+    def op_at(self, order_parameter_name: str, option_and_mask='None'):
         from .analysis import OrderParameterFunc
+
+        parts = option_and_mask.split(',')
+        option = parts[0]
+        if len(parts) == 1:
+            mask = None
+        elif len(parts) == 2:
+            mask_expr = parts[1].strip()
+            try:
+                mask = parse_mask_expr(mask_expr)
+            except ValueError as e:
+                raise e
+            except Exception as e:
+                raise ValueError(f"Invalid mask expression '{mask_expr}': {str(e)}")
+        else:
+            raise ValueError(f"Invalid option_and_mask format: {option_and_mask}")
 
         def inner(index: int):
             state = self[index]
-            result_struct_array = OrderParameterFunc([order_parameter_name], option)(
+            result_struct_array = OrderParameterFunc([order_parameter_name], option, mask)(
                 (
                     (state['metadata']['A'], state['metadata']['B'], state['metadata']['gamma']),
                     state['xyt'],
