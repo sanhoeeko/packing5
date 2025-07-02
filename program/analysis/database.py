@@ -14,7 +14,7 @@ ut.setWorkingDirectory()
 
 from simulation.state import State
 
-from .h5tools import extract_metadata, struct_array_to_dataframe, filter_dataframe
+from h5tools.h5analysis import extract_metadata, struct_array_to_dataframe, filter_dataframe
 from .voronoi import Voronoi
 
 
@@ -125,6 +125,9 @@ class PickledEnsemble:
     def __len__(self):
         return self.n_replica
 
+    def __repr__(self):
+        return '<PickledEnsemble>' + str(self.metadata[...])
+
     def __iter__(self):
         for i in range(len(self)):
             obj = self.simulation_at(i)
@@ -231,6 +234,9 @@ class PickledSimulation:
 
     def __len__(self):
         return self.n
+
+    def __repr__(self):
+        return '<PickledSimulation>' + str(self.metadata)
 
     def __getitem__(self, idx) -> dict:
         state_info = ut.struct_to_dict(self.state_info[idx])

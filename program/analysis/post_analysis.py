@@ -5,7 +5,7 @@ import pandas as pd
 import analysis.utils as ut
 from analysis.analysis import averageByReplica
 from analysis.database import DatabaseBase
-from analysis.h5tools import struct_array_to_dataframe, add_property_to_hdf5, add_array_to_hdf5, dict_to_analysis_hdf5
+from h5tools.h5analysis import struct_array_to_dataframe, add_property_to_hdf5, add_array_to_hdf5, dict_to_analysis_hdf5
 from h5tools.merge import group_similar_ids
 
 

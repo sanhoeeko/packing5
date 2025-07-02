@@ -4,7 +4,7 @@ from typing import Union
 import numpy as np
 
 import default
-from analysis.h5tools import invalid_value_of
+from h5tools.h5analysis import invalid_value_of
 
 
 def setWorkingDirectory():
@@ -213,10 +213,11 @@ def r_phi(phi: float):
 
 
 def y_rank(N: int, phi: float, xyt: np.ndarray):
+    y_ratio = 0.5
     r = r_phi(phi)
     abs_y = np.abs(xyt[:, 1])
     idx = min(int(round(r * N)), N - 1)
-    critical_abs_y = np.sort(abs_y)[::-1][idx]
+    critical_abs_y = np.sort(abs_y)[::-1][idx] * y_ratio
     mask = abs_y >= critical_abs_y
     return mask
 

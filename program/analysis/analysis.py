@@ -4,10 +4,9 @@ from typing import Callable
 import matplotlib.pyplot as plt
 import numpy as np
 
-import default
 from . import mymath as mm, utils as ut
 from .database import Database, PickledEnsemble
-from .h5tools import dict_to_analysis_hdf5, add_array_to_hdf5, add_property_to_hdf5
+from h5tools.h5analysis import dict_to_analysis_hdf5, add_array_to_hdf5, add_property_to_hdf5
 from .kernel import ker
 from .mymath import DirtyDataException
 from .orders import OrderParameterList
@@ -49,8 +48,8 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None'):
         elif option in ['y rank', '~y rank']:
             N = xyt.shape[0]
             phi = ut.phi(N, abg[2], abg[0], abg[1])
-            # mask = ut.y_rank(N, phi, xyt)
-            mask = ut.y_rank_2(N, phi, abg[0], xyt)
+            mask = ut.y_rank(N, phi, xyt)
+            # mask = ut.y_rank_2(N, phi, abg[0], xyt)
             if option == '~y rank':
                 mask = ~mask
             N_valid = np.sum(mask)
@@ -263,7 +262,7 @@ def GeneralCalculation(filenames: list[str], calculation: Callable, save=False, 
     :param aggregate_method: sum | average
     """
     op_gamma = []
-    gammas = [1.1] if test else np.arange(1.1, 3, 0.1)
+    gammas = [2.2] if test else np.arange(1.1, 3, 0.1)
     ensembles_per_file = 1 if test else 5
     db0 = Database(filenames[0])
     for gamma in gammas:
