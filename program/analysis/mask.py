@@ -125,6 +125,16 @@ def parse_mask_expr(expr: str) -> Mask:
 
 class MaskPrefab:
     @staticmethod
+    def body():
+        def mask_func(abg, xyt):
+            A, B, gamma = abg
+            xyt_c = ut.CArray(xyt, dtype=np.float32)
+            voro = Voronoi(gamma, A, B, xyt_c.data).delaunay()
+            return ~voro.dist_hull(xyt_c).astype(bool)
+
+        return Mask(mask_func)
+
+    @staticmethod
     def internal():
         """Create mask for internal particles"""
 

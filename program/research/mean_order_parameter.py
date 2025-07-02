@@ -32,6 +32,6 @@ if __name__ == '__main__':
     calculate_op(
         filenames=['../data-20250419.h5', ],
         # filenames=ut.filenamesFromTxt('all-data-files.txt'),
-        order_parameter_name='S_local', test=True, save=False, aggregate_method='average',
-        option='abs_averaged, internal & y_rank'
+        order_parameter_name='C6_raw', test=True, save=False, aggregate_method='average',
+        option='abs_averaged, body & y_rank'
     )
