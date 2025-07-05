@@ -72,7 +72,7 @@ ge EllipticBoundary::collide(Rod* shape, const xyt& q)
 	// This should not be frequently used in real systems
 	float h = distOutOfBoundary(q);
 	if (h > h_min) {
-		float fr = -10 * (expf(h - h_min) - 1);
+		float fr = -1 * (expf(h - h_min) - 1);   // The coefficient -1 ensures the image particle has the same rigidity as the real one
 		g += { fr* q.x, fr* q.y, 0, 0 };
 	}
 	return g;

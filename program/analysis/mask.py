@@ -158,7 +158,7 @@ class MaskPrefab:
             N = xyt.shape[0]
             A, B, gamma = abg
             phi = ut.phi(N, gamma, A, B)
-            return ut.y_rank(N, phi, xyt)
+            return ut.y_rank(N, phi, xyt, B)
 
         return Mask(mask_func)
 

@@ -12,5 +12,5 @@ if __name__ == '__main__':
         n=np.arange(5, 81 + 4, 4),
         d=0.05,
         Gamma0=1,
-        phi0=0.4
+        phi0=0.5
     )
