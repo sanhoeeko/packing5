@@ -127,7 +127,7 @@ class Simulator(ut.HasMeta):
                     continue
 
             for i in range(default.max_compress_turns):
-                if self.state.phi > default.terminal_phi: break
+                if self.state.phi > ut.reference_phi(self.gamma, default.h_max): break
                 self.state.descent_curve.clear()
 
                 if default.if_affine_when_compress:

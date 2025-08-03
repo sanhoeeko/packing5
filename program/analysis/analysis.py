@@ -31,6 +31,8 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None', mask: Mas
         if mask is not None:
             assert type(mask) == Mask, "mask must be analysis.mask.Mask instance"
             final_mask = mask(abg, xyt)
+        else:
+            final_mask = None
 
         # Apply based on option and mask
         if option == 'abs_averaged':

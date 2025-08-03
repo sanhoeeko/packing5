@@ -37,7 +37,7 @@ class StaticOrders:
         return hist  # bins are easy to calculate
 
 
-def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, abg: tuple = None) -> np.ndarray:
+def general_order_parameter(name: str, xyt: np.ndarray, delaunay: 'Delaunay' = None, abg: tuple = None) -> np.ndarray:
     """
     :return: a numpy array of shape (N,), N = particle number.
     parameter `name` and `xyt` are necessary.
@@ -45,12 +45,12 @@ def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, ab
     if name in ['S_global', 'S_x', 'Angle', 'AngleDist']:
         return getattr(StaticOrders, name)(xyt)
     elif name.startswith('Elliptic'):
-        return getattr(voro, name)(ut.CArray(xyt), abg[2])
+        return getattr(delaunay, name)(ut.CArray(xyt), abg[2])
     elif name.startswith('director-'):
         order = int(name.split('-')[1])
-        return voro.n_order_director(order)(ut.CArray(xyt))
+        return delaunay.n_order_director(order)(ut.CArray(xyt))
     else:
-        return getattr(voro, name)(ut.CArray(xyt))
+        return getattr(delaunay, name)(ut.CArray(xyt))
 
 
 def OrderParameterList(order_parameter_names: list[str]):

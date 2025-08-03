@@ -3,6 +3,7 @@ import ctypes as ct
 import os.path
 import re
 import time
+from typing import Union
 
 import h5py
 import numpy as np
@@ -220,4 +221,5 @@ def save_array(file_name: str):
     return inner
 
 
-dump = save_array('dump.h5')
+def reference_phi(gamma: Union[float, np.ndarray], h: float) -> Union[float, np.ndarray]:
+    return (np.pi + 4 * (gamma - 1)) / (2 * gamma * (2 - h))
