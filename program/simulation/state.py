@@ -218,7 +218,8 @@ class State(ut.HasMeta):
         self.xyt.set_data(state.xyt.data / length_scale)
 
     def initAsHardRods(self):
-        status_code = ker.dll.SegmentInitialization(self.xyt.ptr, self.N, self.A, self.B, 1 - 1 / self.gamma)
+        max_trial = self.N ** 2
+        status_code = ker.dll.SegmentInitialization(self.xyt.ptr, self.N, self.A, self.B, 1 - 1 / self.gamma, max_trial)
         if status_code != 0:
             raise ut.InitFailException
 

@@ -89,7 +89,7 @@ DLLEXPORT void AverageState(float temperature, void* p_state, void* energies, vo
 
 DLLEXPORT float AverageStateZeroTemperature(void* p_state, void* energies, void* dst, int N, int n_samples);
 
-DLLEXPORT int SegmentInitialization(void* xyt_ptr, int N, float A, float B, float r);
+DLLEXPORT int SegmentInitialization(void* xyt_ptr, int N, float A, float B, float r, int max_trial);
 
 //// test functions /////////////////////////////////////////////////////////////////////////////
 
