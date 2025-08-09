@@ -18,9 +18,8 @@ def read_op(filename: str, order_parameter_name: str, from_to: tuple):
     plt.show()
 
 
-def calculate_op(filenames: list[str], order_parameter_name: str, save=False, test=True, aggregate_method='average'):
-    option = 'y rank'
-
+def calculate_op(filenames: list[str], order_parameter_name: str, save=False, test=True,
+                 aggregate_method='average', option='None'):
     def calculation(simu: PickledSimulation):
         return simu.op(order_parameter_name, upper_phi=0.84, num_threads=4, option=option)
 
@@ -33,4 +32,6 @@ if __name__ == '__main__':
     calculate_op(
         filenames=['../data-20250419.h5', ],
         # filenames=ut.filenamesFromTxt('all-data-files.txt'),
-        order_parameter_name='S_local', test=True, save=False, aggregate_method='average')
+        order_parameter_name='C6_raw', test=True, save=False, aggregate_method='average',
+        option='abs_averaged, body & y_rank'
+    )

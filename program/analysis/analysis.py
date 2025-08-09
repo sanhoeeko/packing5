@@ -4,23 +4,21 @@ from typing import Callable
 import matplotlib.pyplot as plt
 import numpy as np
 
-import default
 from . import mymath as mm, utils as ut
 from .database import Database, PickledEnsemble
 from .h5tools import dict_to_analysis_hdf5, add_array_to_hdf5, add_property_to_hdf5
 from .kernel import ker
+from .mask import Mask
 from .mymath import DirtyDataException
 from .orders import OrderParameterList
-from .voronoi import Voronoi
 
 
-def OrderParameterFunc(order_parameter_list: list[str], option='None'):
+def OrderParameterFunc(order_parameter_list: list[str], option='None', mask: Mask = None):
     """
     parameters of inner function:
         abg = (A_upper_bound, B_upper_bound, gamma) for each state
         xyt = (N, 3) configuration
-    option: 'None' | 'abs averaged' | 'only boundary' | 'only internal' | 'dist rank' | 'y rank'
-            'dense 0' | 'dense 0|1' | ... <0 for sparse, 1 for dense, 2 for super-dense>
+    option: example: 'None, boundary & dense0'
     :return: a function object for `Database.apply`
     """
     assert type(option) is str
@@ -29,46 +27,30 @@ def OrderParameterFunc(order_parameter_list: list[str], option='None'):
         abg: tuple = args[0]
         xyt: np.ndarray = args[1]
         Xi = OrderParameterList(order_parameter_list)(xyt, abg)
-        if option == 'abs averaged':
-            return ut.apply_struct(np.mean)(Xi)
-        elif option in ['only boundary', 'only internal']:
-            N = xyt.shape[0]
-            phi = ut.phi(N, abg[2], abg[0], abg[1])
-            mask = ut.InternalMask2(phi, abg[0], abg[1], xyt)
-            if option == 'only boundary':
-                mask = ~mask
-            N_valid = np.sum(mask)
-            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
-        elif option == 'dist rank':
-            # slow, because it calls Voronoi twice
-            xyt_c = ut.CArray(xyt, dtype=np.float32)
-            voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
-            mask = voro.SegmentDistRankMask(xyt_c)
-            N_valid = np.sum(mask)
-            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
-        elif option in ['y rank', '~y rank']:
-            N = xyt.shape[0]
-            phi = ut.phi(N, abg[2], abg[0], abg[1])
-            # mask = ut.y_rank(N, phi, xyt)
-            mask = ut.y_rank_2(N, phi, abg[0], xyt)
-            if option == '~y rank':
-                mask = ~mask
-            N_valid = np.sum(mask)
-            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
-        elif option.startswith('dense'):
-            # slow, because it calls Voronoi twice
-            N = xyt.shape[0]
-            xyt_c = ut.CArray(xyt, dtype=np.float32)
-            voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
-            dense = voro.dense(xyt_c)
-            mask = np.zeros((N,), dtype=bool)
-            density_flags = list(map(int, option.split(' ')[1].split('|')))
-            for flag in density_flags:
-                mask = np.bitwise_or(mask, dense == flag)
-            N_valid = np.sum(mask)
-            return ut.apply_struct(lambda x: np.sum(x) / N_valid)(ut.mask_structured_array(Xi, mask))
+        # Resolve mask
+        if mask is not None:
+            assert type(mask) == Mask, "mask must be analysis.mask.Mask instance"
+            final_mask = mask(abg, xyt)
+        else:
+            final_mask = None
+
+        # Apply based on option and mask
+        if option == 'abs_averaged':
+            if mask is not None:
+                # Average over masked particles
+                N_valid = np.sum(final_mask)
+                masked_Xi = ut.mask_structured_array(Xi, final_mask)
+                return ut.apply_struct(lambda x: np.sum(x) / N_valid)(masked_Xi)
+            else:
+                # Average over all particles
+                return ut.apply_struct(np.mean)(Xi)
         elif option == 'None':
-            return Xi
+            if final_mask is not None:
+                # Return only masked particles
+                return ut.mask_structured_array(Xi, final_mask)
+            else:
+                # Return all particles
+                return Xi
         else:
             raise ValueError("Unknown option!")
 

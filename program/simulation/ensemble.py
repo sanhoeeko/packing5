@@ -90,7 +90,9 @@ def StartEnsemble(replica: int, N: int, n: int, d: float, phi0: float, Gamma0: f
         compress_func_B = boundary.UniformCompress(db)
     else:
         compress_func_A = boundary.NoCompress()
-        compress_func_B = boundary.RatioCompress(default.compress_rate)
+        # compress_func_B = boundary.RatioCompress(default.compress_rate)
+        da, db = get_uniform_compress_delta(default.uniform_compress_rate, N, n, d, phi0, Gamma0)
+        compress_func_B = boundary.UniformCompress(db)
 
     ensemble = CreateEnsemble(N, n, d, phi0, Gamma0, compress_func_A, compress_func_B, potential)
     ensemble.setReplica(replica)

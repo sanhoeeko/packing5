@@ -37,7 +37,7 @@ class StaticOrders:
         return hist  # bins are easy to calculate
 
 
-def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, abg: tuple = None) -> np.ndarray:
+def general_order_parameter(name: str, xyt: np.ndarray, delaunay: 'Delaunay' = None, abg: tuple = None) -> np.ndarray:
     """
     :return: a numpy array of shape (N,), N = particle number.
     parameter `name` and `xyt` are necessary.
@@ -45,12 +45,12 @@ def general_order_parameter(name: str, xyt: np.ndarray, voro: Voronoi = None, ab
     if name in ['S_global', 'S_x', 'Angle', 'AngleDist']:
         return getattr(StaticOrders, name)(xyt)
     elif name.startswith('Elliptic'):
-        return getattr(voro, name)(ut.CArray(xyt), abg[2])
+        return getattr(delaunay, name)(ut.CArray(xyt), abg[2])
     elif name.startswith('director-'):
         order = int(name.split('-')[1])
-        return voro.n_order_director(order)(ut.CArray(xyt))
+        return delaunay.n_order_director(order)(ut.CArray(xyt))
     else:
-        return getattr(voro, name)(ut.CArray(xyt))
+        return getattr(delaunay, name)(ut.CArray(xyt))
 
 
 def OrderParameterList(order_parameter_names: list[str]):
@@ -82,20 +82,27 @@ class Delaunay(DelaunayBase):
                  A: float, B: float, disks_per_rod: int):
         super().__init__(indices, edges, weights, gamma, A, B, disks_per_rod)
 
-    def defect(self, xyt: ut.CArray) -> np.ndarray:
+    def C6(self, xyt: ut.CArray) -> np.ndarray:
         """
         :return: 1 - [number of defects] / [number of internal particles]
         """
         z = self.z_number()
-        body = 1 - self.dist_hull(xyt)
+        body = ~self.dist_hull(xyt).astype(bool)
         body_rods = np.sum(body)
-        d = np.bitwise_and(body.astype(bool), z == 6)
+        d = np.bitwise_and(body, z == 6)
         return d / (body_rods / self.num_rods)
+
+    def C6_raw(self, xyt: ut.CArray) -> np.ndarray:
+        """
+        This is used for combining multiple masks for C6.
+        It MUST be used with a mask: `body`
+        """
+        return self.z_number() == 6
 
     def defect_number(self, xyt: ut.CArray) -> int:
         z = self.z_number()
-        body = 1 - self.dist_hull(xyt)
-        return np.sum(np.bitwise_and(body.astype(bool), z != 6))
+        body = ~self.dist_hull(xyt).astype(bool)
+        return np.sum(np.bitwise_and(body, z != 6))
 
     def Phi6Complex(self, xyt: ut.CArray) -> np.ndarray[np.complex64]:
         return self.phi_p(6, xyt)

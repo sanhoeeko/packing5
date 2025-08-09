@@ -7,8 +7,7 @@
 /*
     return: 0 -> Success, -1 -> Fail
 */
-int SegmentInitialization(void* xyt_ptr, int N, float A, float B, float r) {
-    int max_trial = N * 1000;
+int SegmentInitialization(void* xyt_ptr, int N, float A, float B, float r, int max_trial) {
     float r0 = 1 - r, gamma = 1 / r0;
     float rc = 2 * r0;
     float a = A - 1, b = B - 1;
