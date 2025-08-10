@@ -46,8 +46,7 @@ class Kernel:
             ('LbfgsDirection', [ct.c_void_p] * 2, None),
             ('AverageState', [ct.c_float] + [ct.c_void_p] * 3 + [ct.c_int] * 2, None),
             ('AverageStateZeroTemperature', [ct.c_void_p] * 3 + [ct.c_int] * 2, ct.c_float),
-            ('SegmentInitialization', [ct.c_void_p, ct.c_int] + [ct.c_float] * 3, ct.c_int),
-            # ('SegmentDistMoment', [ct.c_int] * 2 + [ct.c_void_p] * 3 + [ct.c_float, ct.c_int], ct.c_float),
+            ('SegmentInitialization', [ct.c_void_p, ct.c_int] + [ct.c_float] * 3 + [ct.c_int], ct.c_int),
         )
 
     def setTypes(self, *tup):

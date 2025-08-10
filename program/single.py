@@ -11,7 +11,7 @@ InitRecipe()
 
 
 def testSingleThread(profile=True):
-    N = 1024
+    N = 5000
     n = 6
     d = 0.1
     phi0 = 0.5

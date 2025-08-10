@@ -31,10 +31,16 @@ int SegmentInitialization(void* xyt_ptr, int N, float A, float B, float r, int m
             }
         }
         if (accept) {
-            q[cnt] = { x,y,t,0 }; cnt++;
+            q[cnt] = { x,y,t,0 }; 
+            cnt++;
         }
     }
     cout << "Number of initialized particles:" << cnt << endl;
-    if (cnt == N)return 0;
-    return -1;
+    if (cnt == N) {
+        return 0;
+    }
+    else {
+        cout << "Random Initialization failed!" << endl;
+        return -1;
+    }
 }

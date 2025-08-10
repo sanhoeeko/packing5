@@ -5,13 +5,12 @@ from .kernel import ker
 
 
 class Grid:
-    max_size = 8192
-
     def __init__(self, state):
         self.N = state.N
         self.state = state
         self.indices = ut.CArray(np.full((self.N,), -1, dtype=np.int32))
-        grid = np.full((Grid.max_size, ut.max_neighbors), -1, dtype=np.int32)
+        max_size = 2 * (4 * state.N)  # the estimated size: 4 R^2 = 4 N
+        grid = np.full((max_size, ut.max_neighbors), -1, dtype=np.int32)
         grid[:, 0] = 0
         self.grid = ut.CArray(grid)
 
