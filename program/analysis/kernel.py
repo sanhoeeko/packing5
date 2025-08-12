@@ -40,6 +40,7 @@ class Kernel:
             ('bitmap_to_pairs', [ct.c_void_p] * 2 + [ct.c_int], ct.c_int),
             ('bitmap_count', [ct.c_void_p, ct.c_int], ct.c_int),
             ('BoundaryMask', [ct.c_void_p] * 2 + [ct.c_int], None),
+            ('num_rod_required_for_bitmap', [], ct.c_int),
             ('FindEventsInBitmap', [ct.c_int] + [ct.c_void_p] * 5, ct.c_int),
             ('vote', [ct.c_int] * 2 + [ct.c_void_p] * 4 + [ct.c_int], None),
         )

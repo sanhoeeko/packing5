@@ -5,7 +5,7 @@ from .kernel import ker
 
 
 class BitMatrix:
-    min_bits = 256
+    min_bits = ker.dll.num_rod_required_for_bitmap()  # 8 or 256 depending on dll's version
 
     def __init__(self, rows: int):
         """

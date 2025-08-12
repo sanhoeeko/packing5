@@ -335,6 +335,12 @@ void BoundaryMask(void* data_ptr, void* dst_ptr, int num_rods)
     }
 }
 
+int num_rod_required_for_bitmap()
+{
+    if constexpr (USE_AVX2) return 256;
+    else return 8;
+}
+
 struct DefectEvent {
     int related_particles;
     int previous_negative_charge = 0, previous_positive_charge = 0;

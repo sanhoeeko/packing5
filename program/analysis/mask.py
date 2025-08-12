@@ -151,6 +151,16 @@ class MaskPrefab:
         return ~MaskPrefab.internal()
 
     @staticmethod
+    def graph_boundary():
+        def mask_func(abg, xyt):
+            A, B, gamma = abg
+            xyt_c = ut.CArray(xyt, dtype=np.float32)
+            voro = Voronoi(gamma, A, B, xyt_c.data).delaunay()
+            return voro.hull_mask()
+
+        return Mask(mask_func)
+
+    @staticmethod
     def y_rank():
         """Create mask based on y rank"""
 

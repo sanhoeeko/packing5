@@ -224,6 +224,12 @@ class DelaunayBase:
         internal = 1 - self.dist_hull(xyt)
         return np.dot(self.z_number(), internal) - 6 * np.sum(internal)
 
+    def hull_mask(self, args=None) -> np.ndarray[np.int32]:
+        A = self.adjacency_matrix()
+        mask = ut.CArray(np.zeros((self.num_rods,), dtype=bool))
+        ker.dll.BoundaryMask(A.arr.ptr, mask.ptr, self.num_rods)
+        return mask.data.astype(np.int32)
+
     def dist_hull(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         """
         :return: binary array: 0 for internal, 1 for marginal
