@@ -212,7 +212,7 @@ def r_phi(phi: float):
     return r
 
 
-def y_rank(N: int, phi: float, xyt: np.ndarray, B: float):
+def y_rank(N: int, phi: float, xyt: np.ndarray, B: float) -> np.ndarray[np.int32]:
     y_ratio = 0.5
     r = r_phi(phi)
     abs_y = np.abs(xyt[:, 1])
@@ -220,7 +220,7 @@ def y_rank(N: int, phi: float, xyt: np.ndarray, B: float):
     critical_abs_y = np.sort(abs_y)[::-1][idx]
     critical_abs_y = B - y_ratio * (B - critical_abs_y)
     mask = abs_y >= critical_abs_y
-    return mask
+    return mask.astype(np.int32)
 
 
 def y_rank_2(N: int, phi: float, A: float, xyt: np.ndarray):

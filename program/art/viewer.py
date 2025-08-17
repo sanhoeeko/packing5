@@ -1,3 +1,6 @@
+import time
+
+import matplotlib
 import matplotlib.collections as collections
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
@@ -12,6 +15,23 @@ from analysis.voronoi import Voronoi
 from art.art import Figure
 from . import art
 from .delaunay_art import showTypedDelaunay
+
+# 尝试设置OpenGL加速的后端（按优先级尝试）
+opengl_backends = [
+    'module://mplcairo.qt',  # 最佳性能
+    'Qt5Agg',
+    'TkAgg',
+    'GTK3Agg'
+]
+
+for backend in opengl_backends:
+    try:
+        matplotlib.use(backend)
+        print(f"成功设置后端: {backend}")
+        break
+    except:
+        print(f"后端 {backend} 不可用，尝试下一个...")
+
 
 style_dict = {
     'angle': ['Angle', 'DirectorAngle', 'PureRotationAngle'],
@@ -101,10 +121,11 @@ class RenderState:
         else:
             a, b = 1, 1 / metadata['gamma']
             alpha = 1.0
-        for xi, yi, ti in xyt:
-            # ellipse = patches.Ellipse((xi, yi), width=self.a, height=self.b, angle=ti)
-            ellipse = art.Capsule((xi, yi), width=a, height=b, angle=180 / np.pi * ti)
-            ellipses.append(ellipse)
+
+        start = time.perf_counter()
+        ellipses = [art.Capsule((xi, yi), width=a, height=b, angle=180 / np.pi * ti) for xi, yi, ti in xyt]
+        elapsed = time.perf_counter() - start
+        print(f"创建耗时: {elapsed:.4f}秒")
 
         # Calculate color_data, which determines the color to display on particles
         if setup.func is None:
@@ -114,8 +135,11 @@ class RenderState:
             color_data = setup.func((abg, xyt))
 
         # Create a collection with the ellipses and add it to the axes
+        start = time.perf_counter()
         col = collections.PatchCollection(ellipses, array=color_data, norm=norm, cmap=cmap, alpha=alpha)
         self.handle.ax.add_collection(col)
+        elapsed = time.perf_counter() - start
+        print(f"渲染耗时: {elapsed:.4f}秒")
 
         # Set the limits of the plot
         self.handle.ax.set_xlim(-self.A - 1, self.A + 1)

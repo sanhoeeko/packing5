@@ -36,6 +36,13 @@ class StaticOrders:
         hist, bins = np.histogram(t, bins=n_angles, range=(0, np.pi))
         return hist  # bins are easy to calculate
 
+    @staticmethod
+    def YRank(xyt: np.ndarray, abg: tuple):
+        A, B, gamma = abg
+        N = xyt.shape[0]
+        phi = ut.phi(N, gamma, A, B)
+        return ut.y_rank(N, phi, xyt, B)
+
 
 def general_order_parameter(name: str, xyt: np.ndarray, delaunay: 'Delaunay' = None, abg: tuple = None) -> np.ndarray:
     """
@@ -44,6 +51,8 @@ def general_order_parameter(name: str, xyt: np.ndarray, delaunay: 'Delaunay' = N
     """
     if name in ['S_global', 'S_x', 'Angle', 'AngleDist']:
         return getattr(StaticOrders, name)(xyt)
+    elif name in ['YRank']:
+        return getattr(StaticOrders, name)(xyt, abg)
     elif name.startswith('Elliptic'):
         return getattr(delaunay, name)(ut.CArray(xyt), abg[2])
     elif name.startswith('director-'):
@@ -268,6 +277,8 @@ class Delaunay(DelaunayBase):
     def super_dense_ratio(self, xyt: ut.CArray) -> float:
         return np.sum(self.FarthestSegmentDist(xyt) < default.segdist_for_dense) / self.num_rods
 
-    def SegmentDistRankMask(self, xyt: ut.CArray) -> np.ndarray:
+    def SegmentDistRankMask(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
-        return self.segment_dist_rank_mask(xyt, ut.r_phi(phi))
+        ratio = ut.r_phi(phi) * 0.8
+        mask = self.segment_dist_rank_mask(xyt, ratio)
+        return self.VoteN(3, mask)

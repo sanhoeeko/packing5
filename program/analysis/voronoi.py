@@ -350,17 +350,17 @@ class DelaunayBase:
         ker.dll.vote(*self.params, raw_res.ptr, res.ptr, 2)
         return res
 
-    def VoteN(self, n: int, x: np.ndarray[np.int32]) -> np.ndarray:
+    def VoteN(self, n: int, x: np.ndarray[np.int32]) -> np.ndarray[np.int32]:
         y = ut.CArray(x)
         for i in range(n):
             y = self.vote(y)
         return y.data
 
-    def segment_dist_rank_mask(self, xyt: ut.CArray, ratio: float) -> np.ndarray:
+    def segment_dist_rank_mask(self, xyt: ut.CArray, ratio: float) -> np.ndarray[np.int32]:
         if ratio == 1:
             return np.ones((self.num_rods,), dtype=bool)
         dist = self.farthest_segment_dist(xyt)
         sorted_dist = np.sort(dist)
         idx = min(int(round(self.num_rods * ratio)), self.num_rods - 1)
         critical_value = sorted_dist[idx]
-        return dist <= critical_value
+        return (dist <= critical_value).astype(np.int32)
