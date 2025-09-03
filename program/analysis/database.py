@@ -366,8 +366,6 @@ class PickledSimulation:
         else:
             dics = [dic for dic in self][from_:to_]
             delaunays = [Voronoi.fromStateDict(dic).delaunay() for dic in dics]
-        for d in delaunays:
-            d.check()
         return delaunays
 
     def bondCreation(self, num_threads=1, phi_c=None, upper_h=None) -> np.ndarray:

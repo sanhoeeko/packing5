@@ -20,35 +20,33 @@ setWorkingDirectory()
 # C++ data management
 
 class CArray:
-    def __init__(self, arr: np.ndarray, dtype=None):
-        if dtype is None:
-            dtype = arr.dtype
-        if arr.flags['C_CONTIGUOUS']:
-            self.data: np.ndarray = arr.astype(dtype)
-        else:
-            self.data: np.ndarray = np.ascontiguousarray(arr, dtype=dtype)
-        self.ptr = self.data.ctypes.data
+    def __init__(self, input_array):
+        """
+        :param input_array: np.ndarray or other types that can be converted to np.ndarray
+        """
+        if not isinstance(input_array, np.ndarray):
+            input_array = np.array(input_array)
+        self.data = input_array
 
-    def __repr__(self):
-        return str(self.data)
-
-    def __getitem__(self, item):
-        return self.data[item]
+    @property
+    def ptr(self) -> int:
+        if not self.data.flags.contiguous:
+            self.data = np.ascontiguousarray(self.data)
+        return self.data.ctypes.data
 
     def copy(self) -> 'CArray':
         return CArray(self.data.copy())
 
-    def check(self):
-        # to fix some bugs in multiprocess (Maybe in which `CArray`s are incorrectly copied)
-        self.ptr = self.data.ctypes.data
+    def __repr__(self):
+        return str(self.data)
 
 
 def CArrayF(arr: np.ndarray):
-    return CArray(arr, np.float32)
+    return CArray(arr.astype(np.float32))
 
 
 def CArrayFZeros(*args, **kwargs):
-    return CArray(np.zeros(*args, **kwargs), np.float32)
+    return CArray(np.zeros(*args, **kwargs, dtype=np.float32))
 
 
 # parallel

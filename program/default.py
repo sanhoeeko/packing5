@@ -22,7 +22,7 @@ enable_legal_check = False
 S_local_background = 0.338
 h_max = 1.2
 phi_0 = 0.4
-phi_c = 0.84
+phi_c = 0.90
 segdist_for_dense = 2.05
 # segdist_for_sparse = 2.6  # for gamma=1.2
 segdist_for_sparse = 3.4  # for gamma=1.8

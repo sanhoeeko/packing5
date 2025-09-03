@@ -13,8 +13,8 @@ def batch_analyze(filename: str):
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('z_number')).setMarkerSetup('').show()
+    InteractiveViewer(e, RenderSetup('EllipticPhi6')).setMarkerSetup('').show()
 
 
 if __name__ == '__main__':
-    batch_analyze('../XL10000.h5')
+    batch_analyze('../XL20250831.h5')

@@ -70,7 +70,7 @@ def OrderParameterList(order_parameter_names: list[str]):
     dtype = list(zip(order_parameter_names, ['f4'] * len(order_parameter_names)))
 
     def inner(xyt, abg) -> np.ndarray:
-        xyt_c = ut.CArray(xyt, dtype=np.float32)
+        xyt_c = ut.CArrayF(xyt)
         n = xyt.shape[-2]
         voro = Voronoi(abg[2], abg[0], abg[1], xyt_c.data).delaunay()
         result = np.full((n,), np.nan, dtype=dtype)
@@ -228,7 +228,10 @@ class Delaunay(DelaunayBase):
         return np.round(wd2).astype(np.int32)
 
     def FarthestSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
-        return self.farthest_segment_dist(xyt) * self.gamma
+        return self.max_segment_dist(xyt) * self.gamma
+
+    def MeanSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
+        return self.mean_segment_dist(xyt) * self.gamma
 
     def raw_dense(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         dist = self.FarthestSegmentDist(xyt)
@@ -251,34 +254,17 @@ class Delaunay(DelaunayBase):
     def dense_1(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         return self.VoteN(3, self.raw_dense_1(xyt))
 
-    def dense_over_theoretical_dense(self, xyt: ut.CArray) -> float:
-        phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
-        r = ut.r_phi(phi)
-        dist = self.FarthestSegmentDist(xyt)
-        dense = dist < default.segdist_for_sparse
-        return np.sum(dense) / (self.num_rods * r)
-
-    def super_dense_over_theoretical_dense(self, xyt: ut.CArray) -> float:
-        phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
-        r = ut.r_phi(phi)
-        dist = self.FarthestSegmentDist(xyt)
-        dense = dist < default.segdist_for_dense
-        return np.sum(dense) / (self.num_rods * r)
-
-    def super_dense_over_dense(self, xyt: ut.CArray) -> float:
-        dist = self.FarthestSegmentDist(xyt)
-        dense = dist < default.segdist_for_sparse
-        super_dense = dist < default.segdist_for_dense
-        return np.sum(super_dense) / np.sum(dense)
-
-    def dense_ratio(self, xyt: ut.CArray) -> float:
-        return np.sum(self.dense(xyt) != 0) / self.num_rods
-
-    def super_dense_ratio(self, xyt: ut.CArray) -> float:
-        return np.sum(self.FarthestSegmentDist(xyt) < default.segdist_for_dense) / self.num_rods
-
     def SegmentDistRankMask(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         phi = ut.phi(self.num_rods, self.gamma, self.A, self.B)
-        ratio = ut.r_phi(phi) * 0.8
-        mask = self.segment_dist_rank_mask(xyt, ratio)
-        return self.VoteN(3, mask)
+        ratio = ut.r_phi(phi) * 1.0
+
+        if ratio == 1:
+            return np.ones((self.num_rods,), dtype=np.int32)
+
+        dist = self.max_segment_dist(xyt)
+        sorted_dist = np.sort(dist)
+        idx = min(int(round(self.num_rods * ratio)), self.num_rods - 1)
+        critical_value = sorted_dist[idx]
+        mask = (dist <= critical_value).astype(np.int32)
+        return self.VoteN(4, mask)
+        # return mask
