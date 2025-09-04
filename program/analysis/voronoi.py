@@ -352,13 +352,13 @@ class DelaunayBase:
         ker.dll.symmetricSum(*self.params, seg_dist.ptr, max_dist.ptr)
         return max_dist.data / self.z_number()  # symmetricMean
 
-    def vote(self, raw_res: ut.CArray) -> ut.CArray:
+    def vote(self, raw_res: ut.CArray, max_value=255) -> ut.CArray:
         res = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
-        ker.dll.vote(*self.params, raw_res.ptr, res.ptr, 2)
+        ker.dll.vote(*self.params, raw_res.ptr, res.ptr, max_value)
         return res
 
-    def VoteN(self, n: int, x: np.ndarray[np.int32]) -> np.ndarray[np.int32]:
-        y = ut.CArray(x)
+    def VoteN(self, n: int, x: np.ndarray[np.int32], max_value=255) -> np.ndarray:
+        y = ut.CArray(x.astype(np.int32))
         for i in range(n):
-            y = self.vote(y)
+            y = self.vote(y, max_value)
         return y.data
