@@ -32,7 +32,6 @@ for backend in opengl_backends:
     except:
         print(f"后端 {backend} 不可用，尝试下一个...")
 
-
 style_dict = {
     'angle': ['Angle', 'DirectorAngle', 'PureRotationAngle'],
     'voronoi': ['z_number'],
@@ -51,7 +50,7 @@ def get_style(order_parameter_name: str) -> str:
 
 
 class RenderSetup:
-    def __init__(self, order_parameter_name: str = None, real_size=True):
+    def __init__(self, order_parameter_name: str = None, mask: str = None, real_size=True):
         self.name = order_parameter_name
         self.style = get_style(order_parameter_name)
         self.real_size = real_size
@@ -60,9 +59,16 @@ class RenderSetup:
             self.style = 'single color'
             self.func = None
         else:
-            def func(x):
-                arr = OrderParameterFunc([order_parameter_name], 'None')(x)
-                return arr[order_parameter_name]
+            if mask is None:
+                def func(x):
+                    arr = OrderParameterFunc([order_parameter_name], 'None')(x)
+                    return arr[order_parameter_name]
+            else:
+                def func(x):
+                    arr = OrderParameterFunc([order_parameter_name, mask], 'None')(x)
+                    op, msk = arr[order_parameter_name], arr[mask]
+                    op[msk < 0.5] = np.nan  # msk.dtype == np.float32
+                    return op
 
             self.func = func
 
@@ -111,17 +117,16 @@ class RenderState:
             setup = RenderSetup()
         cmap, norm = selectCmapAndNorm(setup.style)
 
-        # Create a list to hold the patches
-        ellipses = []
-
-        # For each point in the data, create a custom patch (ellipse) and add it to the list
         if setup.real_size:
             a, b = np.sqrt(2), np.sqrt(2) / metadata['gamma']
             alpha = 0.7
         else:
             a, b = 1, 1 / metadata['gamma']
             alpha = 1.0
+        cmap = plt.get_cmap(cmap).copy()
+        cmap.set_bad(color='grey', alpha=alpha)
 
+        # For each point in the data, create a custom patch (ellipse) and add it to the list
         start = time.perf_counter()
         ellipses = [art.Capsule((xi, yi), width=a, height=b, angle=180 / np.pi * ti) for xi, yi, ti in xyt]
         elapsed = time.perf_counter() - start

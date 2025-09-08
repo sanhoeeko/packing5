@@ -50,8 +50,8 @@ class Ensemble:
     def pack(self):
         stack_h5_datasets(self.id)
         # delete old files
-        for i in range(len(self.simulators)):
-            os.remove(f"{self.id}_{i}.h5")
+        # for i in range(len(self.simulators)):
+        #     os.remove(f"{self.id}_{i}.h5")
 
     def execute(self):
         self.init()

@@ -266,5 +266,17 @@ class Delaunay(DelaunayBase):
         idx = min(int(round(self.num_rods * ratio)), self.num_rods - 1)
         critical_value = sorted_dist[idx]
         mask = (dist <= critical_value).astype(np.int32)
-        return self.VoteN(4, mask)
         # return mask
+        return self.VoteN(4, mask)
+
+    def Phi_S_mask(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        phi_6e = self.EllipticPhi6(xyt, self.gamma)
+        s_local = self.S_local(xyt)
+        mask = np.logical_and(phi_6e > 0.9, s_local > 0.99).astype(np.int32)
+        return mask
+
+    def C6_S_mask(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
+        c6 = self.C6_raw(xyt)
+        s_local = self.S_local(xyt)
+        mask = np.logical_and(c6 == 1, s_local > 0.99).astype(np.int32)
+        return mask
