@@ -9,12 +9,12 @@ def batch_analyze(filename: str):
     db.search_max_gradient()
     # checkMaxGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=1.1)[0][3]
+    e = db.find(gamma=2.0)[0][3]
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('Angle')).setMarkerSetup('new-bonds').show()
+    InteractiveViewer(e, RenderSetup('Angle', mask='C6_S_mask')).setMarkerSetup('').show()
 
 
 if __name__ == '__main__':
-    batch_analyze('../XL20250831.h5')
+    batch_analyze('../XL5000-1.h5')

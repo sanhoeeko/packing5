@@ -27,7 +27,7 @@ enum HowToCalGradient { Normal, AsDisks, HowToCalGradient_Count };
 enum HashFunc { _h2pi, _h4 };
 enum ParticleShapeType { RodType, SegmentType };
 
-struct xyt {
+struct alignas(16) xyt {
     float x, y, t, unused;
     void operator+=(const xyt&); void operator-=(const xyt&);
     xyt operator*(const float);

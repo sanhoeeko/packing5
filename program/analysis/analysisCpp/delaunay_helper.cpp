@@ -85,7 +85,7 @@ static inline float cross(const Point& O, const Point& A, const Point& B) {
 
 vector<int> convexHull(const vector<Point>& points) {
     int n = points.size();
-    if (n < 3) return {}; // 至少需要三个点形成凸包
+    if (n < 3) return {};
 
     // generate indices
     vector<int> indices(n);

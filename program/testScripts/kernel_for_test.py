@@ -21,6 +21,7 @@ class TestKernel(Kernel):
         self.setTypes(
             ('interpolateGE', [ct.c_void_p] * 2 + [ct.c_float] * 4, None),
             ('preciseGE', [ct.c_void_p] * 4 + [ct.c_float] * 4, None),
+            ('standardSegmentDist', [ct.c_void_p] + [ct.c_float] * 4, ct.c_float),
         )
         # self.dll.getMirrorOf.argtypes = [ct.c_float] * 5
         # self.getMirrorOf = self.returnFixedArray(self.dll.getMirrorOf, 3)
@@ -64,3 +65,6 @@ class TestPotential:
         """
         arr = self.interpolateGE(x, y, t1, t2)
         return np.hstack([arr[0:3], arr[4:7]])
+
+    def segDist(self, x: float, y: float, t1: float, t2: float) -> float:
+        return ker.dll.standardSegmentDist(self.potential.shape_ptr, x, y, t1, t2)

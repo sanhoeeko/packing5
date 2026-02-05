@@ -98,4 +98,6 @@ DLLEXPORT void preciseGE(void* p_shape, void* scalar_potential, void* scalar_pot
 
 DLLEXPORT void interpolateGE(void* p_shape, void* p_out, float x, float y, float t1, float t2);
 
+DLLEXPORT float standardSegmentDist(void* p_shape, float x, float y, float t1, float t2);
+
 #endif

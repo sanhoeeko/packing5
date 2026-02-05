@@ -40,15 +40,14 @@ def process_task(task):
 if __name__ == '__main__':
     # List all database filenames.
     db_files = [
-        '../data-20250420.h5',
-        '../data-20250420-2.h5'
+        '../XL20250910.h5',
     ]
 
     # Define gamma values from 1.1 to 3.0 in steps of 0.1.
     gammas = np.arange(1.1, 3.1, 0.1)
 
     # fot test
-    gammas = [2.7]
+    gammas = [1.7]
 
     # To store the result for each gamma; each entry is a vector of length 90.
     results_by_gamma = []

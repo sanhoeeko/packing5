@@ -7,8 +7,10 @@
 #define interpolatePotential interpolatePotentialSimplex
 #define interpolateGradient interpolateGradientSimplex
 #else
-#define interpolatePotential interpolatePotentialTrilinear
-#define interpolateGradient interpolateGradientTrilinear
+//#define interpolatePotential interpolatePotentialTrilinear
+//#define interpolateGradient interpolateGradientTrilinear
+#define interpolatePotential _trilinearInterpolate
+#define interpolateGradient _trilinearInterpolate    // use SIMD version
 #endif
 
 /*
@@ -48,6 +50,7 @@ struct ParticleShape {
     xyt interpolatePotentialSimplex(const xyt& q);
     xyt interpolateGradientTrilinear(const xyt& q);
     xyt interpolatePotentialTrilinear(const xyt& q);
+    xyt _trilinearInterpolate(const xyt& q);
 
     // interfaces
     void initPotential(int threads, float* scalar_potential);

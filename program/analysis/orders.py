@@ -95,11 +95,10 @@ class Delaunay(DelaunayBase):
         """
         :return: 1 - [number of defects] / [number of internal particles]
         """
-        z = self.z_number()
-        body = ~self.dist_hull(xyt).astype(bool)
-        body_rods = np.sum(body)
-        d = np.bitwise_and(body, z == 6)
-        return d / (body_rods / self.num_rods)
+        raw = self.C6_raw(xyt).astype(np.float32)
+        hull = self.hull_mask()
+        raw[hull == 1] = np.nan
+        return raw
 
     def C6_raw(self, xyt: ut.CArray) -> np.ndarray:
         """
@@ -272,11 +271,13 @@ class Delaunay(DelaunayBase):
     def Phi_S_mask(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         phi_6e = self.EllipticPhi6(xyt, self.gamma)
         s_local = self.S_local(xyt)
-        mask = np.logical_and(phi_6e > 0.9, s_local > 0.99).astype(np.int32)
+        mask = np.logical_and(phi_6e > 0.9, s_local > 0.9).astype(np.int32)
         return mask
 
     def C6_S_mask(self, xyt: ut.CArray) -> np.ndarray[np.int32]:
         c6 = self.C6_raw(xyt)
         s_local = self.S_local(xyt)
-        mask = np.logical_and(c6 == 1, s_local > 0.99).astype(np.int32)
+        mask = np.logical_and(c6 == 1, s_local > 0.9).astype(np.int32)
+        # mask = np.logical_and(c6 == 1, np.logical_and(0.6 < s_local, s_local < 0.8)).astype(np.int32)
+        # mask = np.logical_and(0.6 < s_local, s_local < 0.8).astype(np.int32)
         return mask

@@ -1,6 +1,5 @@
 import time
 
-import matplotlib
 import matplotlib.collections as collections
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
@@ -15,22 +14,6 @@ from analysis.voronoi import Voronoi
 from art.art import Figure
 from . import art
 from .delaunay_art import showTypedDelaunay
-
-# 尝试设置OpenGL加速的后端（按优先级尝试）
-opengl_backends = [
-    'module://mplcairo.qt',  # 最佳性能
-    'Qt5Agg',
-    'TkAgg',
-    'GTK3Agg'
-]
-
-for backend in opengl_backends:
-    try:
-        matplotlib.use(backend)
-        print(f"成功设置后端: {backend}")
-        break
-    except:
-        print(f"后端 {backend} 不可用，尝试下一个...")
 
 style_dict = {
     'angle': ['Angle', 'DirectorAngle', 'PureRotationAngle'],
@@ -50,7 +33,7 @@ def get_style(order_parameter_name: str) -> str:
 
 
 class RenderSetup:
-    def __init__(self, order_parameter_name: str = None, mask: str = None, real_size=True):
+    def __init__(self, order_parameter_name: str = None, mask: str = None, mask_reverse=False, real_size=True):
         self.name = order_parameter_name
         self.style = get_style(order_parameter_name)
         self.real_size = real_size
@@ -67,6 +50,8 @@ class RenderSetup:
                 def func(x):
                     arr = OrderParameterFunc([order_parameter_name, mask], 'None')(x)
                     op, msk = arr[order_parameter_name], arr[mask]
+                    if mask_reverse:
+                        msk = 1 - msk
                     op[msk < 0.5] = np.nan  # msk.dtype == np.float32
                     return op
 
