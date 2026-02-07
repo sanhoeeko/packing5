@@ -165,13 +165,15 @@ class RenderState:
         return self
 
     def drawMarkers(self, xyt: np.ndarray, metadata: dict):
-        marker_list = ['+', '1', '', r'$\perp$', 's']
+        marker_list = ['+', 'x', '', r'$\circ$', 's']
         xyt_c = ut.CArray(xyt)
         winding_number_2 = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay().winding2(xyt_c)
         for i in range(metadata['N']):
             if winding_number_2[i] != 0:
                 x, y = xyt[i, 0:2]
-                self.handle.ax.scatter(x, y, marker=marker_list[winding_number_2[i] + 2], color='black')
+                idx = winding_number_2[i] + 2
+                if 0 <= idx <= 4:
+                    self.handle.ax.scatter(x, y, marker=marker_list[idx], color='black')
         return self
 
     def drawBonds(self, xyt: np.ndarray, edges: np.ndarray, color='black'):

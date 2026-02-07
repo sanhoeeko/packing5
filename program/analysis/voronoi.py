@@ -328,10 +328,10 @@ class DelaunayBase:
         ker.dll.is_isolated_defect(*self.params, z.ptr)
         return z.data
 
-    def winding_angle(self, xyt: ut.CArray, angles: ut.CArray) -> np.ndarray:
-        theta = ut.CArrayFZeros((self.num_rods,))
-        ker.dll.windingAngle(*self.params, xyt.ptr, angles.ptr, theta.ptr)
-        return theta.data
+    def windingNumber2(self, xyt: ut.CArray, angles: ut.CArray) -> np.ndarray:
+        s2 = ut.CArray(np.zeros((self.num_rods,), dtype=np.int32))
+        ker.dll.windingNumber2(*self.params, xyt.ptr, angles.ptr, s2.ptr)
+        return s2.data
 
     def winding_angle_next_nearest(self, xyt: ut.CArray, angles: ut.CArray) -> np.ndarray:
         theta = ut.CArrayFZeros((self.num_rods,))

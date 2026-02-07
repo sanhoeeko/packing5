@@ -45,10 +45,10 @@ DLLEXPORT void FittedEllipticPhi_p(int num_edges, int num_rods, void* indices_pt
 DLLEXPORT void correlation(void* xyt_ptr, void* opA_field_ptr, void* opB_field_ptr, void* out_r_ptr, void* out_corr_ptr, int if_seg_dist,
     int N, float gamma, float mean_A, float mean_B, float std_A, float std_B);
 DLLEXPORT void angularCorrelation(void* xyt_ptr, void* out_r_ptr, void* out_corr_ptr, int if_seg_dist, int N, float gamma);
-DLLEXPORT void Angle57Dist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
+DLLEXPORT void Angle57Hist(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr,
     int n_angles, void* xyt_ptr, void* z_number_ptr, void* output_ptr);
 DLLEXPORT void is_isolated_defect(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* output_ptr);
-DLLEXPORT void windingAngle(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+DLLEXPORT void windingNumber2(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
     void* angle_ptr, void* output_ptr);
 DLLEXPORT void bitmap_from_delaunay(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* dst_ptr);
 DLLEXPORT void bitmap_subtract(void* a_ptr, void* b_ptr, void* dst_ptr, int num_bytes);
