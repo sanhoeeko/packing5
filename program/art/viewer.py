@@ -167,13 +167,17 @@ class RenderState:
     def drawMarkers(self, xyt: np.ndarray, metadata: dict):
         marker_list = ['+', 'x', '', r'$\circ$', 's']
         xyt_c = ut.CArray(xyt)
-        winding_number_2 = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay().winding2(xyt_c)
-        for i in range(metadata['N']):
-            if winding_number_2[i] != 0:
-                x, y = xyt[i, 0:2]
-                idx = winding_number_2[i] + 2
-                if 0 <= idx <= 4:
-                    self.handle.ax.scatter(x, y, marker=marker_list[idx], color='black')
+        voro = Voronoi(metadata['gamma'], metadata['A'], metadata['B'], xyt).delaunay()
+        # winding_number_2 = voro.winding2(xyt_c)
+        # for i in range(metadata['N']):
+        #     if winding_number_2[i] != 0:
+        #         x, y = xyt[i, 0:2]
+        #         idx = winding_number_2[i] + 2
+        #         if 0 <= idx <= 4:
+        #             self.handle.ax.scatter(x, y, marker=marker_list[idx], color='black')
+        pos_lc_defect, neg_lc_defect = voro.LCDefect(xyt_c)
+        self.handle.ax.scatter(pos_lc_defect[:, 0], pos_lc_defect[:, 1], marker=marker_list[3], color='black')
+        self.handle.ax.scatter(neg_lc_defect[:, 0], neg_lc_defect[:, 1], marker=marker_list[1], color='black')
         return self
 
     def drawBonds(self, xyt: np.ndarray, edges: np.ndarray, color='black'):

@@ -338,6 +338,17 @@ class DelaunayBase:
         ker.dll.windingAngleNextNearest(*self.params, xyt.ptr, angles.ptr, theta.ptr)
         return theta.data
 
+    def LCDefectPositions(self, xyt: ut.CArray, angles: ut.CArray):
+        positive_buffer = ut.CArrayFZeros((self.num_rods * 3,))
+        negative_buffer = ut.CArrayFZeros((self.num_rods * 3,))
+        pos_count_neg_count = ker.dll.LCDefectPositions(*self.params, xyt.ptr, angles.ptr,
+                                                        positive_buffer.ptr, negative_buffer.ptr)
+        pos_count = pos_count_neg_count // (1 << 32)
+        neg_count = pos_count_neg_count % (1 << 32)
+        pos = positive_buffer.data[:pos_count * 2].copy()
+        neg = negative_buffer.data[:neg_count * 2].copy()
+        return pos.reshape(pos_count, 2), neg.reshape(neg_count, 2)
+
     def max_segment_dist(self, xyt: ut.CArray) -> np.ndarray:
         seg_dist = ut.CArrayFZeros((self.num_edges,))
         max_dist = ut.CArrayFZeros((self.num_rods,))

@@ -43,6 +43,7 @@ class Kernel:
             ('num_rod_required_for_bitmap', [], ct.c_int),
             ('FindEventsInBitmap', [ct.c_int] + [ct.c_void_p] * 5, ct.c_int),
             ('vote', [ct.c_int] * 2 + [ct.c_void_p] * 4 + [ct.c_int], None),
+            ('LCDefectPositions', [ct.c_int] * 2 + [ct.c_void_p] * 6, ct.c_int64)
         )
 
     def setTypes(self, *tup):

@@ -59,5 +59,7 @@ DLLEXPORT int num_rod_required_for_bitmap();
 DLLEXPORT int FindEventsInBitmap(int num_rods, void* current_bonds_ptr, void* new_bonds_ptr, void* previous_z, void* current_z,
     void* dst_ptr);
 DLLEXPORT void vote(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* values_ptr, void* output_ptr, int max_value);
+DLLEXPORT __int64 LCDefectPositions(int num_edges, int num_rods, void* indices_ptr, void* edges_ptr, void* configuration_ptr,
+    void* angle_ptr, void* output_positive_ptr, void* output_negative_ptr);
 
 #endif //PCH_H

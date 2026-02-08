@@ -226,6 +226,10 @@ class Delaunay(DelaunayBase):
         angles = ut.CArray(xyt.data[:, 2] % np.pi)
         return super().windingNumber2(xyt, angles)
 
+    def LCDefect(self, xyt: ut.CArray) -> (np.ndarray, np.ndarray):
+        angles = ut.CArray(xyt.data[:, 2] % np.pi)
+        return super().LCDefectPositions(xyt, angles)
+
     def FarthestSegmentDist(self, xyt: ut.CArray) -> np.ndarray:
         return self.max_segment_dist(xyt) * self.gamma
 
