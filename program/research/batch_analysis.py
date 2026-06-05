@@ -9,12 +9,12 @@ def batch_analyze(filename: str):
     db.search_max_gradient()
     # checkMaxGradient(db, 0.1)
     # checkEnergy(db)
-    e = db.find(gamma=1.3)[0][0]
+    e = db.find(gamma=1.2)[0][0]
     # plotListOfArray(e.energyCurve(), y_restriction=2)
     # plotListOfArray(e.meanGradientCurve(), y_restriction=2)
     # plotListOfArray(e.maxGradientCurve(), y_restriction=2)
-    InteractiveViewer(e, RenderSetup('z_number')).setMarkerSetup('lc-defect').show()
+    InteractiveViewer(e, RenderSetup('S_local')).setMarkerSetup('').show()
 
 
 if __name__ == '__main__':
-    batch_analyze('../XL5000-1.h5')
+    batch_analyze('../data-20250404.h5')

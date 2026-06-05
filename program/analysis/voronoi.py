@@ -201,7 +201,7 @@ class DelaunayBase:
         i = 0
         for k in range(self.num_edges):
             j = self.edges.data[k]
-            while k >= self.indices[i] and i < self.num_rods:
+            while k >= self.indices.data[i] and i < self.num_rods:
                 i += 1
             yield i, j, ty[k]
 
@@ -239,7 +239,7 @@ class DelaunayBase:
 
     def dist_to_ellipse(self, xyt: ut.CArray) -> np.ndarray:
         dists = ut.CArrayFZeros((self.num_rods,))
-        xy = ut.CArray(xyt.data[:, 0:2], dtype=np.float32)
+        xy = ut.CArray(xyt.data[:, 0:2].astype(np.float32))
         ker.dll.DistToEllipse(self.A, self.B, xy.ptr, dists.ptr, self.num_rods)
         return dists.data
 

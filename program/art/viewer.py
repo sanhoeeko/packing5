@@ -24,6 +24,8 @@ style_dict = {
 
 
 def get_style(order_parameter_name: str) -> str:
+    if not order_parameter_name:
+        return 'default'
     for k, v_list in style_dict.items():
         if order_parameter_name in v_list:
             return k
@@ -68,7 +70,7 @@ def selectCmapAndNorm(style: str):
             'single color': (mcolors.LinearSegmentedColormap.from_list("single_color_cmap",
                                                                        [(0, single_color), (1, single_color)]),
                              mcolors.Normalize(vmin=0, vmax=1)),
-            'default': ('jet', None),
+            'default': ('viridis', None),
             'angle': ('hsv', mcolors.Normalize(vmin=0, vmax=np.pi)),
             'pm1': ('bwr', mcolors.Normalize(vmin=-1, vmax=1)),
             'defect_pm2': ('Spectral', mcolors.Normalize(vmin=-3, vmax=3)),

@@ -1,3 +1,10 @@
+import os
+import sys
+
+from matplotlib import pyplot as plt
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import numpy as np
 import pandas as pd
 from scipy.spatial import Delaunay
@@ -12,14 +19,18 @@ A = 31.1
 B = 16
 use_segment_delaunay = True
 use_modulo = True
-show_types = True
-show_hull = True
+show_types = False
+show_hull = False
 
 if __name__ == '__main__':
     xyt = np.array(pd.read_csv('testScripts/example_data.csv', header=None))
+    if show_hull:
+        render_setup = RenderSetup('dist_hull')
+    else:
+        render_setup = RenderSetup()
     with Figure() as f:
-        RenderState(f).drawParticles(xyt, {'gamma': gamma, 'A': A, 'B': B},
-                                     RenderSetup('dist_hull'), with_label=False)
+        plt.axis('off')
+        RenderState(f).drawParticles(xyt, {'gamma': gamma, 'A': A, 'B': B}, render_setup, with_label=False)
         if use_segment_delaunay:
             voro = Voronoi(gamma, np.max(np.abs(xyt[:, 0])), np.max(np.abs(xyt[:, 1])), xyt)
             if use_modulo:
@@ -34,7 +45,8 @@ if __name__ == '__main__':
             else:
                 delaunay = Delaunay(voro.disk_map)
                 xy = voro.disk_map
-                f.ax.triplot(xy[:, 0], xy[:, 1], delaunay.simplices.copy())
+                f.ax.triplot(xy[:, 0], xy[:, 1], delaunay.simplices.copy(), color='blue')
         else:
             delaunay = Delaunay(xyt[:, :2])
-            f.ax.triplot(xyt[:, 0], xyt[:, 1], delaunay.simplices.copy())
+            f.ax.triplot(xyt[:, 0], xyt[:, 1], delaunay.simplices.copy(), color='blue')
+        f.region((2, 12), (-8, 2))
